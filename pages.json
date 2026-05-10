@@ -1,0 +1,84 @@
+{
+	"pages": [
+		{
+			"path": "pages/splash/index"
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "发起申请",
+				"navigationBarBackgroundColor": "#ffffff"
+			}
+		},
+		{
+			"path": "pages/apply/apply",
+			"style": {
+				"navigationBarTitleText": "我的申请",
+				"navigationBarBackgroundColor": "#ffffff",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/center/center",
+			"style": {
+				"navigationBarTitleText": "审批中心",
+				"navigationBarBackgroundColor": "#ffffff"
+			}
+		},
+		{
+			"path": "pages/detail/detail",
+			"style": {
+				"navigationBarTitleText": "审批详情",
+				"navigationBarBackgroundColor": "#ffffff"
+			}
+		},
+		{
+			"path": "pages/form/form",
+			"style": {
+				"navigationBarTitleText": "审批详情",
+				"navigationBarBackgroundColor": "#ffffff"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarBackgroundColor": "#F5F7F9",
+		"backgroundColor": "#F5F7F9"
+	},
+	"tabBar": {
+		"color": "#999999",
+		"selectedColor": "#2979FF",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "white",
+		"height": "50px",
+		"fontSize": "10px",
+		"iconWidth": "24px",
+		"spacing": "3px",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "发起申请",
+				"iconPath": "static/tab_add.png",
+				"selectedIconPath": "static/tab_add_active.png"
+			},
+			{
+				"pagePath": "pages/apply/apply",
+				"text": "我的申请",
+				"iconPath": "static/tab_mine.png",
+				"selectedIconPath": "static/tab_mine_active.png"
+			},
+			{
+				"pagePath": "pages/center/center",
+				"text": "审批中心",
+				"iconPath": "static/tab_center.png",
+				"selectedIconPath": "static/tab_center_active.png"
+			}
+		]
+	},
+	"easycom": {
+	    "autoscan": true,
+	    "custom": {
+	      "^uni-(.*)": "@/uni_modules/uni-$1/uni-$1.vue"
+	    }
+	  }
+}

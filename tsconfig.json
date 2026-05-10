@@ -1,0 +1,36 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "lib": [
+      "esnext", 
+      "dom"
+    ],
+    "types": ["@dcloudio/types"],
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "pages/**/*.ts", 
+    "pages/**/*.d.ts", 
+    "pages/**/*.vue",
+    "components/**/*.ts", 
+    "components/**/*.d.ts", 
+    "components/**/*.vue",
+    "utils/**/*.ts",
+    "hooks/**/*.ts",
+    "constants/**/*.ts",
+    "apis/**/*.ts",
+    "stores/**/*.ts",
+    "typings/**/*.ts",
+    "typings/**/*.d.ts",
+    "main.ts",
+    "eslint.config.mts",
+    "App.vue"
+  ]
+}
