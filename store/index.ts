@@ -3,7 +3,7 @@ import createPersistedState from 'vuex-persistedstate'
 import user from './modules/user'
 import storage from '@/utils/storage'
 import type { RootState, StoreState } from './types'
-import type { Person } from '@/apis/typings/global'
+import type { IPerson } from '@/apis/typings/global'
 
 const store = createStore<RootState>({
   modules: {
@@ -20,7 +20,7 @@ const store = createStore<RootState>({
       state.device_id = id
     },
 
-    SET_USER_LIST(state, list: Array<Person>) {
+    SET_USER_LIST(state, list: Array<IPerson>) {
       state.userList = list
     }
   },
@@ -32,6 +32,7 @@ const store = createStore<RootState>({
         const s = state as StoreState
         return {
           device_id: s.device_id,
+          userList: s.userList,
           user: s.user
         }
       },

@@ -1,166 +1,152 @@
 <template>
   <view class="container">
-    <scroll-view scroll-y class="scroll-content">
-      
+    <scroll-view ref="scrollRef" scroll-with-animation scroll-y class="scroll-content">
       <view class="card-section header-card">
         <view class="main-title">
-          <text>请假申请</text>
-          <text class="status-tag passed">已通过</text>
+          <text>{{ instanceDetail.form_name }}</text>
+          <text class="status-tag passed">{{ instanceDetail.status }}</text>
         </view>
-        <view class="sub-info">申请编号：SP20230615001</view>
-        <view class="sub-info">提交时间：2025-07-19 10:09:30</view>
+        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code?.split('_')?.[2] ?? '' }}</view>
+        <view class="sub-info">提交时间：{{ instanceDetail?.application_time ?? '' }}</view>
       </view>
 
       <view class="card-section detail-card">
         <view class="user-row">
-          <image class="avatar" src="https://via.placeholder.com/60" />
+          <view
+            class="avatar"
+            :style="{
+              background: `linear-gradient(${instanceDetail.back_ground})`
+            }"
+            >{{ instanceDetail.applicant?.slice(-1) }}
+          </view>
           <view class="user-info">
-            <text class="name">Jake</text>
-            <text class="dept">数字化及软件工程部</text>
+            <text class="name">{{ instanceDetail.applicant }}</text>
+            <text class="dept">{{ instanceDetail.department }}</text>
           </view>
         </view>
-        
-        <view class="info-item">
-          <view class="label">请假类型</view>
-          <view class="value bold">年假</view>
-        </view>
-        
-        <view class="info-item">
-          <view class="label">开始时间</view>
-          <view class="value time-range">
-            <text>2025-10-20 11:30</text>
-            <text class="to">至</text>
-            <text>2025-10-23 16:30</text>
-          </view>
-          <view class="sub-value">共 3 天 (含周末2天)</view>
-        </view>
-        
-        <view class="info-item">
-          <view class="label">请假事由</view>
-          <view class="value">因家里有急事需要回去处理，需要请假5天，还望领导审批，谢谢！</view>
-        </view>
-        
-        <view class="info-item">
-          <view class="label">工作安排</view>
-          <view class="value">
-            1.假期期间工作已交接给同事王华<br/>
-            2.紧急事务可联系电话：13800138000
-          </view>
-        </view>
-        
-        <view class="info-item attachment-box">
-          <view class="label">附件</view>
-          <view class="file-item">
-            <view class="file-left">
-              <text class="file-icon">📄</text>
-              <text class="file-name">zujianku请假证明.pdf</text>
-            </view>
-            <text class="download-icon">📥</text>
-          </view>
+        <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
+          <Renderer :formItem="formItem" />
         </view>
       </view>
-
       <view class="card-section timeline-card">
         <view class="section-title">审批记录</view>
         <view class="timeline">
-          <view class="timeline-item">
-            <view class="tail"></view>
-            <view class="node node-blue"></view>
-            <view class="content">
-              <view class="step-title">提交</view>
-              <view class="person-box">
-                <image class="mini-avatar" src="https://via.placeholder.com/40" />
-                <view class="person-info">
-                  <view class="p-top"><text class="p-name">Jake</text> <text class="p-role">产品组</text></view>
-                  <view class="p-status blue">已提交</view>
-                </view>
-                <view class="p-time">
-                  <text>9个月前</text>
-                  <text class="date">2025年3月15日</text>
-                </view>
-              </view>
-            </view>
-          </view>
-          <view class="timeline-item">
-            <view class="tail"></view>
-            <view class="node node-blue"></view>
-            <view class="content">
-              <view class="step-title">审批</view>
-              <view class="person-box">
-                <image class="mini-avatar" src="https://via.placeholder.com/40" />
-                <view class="person-info">
-                  <view class="p-top"><text class="p-name">Robin</text> <text class="p-role">高级产品经理</text></view>
-                  <view class="p-status green">已同意</view>
-                </view>
-                <view class="p-time">
-                  <text>9个月前</text>
-                  <text class="date">2025年3月15日</text>
-                </view>
-              </view>
-              <view class="comment-bubble">已确认请假事宜，了解工作安排，同意请假，请其余审批人员配合审批。</view>
-            </view>
-          </view>
-          <view class="timeline-item current">
-            <view class="node node-gray"></view>
-            <view class="content">
-              <view class="step-title">审批</view>
-              <view class="person-box">
-                <image class="mini-avatar" src="https://via.placeholder.com/40" />
-                <view class="person-info">
-                  <view class="p-top"><text class="p-name">李经理</text> <text class="p-role">产品总监</text></view>
-                  <view class="p-status gray">○ 未读</view>
-                </view>
-              </view>
-            </view>
-          </view>
+          <TimeLine v-for="item in histories" :key="item.serial_number" :history="item" class="timeline-item" />
         </view>
+        <text v-if="histories.length === 0">暂无审批记录</text>
       </view>
-
     </scroll-view>
 
     <view class="bottom-action-bar">
-      <button class="btn btn-reject">拒绝</button>
-      <button class="btn btn-agree">同意</button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover" @click="toComment">评论</button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover">拒绝</button>
+      <button class="btn btn-light" hover-class="btn-light-hover">同意</button>
     </view>
   </view>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import type { InstanceHistoryItem, PageOptions } from './typings'
+import { queryInstanceDetail, queryInstanceHistory } from '@/apis/modules/detail'
+import type { InstanceDetail } from './typings'
+import personUtil from '@/utils/person'
+import Renderer from './Renderer.vue'
+import type { FormItem } from './../form/typings'
+import { makeToast } from '@/hooks/base/toast'
+import type { OperateHistoryResponse } from '@/apis/typings/detail'
+import { getTimeAgo } from '@/utils'
+import TimeLine from './components/TimeLine.vue'
+import bus from '@/utils/bus'
 
-// 声明一个响应式变量来存储接收到的单据 ID
-const documentId = ref('');
-// 假设这是详情数据
-const detailData = ref({});
+const toast = makeToast()
+const instanceDetail = ref<InstanceDetail>({} as InstanceDetail)
+const formItems = ref<FormItem[]>([])
+const histories = ref<InstanceHistoryItem[]>([])
+
+const getApprovalHistory = (id: string) => {
+  queryInstanceHistory(id)
+    .then((res) => {
+      if (res.code === 200) {
+        const datas = res.message as OperateHistoryResponse
+        const mapHistory = datas.instance_history.map((data) => {
+          const operate_time = data.operate_time
+          const result = personUtil.lookup(data.operate_user)
+          return {
+            ...data,
+            job_title: result.job_title,
+            back_ground: result.back_ground,
+            time_ago: getTimeAgo(operate_time),
+            is_read: false
+          }
+        })
+        histories.value = mapHistory
+        console.log('获取审批历史成功：', mapHistory)
+      } else {
+        toast.info((res.message as string) ?? '获取审批历史失败')
+      }
+    })
+    .catch((error) => {
+      console.error('获取审批历史失败：', error)
+    })
+}
+
+const getInstance = (id: string, applicant: string, application_time: string) => {
+  queryInstanceDetail(id)
+    .then((res) => {
+      if (res.code === 200) {
+        const result = personUtil.lookup(applicant)
+        const message = res.message || {}
+        instanceDetail.value = {
+          ...message,
+          applicant: applicant || '',
+          application_time: application_time || '',
+          department: result.departments,
+          back_ground: result.back_ground
+        }
+        let depItems: FormItem[] = []
+        const formInstance = message.form_instance || []
+        formInstance.forEach((instance) => {
+          depItems.push({
+            label: instance.values.find((item) => item.name === '标题')?.value as string,
+            sequence: instance.sequence,
+            component_code: instance.component_code,
+            values: instance.values
+          })
+        })
+        formItems.value = depItems
+      } else {
+        console.error('获取单据详情失败：', res.message)
+      }
+    })
+    .catch((error) => {
+      console.error('获取单据详情失败：', error)
+    })
+}
+
+const toComment = () => {
+  uni.navigateTo({
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}`
+  })
+}
 
 // onLoad 生命周期接收路由参数
-onLoad((options) => {
-  if (options.id) {
-    documentId.value = options.id;
-    console.log('从列表页接收到的单据ID是:', documentId.value);
-    
-    // 拿到 ID 后，调用后端的接口获取审批详情
-    fetchDetailData(documentId.value);
+onLoad((options?: PageOptions) => {
+  const obj = JSON.parse(decodeURIComponent(options?.data ?? '{}'))
+  if (obj?.instance_id) {
+    const { instance_id, applicant, application_time } = obj
+    getInstance(instance_id, applicant, application_time)
+    getApprovalHistory(instance_id)
   }
-});
+})
 
-// 模拟获取详情数据的网络请求
-const fetchDetailData = (id) => {
-  uni.showLoading({ title: '加载中...' });
-  
-  // 模拟请求延迟
-  setTimeout(() => {
-    // 这里替换成你的真实业务请求：uni.request(...)
-    detailData.value = {
-      applyId: 'SP20230615001',
-      name: 'Jake',
-      type: '年假'
-      // ...其他详情字段
-    };
-    uni.hideLoading();
-  }, 500);
-};
+onMounted(() => {
+  bus.on('detail:refresh-history', () => {
+    getApprovalHistory(instanceDetail.value.form_instance_code)
+    // 滚动到最底部
+  })
+})
 </script>
 
 <style lang="scss" scoped>
@@ -168,7 +154,7 @@ const fetchDetailData = (id) => {
   // height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #F5F6F8;
+  background-color: #f5f6f8;
 }
 .scroll-content {
   flex: 1;
@@ -194,66 +180,73 @@ const fetchDetailData = (id) => {
     color: #333;
     margin-bottom: 16rpx;
     .status-tag {
-      font-size: 26rpx; padding: 6rpx 16rpx; border-radius: 8rpx; font-weight: normal;
-      &.passed { background-color: rgba(24, 181, 158, 0.1); color: #18B59E; }
+      font-size: 26rpx;
+      padding: 6rpx 16rpx;
+      border-radius: 8rpx;
+      font-weight: normal;
+      &.passed {
+        background-color: rgba(24, 181, 158, 0.1);
+        color: #18b59e;
+      }
     }
   }
-  .sub-info { font-size: 26rpx; color: #666; margin-bottom: 8rpx; }
+  .sub-info {
+    font-size: 26rpx;
+    color: #666;
+    margin-bottom: 8rpx;
+  }
 }
 
 /* 详情信息 */
 .detail-card {
   .user-row {
-    display: flex; align-items: center; margin-bottom: 30rpx; padding-bottom: 20rpx; border-bottom: 1rpx solid #F0F0F0;
-    .avatar { width: 60rpx; height: 60rpx; border-radius: 50%; margin-right: 20rpx; }
-    .user-info { display: flex; align-items: center; .name { font-size: 30rpx; font-weight: bold; margin-right: 16rpx;} .dept { font-size: 26rpx; color: #999; } }
-  }
-  .info-item {
-    margin-bottom: 24rpx;
-    .label { font-size: 26rpx; color: #999; margin-bottom: 8rpx; }
-    .value { font-size: 28rpx; color: #333; line-height: 1.5; }
-    .bold { font-size: 32rpx; font-weight: bold; }
-    .time-range { display: flex; align-items: center; .to { margin: 0 20rpx; color: #999; } }
-    .sub-value { font-size: 24rpx; color: #999; margin-top: 8rpx; }
-  }
-  .attachment-box {
-    .file-item {
-      display: flex; justify-content: space-between; align-items: center; background-color: #F5F7F9; padding: 20rpx; border-radius: 12rpx; margin-top: 10rpx;
-      .file-left { display: flex; align-items: center; .file-icon { margin-right: 12rpx; font-size: 32rpx;} .file-name { font-size: 28rpx; color: #2979FF;} }
-      .download-icon { color: #2979FF; font-size: 32rpx; }
+    display: flex;
+    align-items: center;
+    margin-bottom: 30rpx;
+    padding-bottom: 20rpx;
+    border-bottom: 1rpx solid #f0f0f0;
+    .avatar {
+      width: 48rpx;
+      height: 48rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24rpx;
+      border-radius: 50%;
+      margin-right: 20rpx;
+      color: #fff;
     }
+    .user-info {
+      display: flex;
+      align-items: center;
+      .name {
+        font-size: 30rpx;
+        font-weight: bold;
+        margin-right: 16rpx;
+      }
+      .dept {
+        font-size: 26rpx;
+        color: #999;
+      }
+    }
+  }
+  .uni-form-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 26rpx 0;
   }
 }
 
 /* 时间轴 (核心样式) */
 .timeline-card {
-  .section-title { font-size: 30rpx; font-weight: bold; margin-bottom: 30rpx; }
+  .section-title {
+    font-size: 30rpx;
+    font-weight: bold;
+    margin-bottom: 30rpx;
+  }
   .timeline {
     padding-left: 20rpx;
-    .timeline-item {
-      position: relative; padding-bottom: 40rpx;
-      &.current { padding-bottom: 0; .tail { display: none; } }
-      .tail { position: absolute; left: 0rpx; top: 30rpx; bottom: 0; width: 1rpx; background-color: #E9EAED; }
-      .node { position: absolute; left: 0; top: 8rpx; width: 20rpx; height: 20rpx; border-radius: 50%; border: 4rpx solid #fff; box-shadow: 0 0 0 2rpx #2979FF; background: #fff; }
-      .node-blue { box-shadow: 0 0 0 4rpx #2979FF; }
-      .node-gray { box-shadow: 0 0 0 2rpx #ccc; }
-      
-      .content {
-        padding-left: 40rpx;
-        .step-title { font-size: 28rpx; font-weight: bold; color: #333; margin-bottom: 16rpx; }
-        .person-box {
-          display: flex; align-items: flex-start;
-          .mini-avatar { width: 60rpx; height: 60rpx; border-radius: 50%; margin-right: 16rpx; }
-          .person-info {
-            flex: 1;
-            .p-top { display: flex; align-items: center; margin-bottom: 6rpx; .p-name { font-size: 28rpx; color: #333; margin-right: 10rpx; } .p-role { font-size: 22rpx; color: #999; } }
-            .p-status { font-size: 24rpx; &.blue { color: #2979FF; } &.green { color: #18B59E; } &.gray { color: #999; } }
-          }
-          .p-time { display: flex; flex-direction: column; align-items: flex-end; font-size: 22rpx; color: #999; .date { margin-top: 4rpx; } }
-        }
-        .comment-bubble { background-color: #F8F9FA; padding: 20rpx; border-radius: 12rpx; font-size: 26rpx; color: #666; margin-top: 16rpx; line-height: 1.5; }
-      }
-    }
   }
 }
 
@@ -269,14 +262,34 @@ const fetchDetailData = (id) => {
   align-items: center;
   justify-content: space-between;
   padding: 0 30rpx;
-  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
   padding-bottom: env(safe-area-inset-bottom);
-  
+
   .btn {
-    flex: 1; height: 80rpx; line-height: 80rpx; font-size: 30rpx; border-radius: 40rpx; text-align: center; margin: 0 10rpx;
-    &::after { border: none; }
+    flex: 1;
+    height: 80rpx;
+    line-height: 80rpx;
+    font-size: 30rpx;
+    border-radius: 8rpx;
+    text-align: center;
+    margin: 0 10rpx;
+    &::after {
+      border: none;
+    }
   }
-  .btn-reject { background-color: #F5F7F9; color: #666; }
-  .btn-agree { background-color: #2979FF; color: #fff; }
+  .btn-primary {
+    background-color: #f5f7f9;
+    color: #666;
+  }
+  .btn-light {
+    background-color: #2979ff;
+    color: #fff;
+  }
+  .btn-primary-hover {
+    background-color: #f0f0f0;
+  }
+  .btn-light-hover {
+    background-color: #009eff;
+  }
 }
 </style>

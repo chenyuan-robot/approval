@@ -8,7 +8,13 @@ export interface FormDetailResponse {
   owner: string
   name: string
   group: string
+  workflow_cfg: WorkflowCfg
   form_config: Array<FormConfigItem>
+}
+
+export interface WorkflowCfg {
+  workflow_code: string
+  workflow_version: string
 }
 
 export interface FormConfigItem {

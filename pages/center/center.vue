@@ -39,15 +39,16 @@
 					<view class="list-item" :class="{ 'is-checked': item.checked }"
 						v-for="(item, index) in (currentTab < 2 ? tabItem : tabItem[currentReadTab])" :key="index"
 						@click="toggleCheck(index)">
-						<view class="checkbox" :class="{ checked: item.checked }" v-if="currentTab === 0">
-							<text class="check-mark" v-if="item.checked">✓</text>
-						</view>
-
+						
 						<view class="item-main">
 							<view class="item-header">
 								<text class="title">{{ item.form_name }}</text>
-								<text class="tag pending">待审批</text>
+								<status-tag :status="item.status" />
+								<view class="checkbox" :class="{ checked: item.checked }" v-if="currentTab === 0">
+									<text class="check-mark" v-if="item.checked">✓</text>
+								</view>
 							</view>
+
 
 							<view class="user-info">
 								<image class="avatar" src="https://via.placeholder.com/40" />
@@ -63,6 +64,7 @@
 								<button class="btn btn-agree" @click.stop="handleAgree(item)">同意</button>
 							</view>
 						</view>
+						
 					</view>
 				</scroll-view>
 			</swiper-item>
@@ -106,7 +108,6 @@
 		ccList
 	} from "@/apis/modules/center";
 	import type { ApprovedItem } from '@/apis/typings/center';
-	import { getStatusText } from "@/hooks/business/status"
 
 	const dataSource = ref([[], [], [[], []]])  // 格式 [[],[],[]]
 	const filteredDataSource = ref()
@@ -142,9 +143,10 @@
 		if (tabIndex < 2 && dataSource.value[tabIndex].length > 0) {
 			return
 		}
-		if (tabIndex == 2 && dataSource.value[tabIndex][currentReadTab.value].length > 0) {
-			return
-		}
+		// 抄送里面有已读/未读，不缓存了
+		// if (tabIndex == 2 && dataSource.value[tabIndex][currentReadTab.value].length > 0) {
+		// 	return
+		// }
 		toast.loading('')
 		switch (tabIndex) {
 			case 0:
@@ -171,7 +173,7 @@
 
 						statusList.value[tabIndex] = [
 							{ value: 'all', text: '全部状态' },
-							...Array.from(statusSet).map(name => ({ value: name, text: getStatusText(name) }))
+							...Array.from(statusSet).map(name => ({ value: name, text: name }))
 						]
 
 						selectedType.value[tabIndex] = 'all'
@@ -208,7 +210,7 @@
 
 						statusList.value[tabIndex] = [
 							{ value: 'all', text: '全部状态' },
-							...Array.from(statusSet).map(name => ({ value: name, text: getStatusText(name) }))
+							...Array.from(statusSet).map(name => ({ value: name, text: name }))
 						]
 
 						selectedType.value[tabIndex] = 'all'
@@ -438,28 +440,6 @@
 			border-color: #2979FF;
 		}
 
-		.checkbox {
-			width: 36rpx;
-			height: 36rpx;
-			border: 2rpx solid #ccc;
-			border-radius: 50%;
-			margin-right: 20rpx;
-			margin-top: 6rpx;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			&.checked {
-				background-color: #2979FF;
-				border-color: #2979FF;
-
-				.check-mark {
-					color: #fff;
-					font-size: 24rpx;
-				}
-			}
-		}
-
 		.item-main {
 			flex: 1;
 			overflow: hidden;
@@ -467,7 +447,6 @@
 
 		.item-header {
 			display: flex;
-			justify-content: space-between;
 			align-items: center;
 			margin-bottom: 20rpx;
 
@@ -475,15 +454,39 @@
 				font-size: 32rpx;
 				font-weight: bold;
 				color: #333;
+				margin-right: 20rpx;
 			}
 
-			.tag.pending {
+			.tag.status {
 				font-size: 24rpx;
 				color: #2979FF;
 				background: rgba(41, 121, 255, 0.1);
 				padding: 4rpx 12rpx;
 				border-radius: 8rpx;
 			}
+			
+			.checkbox {
+				width: 32rpx;
+				height: 32rpx;
+				border: 2rpx solid #ccc;
+				border-radius: 50%;
+				margin-top: 6rpx;
+				margin-left: auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			
+				&.checked {
+					background-color: #2979FF;
+					border-color: #2979FF;
+			
+					.check-mark {
+						color: #fff;
+						font-size: 24rpx;
+					}
+				}
+			}
+			
 		}
 
 		.user-info {

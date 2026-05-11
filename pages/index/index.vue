@@ -47,6 +47,7 @@ import { treeWithForm } from '@/apis/modules/home'
 import { makeToast } from '@/hooks/base/toast'
 import { queryUserList } from '@/apis/modules/global'
 import { useStore } from 'vuex'
+import _head from 'lodash/first'
 
 const store = useStore()
 const loading = ref(true)
@@ -129,7 +130,9 @@ const getUserList = () => {
         const lists = (res.message?.persons || []).map((user) => ({
           name: user.name,
           account: user.account,
-          job_title: user.job_title
+          job_title: user.job_title || '未知',
+          departments: _head(user.departments ?? ['未知部门']),
+          back_ground: user.back_ground || '162.55deg, #368D36 7.86%, #B1D814 91.46%'
         }))
         store.commit('SET_USER_LIST', lists)
       } else {

@@ -8,44 +8,37 @@
       <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value">
-      <input
-        :name="`COMP_SINGLE_INPUT_${props.formItem.sequence}`"
-        class="component-style"
-        :value="config.defaultValue"
-        :placeholder="config.placeholder"
-        :maxlength="config.maxlength"
-      />
+      <text v-if="props.renderOnly">{{ config.defaultSelection ? '是' : '否' }}</text>
+      <switch v-else :name="`COMP_SWITCH___${props.formItem.sequence}`" :checked="config.defaultSelection" />
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { FormItem } from './../typings'
+import type { FormItem } from '../../pages/form/typings'
 
 defineOptions({
-  name: 'SingleInput',
+  name: 'ASwitch',
   inheritAttrs: false
 })
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
 const config = computed(() => {
-  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
+  console.log('ASwitch组件接收到的formItem数据：', props.formItem)
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
-  const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
-  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
+  const defaultSelection = props.formItem.values.find((item) => item.name === '默认选择')?.value as string
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   return {
-    placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
-    maxlength: Number(maxlength) || 1000,
+    defaultSelection: defaultSelection === '开启',
     required: required
   }
 })
@@ -78,6 +71,18 @@ const config = computed(() => {
     display: flex;
     align-items: center;
     margin-right: 32rpx;
+    .input-result {
+      display: flex;
+      align-items: center;
+      margin-right: 8px;
+      color: #606266;
+      border: 1px solid #dcdfe6;
+      border-radius: 6px;
+      padding: 0rpx 20rpx;
+      height: 64rpx;
+      font-size: 32rpx;
+      box-sizing: border-box;
+    }
     .component-style {
       width: 240rpx;
       border: 1px solid #dcdfe6;

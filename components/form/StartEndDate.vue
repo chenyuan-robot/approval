@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { FormItem } from './../typings'
+import type { FormItem } from '../../pages/form/typings'
 
 defineOptions({
   name: 'StartEndDate',

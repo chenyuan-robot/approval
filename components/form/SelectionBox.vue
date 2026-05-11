@@ -8,23 +8,24 @@
       <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value">
-      <textarea
-        :name="`COMP_MULTI_INPUT_${props.formItem.sequence}`"
-        class="component-style"
-        :value="config.defaultValue"
-        :placeholder="config.placeholder"
-        :maxlength="config.maxlength"
-      />
+      <picker
+        :name="`COMP_SELECTION_BOX_${props.formItem.sequence}_select`"
+        @change="index = $event.detail.value"
+        :value="index"
+        :range="config.options"
+      >
+        <view class="uni-input">{{ config.options[index] ?? config.placeholder }}</view>
+      </picker>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { FormItem } from './../typings'
+import { computed, ref } from 'vue'
+import type { FormItem } from '../../pages/form/typings'
 
 defineOptions({
-  name: 'MultiInput',
+  name: 'SelectionBox',
   inheritAttrs: false
 })
 
@@ -32,20 +33,25 @@ const props = defineProps<{
   formItem: FormItem
 }>()
 
+const index = ref<number>(-1)
+
 const config = computed(() => {
+  console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
-  const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
-  const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
-  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
+  const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
+  const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
+  const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
+  const defaultSelcetion = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   return {
-    placeholder: placeholder || '请输入内容',
+    placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
-    maxlength: Number(maxlength) || 1000,
+    single: selectionMode === '单项',
+    options: (sectionOptions?.selection_list as string[]) ?? [],
+    defaultValue: defaultSelcetion?.specific_value ?? [],
     required: required
   }
 })
@@ -58,9 +64,9 @@ const config = computed(() => {
   justify-content: space-between;
   .component-label {
     margin-left: 32rpx;
+    color: #374151;
+    font-size: 32rpx;
     .field-desc {
-      color: #374151;
-      font-size: 32rpx;
       .required {
         color: #e53e3e;
         font-size: 28rpx;
@@ -78,12 +84,24 @@ const config = computed(() => {
     display: flex;
     align-items: center;
     margin-right: 32rpx;
+    .input-result {
+      display: flex;
+      align-items: center;
+      margin-right: 8px;
+      color: #606266;
+      border: 1px solid #dcdfe6;
+      border-radius: 6px;
+      padding: 0rpx 20rpx;
+      height: 64rpx;
+      font-size: 32rpx;
+      box-sizing: border-box;
+    }
     .component-style {
       width: 240rpx;
       border: 1px solid #dcdfe6;
       border-radius: 6px;
       padding: 12rpx 20rpx;
-      height: 100rpx;
+      height: 64rpx;
       font-size: 32rpx;
       box-sizing: border-box;
     }

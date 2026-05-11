@@ -26,7 +26,7 @@
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_VALUE_LIST'"> text </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SWITCH'">
-      <ASwitch :formItem="props.formItem" />
+      <ASwitch :formItem="props.formItem" :renderOnly="true" />
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_NUMBER'"> text </view>
     <view v-else-if="props.formItem.component_code === 'COMP_CITY'"> text </view>
@@ -49,15 +49,8 @@
 </template>
 
 <script setup lang="ts">
-import ADate from '@/components/form/ADate.vue'
-import Amount from '@/components/form/Amount.vue'
+import type { FormItem } from './../form/typings'
 import ASwitch from '@/components/form/ASwitch.vue'
-import MultiInput from '@/components/form/MultiInput.vue'
-import SelectionBox from '@/components/form/SelectionBox.vue'
-import SingleInput from '@/components/form/SingleInput.vue'
-import StartEndDate from '@/components/form/StartEndDate.vue'
-import UserSelect from '@/components/form/UserSelect.vue'
-import type { FormItem } from './typings'
 
 defineOptions({
   name: 'Renderer',

@@ -7,42 +7,30 @@
       </view>
       <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
-    <view class="component-value" @click="openPanel">
+    <view class="component-value">
       <input
-        :name="`COMP_USER_SELECT_${props.formItem.sequence}`"
-        :value="inputValue"
+        :name="`COMP_SINGLE_INPUT___${props.formItem.sequence}`"
         class="component-style"
-        disabled
+        :value="config.defaultValue"
         :placeholder="config.placeholder"
+        :maxlength="config.maxlength"
       />
     </view>
-    <UserPopup
-      ref="userPopupRef"
-      @update:modelValue="handleUserSelect"
-      :show-all="config.showAll"
-      :depart-user-list="config.departUserList"
-    />
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { FormItem } from './../typings'
-import UserPopup from '@/components/UserPopup.vue'
-import type { Person } from '@/apis/typings/global'
+import { computed } from 'vue'
+import type { FormItem } from '../../pages/form/typings'
 
 defineOptions({
-  name: 'UserSelect',
+  name: 'SingleInput',
   inheritAttrs: false
 })
 
 const props = defineProps<{
   formItem: FormItem
 }>()
-
-const userPopupRef = ref()
-const selectedUsers = ref<Person[]>([])
-const inputValue = ref<string>('')
 
 const config = computed(() => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
@@ -51,33 +39,16 @@ const config = computed(() => {
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
-  const selectionRange = props.formItem.values.find((item) => item.name === '选择范围')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : [],
+    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
     maxlength: Number(maxlength) || 1000,
-    showAll: selectionRange?.value === '全部',
-    departUserList: (selectionRange?.specific_value as string[]) ?? [],
     required: required
   }
 })
-
-const openPanel = (): void => {
-  userPopupRef?.value?.open()
-}
-
-const handleUserSelect = (selectedUser: Person) => {
-  const index = selectedUsers.value.findIndex((item) => item.account === selectedUser.account)
-  if (index > -1) {
-    selectedUsers.value.splice(index, 1)
-  } else {
-    selectedUsers.value.push(selectedUser)
-  }
-  inputValue.value = selectedUsers.value.map((item) => item.name).join(', ')
-}
 </script>
 
 <style lang="scss" scoped>
@@ -108,10 +79,9 @@ const handleUserSelect = (selectedUser: Person) => {
     align-items: center;
     margin-right: 32rpx;
     .component-style {
-      pointer-events: none;
       width: 240rpx;
       border: 1px solid #dcdfe6;
-      border-radius: 9px;
+      border-radius: 6px;
       padding: 12rpx 20rpx;
       height: 64rpx;
       font-size: 32rpx;

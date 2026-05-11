@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Person } from '@/apis/typings/global'
+import type { IPerson } from '@/apis/typings/global'
 import { computed, ref } from 'vue'
 import { useStore } from 'vuex'
 
@@ -48,7 +48,7 @@ const popup = ref()
 const selectedAccounts = ref<string[]>([])
 const scrollHeight = uni.getSystemInfoSync().windowHeight - 200
 const userLists = computed(() => {
-  const allUsers: Person[] = [...store.state.userList]
+  const allUsers: IPerson[] = [...store.state.userList]
   const filterUsers = props.showAll ? allUsers : allUsers.filter((user) => props.departUserList.includes(user.account))
   return filterUsers.map((user) => {
     return {
@@ -68,7 +68,7 @@ const close = () => {
   popup.value?.close()
 }
 
-const handleClick = (userList: Person): void => {
+const handleClick = (userList: IPerson): void => {
   const index = selectedAccounts.value.findIndex((item) => item === userList.account)
   if (index > -1) {
     selectedAccounts.value.splice(index, 1)

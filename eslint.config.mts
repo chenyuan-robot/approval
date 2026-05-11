@@ -53,8 +53,8 @@ export default defineConfig([
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
-        extraFileExtensions: ['.vue'],
-        project: './tsconfig.json'
+        extraFileExtensions: ['.vue']
+        // project: './tsconfig.json'
       },
       globals: {
         ...globals.browser,
