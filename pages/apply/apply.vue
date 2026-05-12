@@ -18,11 +18,13 @@
     <view class="list-wrapper">
       <scroll-view
         scroll-y
-        @refresherrefresh="onRefresh"
+      >
+	  <!-- 
+	  有bug，去掉下拉刷新
+	  @refresherrefresh="onRefresh"
         style="height: 100vh"
         refresher-enabled="true"
-        :refresher-triggered="loading"
-      >
+        :refresher-triggered="loading" -->
         <view
           class="apply-card"
           v-for="(item, index) in filteredDataSource"
@@ -118,9 +120,19 @@ watch(
 // 跳转到详情页
 const goToDetail = (instance_id: string, applicant: string, application_time: string) => {
   const applicaitonItem = {
+    submitted: true,
     instance_id,
     applicant,
-    application_time
+    application_time,
+    permission: {
+      pass: false,
+      reject: false,
+      transfer: false,
+      return: false,
+      withdraw: true,
+      comment: false,
+      sign: false
+    }
   }
   uni.navigateTo({
     url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`

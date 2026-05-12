@@ -25,7 +25,7 @@
             <view v-if="history.node_name === '开始'" class="submited">已提交</view>
             <view v-else-if="history.comment">
               <view class="comment">{{ history.comment }}</view>
-              <view class="comment-attachment" v-if="Array.isArray(history.attachment)">
+              <view class="comment-attachment" v-if="Array.isArray(history.attachment)" @click="handlerPreview">
                 <image :src="`${blobURL}`" alt="附件" class="attachment" />
               </view>
             </view>
@@ -42,10 +42,12 @@
 </template>
 
 <script lang="ts" setup>
-import { previewAttachment } from '@/apis/modules/comment'
 import type { InstanceHistoryItem } from '../typings'
 import { onLoad } from '@dcloudio/uni-app'
 import { ref } from 'vue'
+import store from '@/store'
+import type { StoreState } from '@/store/types'
+import { BASE_URL } from '@/constants/common'
 
 defineOptions({
   name: 'TimeLine',
@@ -58,16 +60,29 @@ const props = defineProps<{
 
 const blobURL = ref<string>('')
 
+const handlerPreview = () => {
+  if (!blobURL.value) return
+  uni.previewImage({
+    urls: [blobURL.value]
+  })
+}
+
 onLoad(() => {
-  console.log('history', props.history)
   if (props.history.attachment) {
     const attachmentId = props.history.attachment[0]
-    previewAttachment(attachmentId)
-      .then((res) => {
-        console.log('res', res)
-        blobURL.value = res
-      })
-      .catch((error) => {})
+    uni.request({
+      url: `${BASE_URL}/api/v1/dl_approval/file/preview/${attachmentId}`,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      header: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+      },
+      success: (res) => {
+        const base64 = uni.arrayBufferToBase64(res.data as ArrayBuffer)
+        blobURL.value = 'data:image/png;base64,' + base64
+      }
+    })
   }
 })
 </script>
@@ -166,8 +181,8 @@ onLoad(() => {
           .comment-attachment {
             margin-top: 12rpx;
             .attachment {
-              width: 40rpx;
-              height: 40rpx;
+              width: 80rpx;
+              height: 80rpx;
             }
           }
         }

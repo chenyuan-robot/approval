@@ -47,3 +47,12 @@ export interface OperateHistoryItem {
   serial_number: number
   task_node_instance_id: string
 }
+
+export interface ReturnNodeResponse {
+  returnable_nodes: Array<ReturnNodeItem>
+}
+
+export interface ReturnNodeItem {
+  node_id: string
+  node_name: string
+}

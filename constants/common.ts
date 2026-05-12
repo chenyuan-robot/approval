@@ -9,3 +9,4 @@ export enum HTTP_CODE {
 
 export const BASE_URL = 'https://approval.softtest.cowarobot.com'
 
+export const DIGITAL_BASE_URL = 'https://digital.softtest.cowarobot.com'

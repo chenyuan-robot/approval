@@ -11,7 +11,9 @@
     <view v-else-if="props.formItem.component_code === 'COMP_ALLOCATION_BUDGET'"> text </view>
     <!-- 专用控件 -->
     <view v-else-if="props.formItem.component_code === 'COMP_SECRET_MULTI_INPUT'"> text </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_COST_BEAR'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_COST_BEAR'">
+      <CostBear :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SECRET_ATTACHMENT'"> text </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SUBSTITUTE'"> text </view>
     <view v-else-if="props.formItem.component_code === 'COMP_INVOICE'"> text </view>
@@ -20,7 +22,9 @@
     <view v-else-if="props.formItem.component_code === 'COMP_MULTI_INPUT'">
       <MultiInput :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_DEPARTMENT_SELECT'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_DEPARTMENT_SELECT'">
+      <DepartmentSelect :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SINGLE_INPUT'">
       <SingleInput :formItem="props.formItem" />
     </view>
@@ -57,6 +61,8 @@ import SelectionBox from '@/components/form/SelectionBox.vue'
 import SingleInput from '@/components/form/SingleInput.vue'
 import StartEndDate from '@/components/form/StartEndDate.vue'
 import UserSelect from '@/components/form/UserSelect.vue'
+import CostBear from '@/components/form/CostBear.vue'
+import DepartmentSelect from '@/components/form/DepartmentSelect.vue'
 import type { FormItem } from './typings'
 
 defineOptions({

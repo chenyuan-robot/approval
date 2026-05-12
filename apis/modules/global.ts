@@ -1,5 +1,6 @@
+import { DIGITAL_BASE_URL } from '@/constants/common'
 import { http } from '../request'
-import type { UserListResponse } from '../typings/global'
+import type { UploadAttachmentItem, UserListResponse } from '../typings/global'
 
 /**
  * 获取用户列表
@@ -7,7 +8,16 @@ import type { UserListResponse } from '../typings/global'
  * @returns
  */
 export const queryUserList = () => {
-  return http.post<UserListResponse>('https://digital.softtest.cowarobot.com/api/v1/appmsg/user/query_all_person', {
+  return http.post<UserListResponse>(`${DIGITAL_BASE_URL}/api/v1/appmsg/user/query_all_person`, {
     tenant: 'cowarobot'
   })
+}
+
+/**
+ * 上传附件
+ * @param params
+ * @returns
+ */
+export const uploadAttachment = () => {
+  return http.post<Array<UploadAttachmentItem>>('/api/v1/dl_approval/file/upload')
 }

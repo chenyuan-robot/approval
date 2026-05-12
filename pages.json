@@ -14,8 +14,7 @@
 			"path": "pages/apply/apply",
 			"style": {
 				"navigationBarTitleText": "我的申请",
-				"navigationBarBackgroundColor": "#ffffff",
-				"enablePullDownRefresh": true
+				"navigationBarBackgroundColor": "#ffffff"
 			}
 		},
 		{
