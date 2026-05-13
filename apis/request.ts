@@ -17,7 +17,7 @@ export function http<T>(options: UniNamespace.RequestOptions) {
       url: `${publicUrl}${url}`,
       header: {
         'Content-Type': 'application/json',
-        Authorization: `bearer ${(store.state as StoreState).user.access_token}`
+        Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
       },
       timeout: 10000 * 6, // 60秒
       dataType: 'json',
@@ -115,7 +115,19 @@ export function httpDelete<D>(url: string, data?: Record<string, unknown>): Prom
   })
 }
 
+/**
+ * 下载 请求
+ */
+export function httpDownload<D>(url: string, data?: Record<string, unknown>): Promise<IBaseResponse<D>> {
+  return http<D>({
+    url,
+    data,
+    method: 'GET'
+  })
+}
+
 http.get = httpGet
 http.post = httpPost
 http.put = httpPut
 http.delete = httpDelete
+http.download = httpDownload

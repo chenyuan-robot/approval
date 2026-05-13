@@ -18,3 +18,9 @@ export interface FormItem {
 export interface PageOptions {
   id?: string
 }
+
+export interface FormValue {
+  name: string
+  rules: Array<Record<string, string>>
+  // [key: string]: string | number | boolean | Array<string> | Array<number> | Array<boolean>
+}

@@ -25,7 +25,8 @@ export interface ApprovedItem {
   is_reviewer: Boolean,
   
   //本地自定义属性
-  checked: Boolean,    
+  checked: Boolean,
+  back_ground: String
 }
 
 export interface CCListReqParams {

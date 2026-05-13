@@ -9,6 +9,7 @@ import { getStatusType } from "@/hooks/base/status"
 const props = defineProps({
   status: {
     type: String,
+	default: '',
     required: true
   },
 })

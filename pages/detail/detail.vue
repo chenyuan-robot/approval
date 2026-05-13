@@ -4,9 +4,9 @@
       <view class="card-section header-card">
         <view class="main-title">
           <text>{{ instanceDetail.form_name }}</text>
-          <text class="status-tag passed">{{ instanceDetail.status }}</text>
+          <status-tag :status="instanceDetail.status" />
         </view>
-        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code?.split('_')?.[2] ?? '' }}</view>
+        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code ?? '' }}</view>
         <view class="sub-info">提交时间：{{ instanceDetail?.application_time ?? '' }}</view>
       </view>
 
@@ -25,31 +25,66 @@
           </view>
         </view>
         <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
-          <Renderer :formItem="formItem" />
+          <Renderer style="width: 100%" :formItem="formItem" />
         </view>
       </view>
       <view class="card-section timeline-card">
         <view class="section-title">审批记录</view>
         <view class="timeline">
-          <TimeLine v-for="item in histories" :key="item.serial_number" :history="item" class="timeline-item" />
+          <TimeLine
+            v-for="(item, index) in histories"
+            :key="item.serial_number"
+            :history="item"
+            :nodeIndex="index"
+            :nodeCount="histories.length"
+            class="timeline-item"
+          />
         </view>
         <text v-if="histories.length === 0">暂无审批记录</text>
       </view>
     </scroll-view>
 
     <view class="bottom-action-bar">
-      <button class="btn btn-primary" hover-class="btn-primary-hover" @click="toComment">评论</button>
-      <button class="btn btn-primary" hover-class="btn-primary-hover">拒绝</button>
-      <button class="btn btn-light" hover-class="btn-light-hover">同意</button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.comment" @click="toComment">
+        评论
+      </button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.return" @click="handlerReturn">
+        退回
+      </button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.sign" @click="handlerSign">
+        加签
+      </button>
+      <button
+        class="btn btn-primary"
+        hover-class="btn-primary-hover"
+        v-if="permission.transfer"
+        @click="handlerTransfer"
+      >
+        转交审批
+      </button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.reject" @click="handlerReject">
+        拒绝
+      </button>
+      <button class="btn btn-light" hover-class="btn-light-hover" v-if="permission.pass" @click="handlerAgree">
+        同意
+      </button>
+      <button
+        :class="['btn', isWithdraw ? 'btn-light' : 'btn-error']"
+        :hover-class="isWithdraw ? 'btn-light-hover' : 'btn-error-hover'"
+        v-if="submitted && instanceDetail.applicant === user_name"
+        @click="handlerSelfApproval"
+      >
+        {{ isWithdraw ? '撤回' : '删除' }}
+      </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, toRefs } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { InstanceHistoryItem, PageOptions } from './typings'
-import { queryInstanceDetail, queryInstanceHistory } from '@/apis/modules/detail'
+import { deleteApproval, queryInstanceDetail, queryInstanceHistory, withdrawApproval } from '@/apis/modules/detail'
 import type { InstanceDetail } from './typings'
 import personUtil from '@/utils/person'
 import Renderer from './Renderer.vue'
@@ -59,11 +94,33 @@ import type { OperateHistoryResponse } from '@/apis/typings/detail'
 import { getTimeAgo } from '@/utils'
 import TimeLine from './components/TimeLine.vue'
 import bus from '@/utils/bus'
+import { useStore } from 'vuex'
+import type { StoreState } from '@/store/types'
+import { getStatusType } from '@/hooks/base/status'
 
+const store = useStore()
 const toast = makeToast()
 const instanceDetail = ref<InstanceDetail>({} as InstanceDetail)
 const formItems = ref<FormItem[]>([])
 const histories = ref<InstanceHistoryItem[]>([])
+const submitted = ref<boolean>(false)
+const permission = reactive({
+  pass: false,
+  reject: false,
+  transfer: false,
+  return: false,
+  withdraw: false,
+  comment: false,
+  sign: false
+})
+
+const userInfo = computed(() => (store.state as StoreState).user)
+const { user_name } = toRefs(userInfo.value)
+
+const isWithdraw = computed(
+  () =>
+    instanceDetail.value.applicant === user_name.value && getStatusType(instanceDetail.value.status) === 'in_progress'
+)
 
 const getApprovalHistory = (id: string) => {
   queryInstanceHistory(id)
@@ -105,6 +162,7 @@ const getInstance = (id: string, applicant: string, application_time: string) =>
           department: result.departments,
           back_ground: result.back_ground
         }
+        console.log('获取单据详情成功：', instanceDetail.value)
         let depItems: FormItem[] = []
         const formInstance = message.form_instance || []
         formInstance.forEach((instance) => {
@@ -125,26 +183,130 @@ const getInstance = (id: string, applicant: string, application_time: string) =>
     })
 }
 
+/**
+ * 审批相关操作-转交
+ */
+const handlerTransfer = (): void => {
+  uni.navigateTo({
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=transfer`
+  })
+}
+
+/**
+ * 审批相关操作-拒绝
+ */
+const handlerReject = (): void => {
+  uni.navigateTo({
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=reject`
+  })
+}
+
+/**
+ * 审批相关操作-同意
+ */
+const handlerAgree = (): void => {
+  uni.navigateTo({
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=agree`
+  })
+}
+
+/**
+ * 审批相关操作-退回
+ */
+const handlerReturn = (): void => {
+  uni.navigateTo({
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=return`
+  })
+}
+
+/**
+ * 审批相关操作-加签
+ */
+const handlerSign = (): void => {
+  uni.navigateTo({
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=sign`
+  })
+}
+
+const handlerSelfApproval = (): void => {
+  if (isWithdraw.value) {
+    handlerWithdraw()
+  } else {
+    handlerDelete()
+  }
+}
+
+const handlerWithdraw = (): void => {
+  const params: Record<string, unknown> = {
+    operate_type: 'withdraw',
+    instance_id: [instanceDetail.value.instance_code]
+  }
+  withdrawApproval(params)
+    .then((res) => {
+      if (res.code === 200) {
+        toast.success('撤回成功')
+        uni.navigateBack()
+      } else {
+        toast.info((res.message as string) ?? '撤回失败')
+      }
+    })
+    .catch((error) => {
+      console.error('撤回失败：', error)
+    })
+}
+
+const handlerDelete = (): void => {
+  deleteApproval(instanceDetail.value.instance_code)
+    .then((res) => {
+      if (res.code === 200) {
+        toast.success('删除成功')
+        uni.navigateBack()
+      } else {
+        toast.info((res.message as string) ?? '删除失败')
+      }
+    })
+    .catch((error) => {
+      console.error('删除失败：', error)
+    })
+}
+
 const toComment = () => {
   uni.navigateTo({
-    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}`
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=comment`
   })
 }
 
 // onLoad 生命周期接收路由参数
 onLoad((options?: PageOptions) => {
+  console.log('onLoad:', options)
   const obj = JSON.parse(decodeURIComponent(options?.data ?? '{}'))
   if (obj?.instance_id) {
-    const { instance_id, applicant, application_time } = obj
+    console.log('obj:', obj)
+    submitted.value = obj.submitted
+    permission.pass = obj.permission.pass
+    permission.reject = obj.permission.reject
+    permission.transfer = obj.permission.transfer
+    permission.return = obj.permission.return
+    permission.withdraw = obj.permission.withdraw
+    permission.comment = obj.permission.comment
+    permission.sign = obj.permission.sign
+    const { instance_id, applicant, application_time, form_instance_code } = obj
     getInstance(instance_id, applicant, application_time)
-    getApprovalHistory(instance_id)
+    getApprovalHistory(form_instance_code)
   }
 })
 
 onMounted(() => {
   bus.on('detail:refresh-history', () => {
+    console.log('refresh history')
     getApprovalHistory(instanceDetail.value.form_instance_code)
     // 滚动到最底部
+  })
+})
+
+onUnmounted(() => {
+  bus.off('detail:refresh-history', () => {
+    console.log('cleanup refresh listener')
   })
 })
 </script>
@@ -194,6 +356,9 @@ onMounted(() => {
     font-size: 26rpx;
     color: #666;
     margin-bottom: 8rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -269,7 +434,7 @@ onMounted(() => {
     flex: 1;
     height: 80rpx;
     line-height: 80rpx;
-    font-size: 30rpx;
+    font-size: 28rpx;
     border-radius: 8rpx;
     text-align: center;
     margin: 0 10rpx;
@@ -290,6 +455,13 @@ onMounted(() => {
   }
   .btn-light-hover {
     background-color: #009eff;
+  }
+  .btn-error {
+    background-color: #f53f3f;
+    color: #fff;
+  }
+  .btn-error-hover {
+    background-color: #ee5454;
   }
 }
 </style>

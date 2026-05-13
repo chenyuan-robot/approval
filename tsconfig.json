@@ -31,6 +31,7 @@
     "typings/**/*.d.ts",
     "main.ts",
     "eslint.config.mts",
-    "App.vue"
+    "App.vue",
+    "vite.config.ts"
   ]
 }

@@ -16,19 +16,14 @@
       ></uni-data-select>
     </view>
     <view class="list-wrapper">
-      <scroll-view
-        scroll-y
-        @refresherrefresh="onRefresh"
+      <scroll-view scroll-y>
+        <!-- 
+	  有bug，去掉下拉刷新
+	  @refresherrefresh="onRefresh"
         style="height: 100vh"
         refresher-enabled="true"
-        :refresher-triggered="loading"
-      >
-        <view
-          class="apply-card"
-          v-for="(item, index) in filteredDataSource"
-          :key="index"
-          @click="goToDetail(item.form_instance_code, item.applicant, item.application_time)"
-        >
+        :refresher-triggered="loading" -->
+        <view class="apply-card" v-for="(item, index) in filteredDataSource" :key="index" @click="goToDetail(item)">
           <view class="card-header">
             <text class="title">{{ item.form_name }}</text>
             <status-tag :status="item.status" />
@@ -116,11 +111,22 @@ watch(
 )
 
 // 跳转到详情页
-const goToDetail = (instance_id: string, applicant: string, application_time: string) => {
+const goToDetail = (item) => {
   const applicaitonItem = {
-    instance_id,
-    applicant,
-    application_time
+    submitted: true,
+    instance_id: item.instance_id,
+    form_instance_code: item.form_instance_code,
+    applicant: item.applicant,
+    application_time: item.application_time,
+    permission: {
+      pass: false,
+      reject: false,
+      transfer: false,
+      return: false,
+      withdraw: true,
+      comment: false,
+      sign: false
+    }
   }
   uni.navigateTo({
     url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`
@@ -153,6 +159,7 @@ function onRefresh() {
   padding: 20rpx 32rpx;
   justify-content: space-between;
   gap: 14rpx;
+  height: 60rpx;
 
   .filter-item {
     flex: 1;
