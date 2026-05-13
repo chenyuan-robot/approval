@@ -1,6 +1,8 @@
 #!/bin/bash
 
+echo "start build h5..."
 /d/software/HbuilderX/HBuilderX.4.87.2025121004/HBuilderX/cli.exe publish --platform h5 --project approval
+echo "h5 build finished"
 
 # RED='\033[0;31m'
 # GREEN='\033[0;32m'

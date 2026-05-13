@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
+import { formRulesUtil } from '@/pages/form/utils/rules'
 
 defineOptions({
   name: 'SingleInput',
@@ -40,6 +41,18 @@ const config = computed(() => {
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  // 该表单项校验规则
+  formRulesUtil.depRules({
+    name: `COMP_SINGLE_INPUT___${props.formItem.sequence}`,
+    rules: [
+      {
+        // ^.+$: 至少一个字符（必填）
+        // .*: 任意字符（非必填）
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `${props.formItem.label}不能为空`
+      }
+    ]
+  })
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,

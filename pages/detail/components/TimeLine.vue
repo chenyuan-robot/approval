@@ -1,6 +1,6 @@
 <template>
   <view class="timeline-item">
-    <view class="tail"></view>
+    <view class="tail" v-if="nodeIndex < nodeCount - 1"></view>
     <view class="node node-blue"></view>
     <view class="content">
       <view class="step-title">
@@ -56,6 +56,8 @@ defineOptions({
 
 const props = defineProps<{
   history: InstanceHistoryItem
+  nodeCount: number
+  nodeIndex: number
 }>()
 
 const blobURL = ref<string>('')

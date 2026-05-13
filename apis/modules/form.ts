@@ -1,5 +1,5 @@
 import { http } from '../request'
-import type { FormDetailResponse } from '../typings/form'
+import type { ConditionNodeValueListItem, FormDetailResponse } from '../typings/form'
 
 /**
  * 获取表单详情
@@ -26,4 +26,15 @@ export const createForm = (data: Record<string, unknown>) => {
  */
 export const submitApplicationInstance = (data: Record<string, unknown>, id: string) => {
   return http.put<string>(`/api/v1/dl_approval/instance/submission/${id}`, data)
+}
+
+/**
+ * 条件节点获取值列表列值详情
+ * @returns
+ */
+export const queryConditionNodeValueList = (code: string, col: string) => {
+  return http.get<ConditionNodeValueListItem[]>(`/api/v1/dl_approval/value_list/col/detail`, {
+    code,
+    col
+  })
 }

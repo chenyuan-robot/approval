@@ -4,7 +4,7 @@
     <view class="filter-header">
       <view class="search-bar">
         <image class="search-icon" src="/static/search.svg" mode="aspectFit" />
-        <input v-model.trim="searchQuery" type="text" placeholder="搜索单据名称1" placeholder-class="ph-color" />
+        <input v-model.trim="searchQuery" type="text" placeholder="搜索单据名称" placeholder-class="ph-color" />
       </view>
     </view>
 

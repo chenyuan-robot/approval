@@ -77,5 +77,8 @@
         "devServer" : {
             "https" : false
         }
+    },
+    "mp-lark" : {
+        "appid" : "cli_aa896edfa6b91cc4"
     }
 }

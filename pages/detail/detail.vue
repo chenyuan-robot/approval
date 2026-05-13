@@ -6,7 +6,7 @@
           <text>{{ instanceDetail.form_name }}</text>
           <status-tag :status="instanceDetail.status" />
         </view>
-        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code?.split('_')?.[2] ?? '' }}</view>
+        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code ?? '' }}</view>
         <view class="sub-info">提交时间：{{ instanceDetail?.application_time ?? '' }}</view>
       </view>
 
@@ -25,13 +25,20 @@
           </view>
         </view>
         <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
-          <Renderer :formItem="formItem" />
+          <Renderer style="width: 100%" :formItem="formItem" />
         </view>
       </view>
       <view class="card-section timeline-card">
         <view class="section-title">审批记录</view>
         <view class="timeline">
-          <TimeLine v-for="item in histories" :key="item.serial_number" :history="item" class="timeline-item" />
+          <TimeLine
+            v-for="(item, index) in histories"
+            :key="item.serial_number"
+            :history="item"
+            :nodeIndex="index"
+            :nodeCount="histories.length"
+            class="timeline-item"
+          />
         </view>
         <text v-if="histories.length === 0">暂无审批记录</text>
       </view>
@@ -283,9 +290,9 @@ onLoad((options?: PageOptions) => {
     permission.withdraw = obj.permission.withdraw
     permission.comment = obj.permission.comment
     permission.sign = obj.permission.sign
-    const { instance_id, applicant, application_time } = obj
+    const { instance_id, applicant, application_time, form_instance_code } = obj
     getInstance(instance_id, applicant, application_time)
-    getApprovalHistory(instance_id)
+    getApprovalHistory(form_instance_code)
   }
 })
 
@@ -349,6 +356,9 @@ onUnmounted(() => {
     font-size: 26rpx;
     color: #666;
     margin-bottom: 8rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

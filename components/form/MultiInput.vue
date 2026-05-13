@@ -9,7 +9,7 @@
     </view>
     <view class="component-value">
       <textarea
-        :name="`COMP_MULTI_INPUT_${props.formItem.sequence}`"
+        :name="`COMP_MULTI_INPUT___${props.formItem.sequence}`"
         class="component-style"
         :value="config.defaultValue"
         :placeholder="config.placeholder"
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
+import { formRulesUtil } from '@/pages/form/utils/rules'
 
 defineOptions({
   name: 'MultiInput',
@@ -33,13 +34,25 @@ const props = defineProps<{
 }>()
 
 const config = computed(() => {
-  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
+  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  // 该表单项校验规则
+  formRulesUtil.depRules({
+    name: `COMP_MULTI_INPUT___${props.formItem.sequence}`,
+    rules: [
+      {
+        // ^.+$: 至少一个字符（必填）
+        // .*: 任意字符（非必填）
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `${props.formItem.label}不能为空`
+      }
+    ]
+  })
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,

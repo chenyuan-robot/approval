@@ -8,7 +8,7 @@
             :key="formItem.sequence"
             :class="['uni-form-item', index < formItems.length - 1 ? 'border-bottom' : '']"
           >
-            <Renderer :formItem="formItem" />
+            <Renderer style="width: 100%" :formItem="formItem" />
           </view>
           <view class="bottom-submit-bar">
             <button class="submit-btn" form-type="submit">提交申请</button>
@@ -29,10 +29,14 @@ import { createForm, queryFormDetail, submitApplicationInstance } from '@/apis/m
 import type { FormInfo, FormItem, PageOptions } from './typings'
 import Renderer from './Renderer.vue'
 import type { WorkflowCfg } from '@/apis/typings/form'
+import { formRulesUtil } from './utils/rules'
+import { makeToast } from '@/hooks/base/toast'
 
 interface FormValues {
-  switch: boolean
+  [key: string]: string
 }
+
+const toast = makeToast()
 
 const formInfo = reactive<FormInfo>({
   form_code: '',
@@ -55,26 +59,60 @@ const formSubmit = (event: Event) => {
     for (let i = 0; i < formKeys.length; i++) {
       const key = formKeys[i]
       const value = e.detail.value[key as keyof FormValues]
-      console.log(`表单项 ${key} 的值为：`, value)
-      const comp = key.split('___')[0]
-      const sequence = Number(key.split('___')[1])
+      // console.log(`表单项 ${key} 的值为：`, value)
+      const componentRuleItem = formRulesUtil.rules.find((item) => item.name === key)
+      const componentRules = componentRuleItem?.rules ?? []
+      for (let j = 0; j < componentRules.length; j++) {
+        const ruleItem = componentRules[j]
+        const reg = new RegExp(ruleItem.ruleType)
+        if (!reg.test(value)) {
+          console.warn(`表单项 ${key} 的值 "${value}" 不符合规则：`, ruleItem.errorMessage)
+          toast.error(ruleItem.errorMessage)
+          return
+        }
+      }
+      const identifier = key?.split('___')
+      const comp = identifier?.[0] ?? ''
+      const last = identifier?.[1] ?? ''
+      const sequence = last?.includes('_') ? Number(last.split('_')[0]) : Number(last)
       console.log(`组件类型：${comp}, 序列号：${sequence}`)
+      const find = formInfo.form_instance[sequence - 1].values.find((item) => item.name === '标题')
+      if (!find) {
+        console.warn(`未找到序列号 ${sequence} 对应的表单项`)
+        continue
+      }
       if (comp === 'COMP_SWITCH') {
         // 处理自定义控件开关组件的值
-        const find = formInfo.form_instance[sequence - 1].values.find((item) => item.name === '标题')
-        if (find) {
-          find.form_value = value.toString()
-        }
+        find.form_value = value.toString()
       } else if (comp === 'COMP_SINGLE_INPUT') {
         // 处理自定义控件单行输入组件的值
-        console.log(`单行输入组件 ${sequence} 的值为：`, value)
-        const find = formInfo.form_instance[sequence - 1].values.find((item) => item.name === '标题')
-        if (find) {
+        find.form_value = value
+      } else if (comp === 'COMP_NUMBER') {
+        // 处理自定义控件数字输入组件的值
+        console.log(`数字输入组件 ${sequence} 的值为：`, value)
+        find.form_value = value
+      } else if (comp === 'COMP_MULTI_INPUT') {
+        // 处理自定义控件多行输入组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_VALUE_LIST') {
+        // 处理自定义控件选项列表组件的值
+        const multiple =
+          formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多项'
+        if (multiple) {
+          find.form_values = value.split(',').map((val) => val.trim())
+        } else {
           find.form_value = value
         }
+      } else if (comp === 'COMP_AMOUNT') {
+        // 处理自定义控件金额输入组件的值
+        if (!find.form_values) {
+          find.form_values = []
+        }
+        ;(find.form_values as string[]).push(value)
       }
     }
     console.log('form keys', formInfo)
+    return
   }
   createForm(formInfo)
     .then((res) => {
@@ -122,7 +160,6 @@ const queryFormCfg = (id: string) => {
   queryFormDetail(id)
     .then((res) => {
       if (res.code === 200) {
-        console.log('查询表单详情成功：', res)
         const message = res.message || {}
         formInfo.form_code = id
         formInfo.form_group = message.group || ''
@@ -150,6 +187,7 @@ const queryFormCfg = (id: string) => {
 }
 
 onLoad((options?: PageOptions) => {
+  formRulesUtil.clearRules()
   if (options?.id) {
     queryFormCfg(options.id)
   }

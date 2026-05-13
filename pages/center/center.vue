@@ -46,7 +46,7 @@
             <view class="tab-item" :class="{ active: currentReadTab === 1 }" @click="switchReadTab(1)"> 已读消息 </view>
           </view>
 
-          <scroll-view scroll-y class="list-content" :style="{ paddingBottom: currentTab === 0 ? '120rpx' : '20rpx' }">
+          <scroll-view scroll-y class="list-content" :class="{ 'tab-0': currentTab === 0, 'tab-1': currentTab === 1 }">
             <view
               class="list-item"
               :class="{ 'is-checked': item.checked }"
@@ -55,58 +55,62 @@
               @click="gotoDetail(item)"
             >
               <view class="item-main" v-if="currentTab === 0">
-                <view class="item-header">
-                  <text class="title">{{ item.form_name }}</text>
-                  <status-tag :status="item.status" />
-                  <view class="checkbox" :class="{ checked: item.checked }" @click.stop="toggleCheck(item)">
-                    <img src="@/static/checked.svg" style="width: 18rpx; height: 14rpx" v-if="item.checked" />
+                <view class="item-container">
+                  <view class="item-header">
+                    <text class="title">{{ item.form_name }}</text>
+                    <status-tag :status="item.status" />
+                    <view class="checkbox" :class="{ checked: item.checked }" @click.stop="toggleCheck(item)">
+                      <image src="/static/checked.svg" style="width: 18rpx; height: 14rpx" v-if="item.checked" />
+                    </view>
                   </view>
-                </view>
 
-                <view class="user-info">
-                  <view
-                    class="avatar"
-                    :style="{
-                      background: `linear-gradient(${item.back_ground})`
-                    }"
-                    >{{ item.applicant?.slice(-1) }}
+                  <view class="user-info">
+                    <view
+                      class="avatar"
+                      :style="{
+                        background: `linear-gradient(${item.back_ground})`
+                      }"
+                      >{{ item.applicant?.slice(-1) }}
+                    </view>
+                    <text class="name">{{ item.applicant }}</text>
+                    <text class="dept">{{ item.application_department }}</text>
                   </view>
-                  <text class="name">{{ item.applicant }}</text>
-                  <text class="dept">{{ item.application_department }}</text>
-                </view>
 
-                <view class="item-desc">{{ item.reason }}</view>
-                <view class="item-time">提交时间：{{ item.application_time }}</view>
+                  <view class="item-desc">{{ item.reason }}</view>
+                  <view class="item-time">提交时间：{{ item.application_time }}</view>
 
-                <view class="item-actions">
-                  <button class="btn btn-reject" @click.stop="handleReject(item)">拒绝</button>
-                  <button class="btn btn-agree" @click.stop="handleAgree(item)">同意</button>
+                  <view class="item-actions">
+                    <button class="btn btn-reject" @click.stop="handleReject(item)">拒绝</button>
+                    <button class="btn btn-agree" @click.stop="handleAgree(item)">同意</button>
+                  </view>
                 </view>
               </view>
 
               <view class="item-main" v-if="currentTab === 1">
-                <view class="item-header">
-                  <text class="title">{{ item.form_name }}</text>
-                  <status-tag :status="item.status" style="margin-left: auto" />
-                </view>
-                <view class="user-info">
-                  <view
-                    class="avatar"
-                    :style="{
-                      background: `linear-gradient(${item.back_ground})`
-                    }"
-                    >{{ item.applicant?.slice(-1) }}
+                <view class="item-container">
+                  <view class="item-header">
+                    <text class="title">{{ item.form_name }}</text>
+                    <status-tag :status="item.status" style="margin-left: auto" />
                   </view>
-                  <text class="name">{{ item.applicant }}</text>
-                  <text class="dept">{{ item.application_department }}</text>
-                </view>
+                  <view class="user-info">
+                    <view
+                      class="avatar"
+                      :style="{
+                        background: `linear-gradient(${item.back_ground})`
+                      }"
+                      >{{ item.applicant?.slice(-1) }}
+                    </view>
+                    <text class="name">{{ item.applicant }}</text>
+                    <text class="dept">{{ item.application_department }}</text>
+                  </view>
 
-                <view class="item-desc">{{ item.reason }}</view>
-                <view class="item-time">提交时间：{{ item.application_time }}</view>
+                  <view class="item-desc">{{ item.reason }}</view>
+                  <view class="item-time">提交时间：{{ item.application_time }}</view>
 
-                <view class="item-footer">
-                  <text class="time" v-if="item.delivery_time">审批时间：{{ item.delivery_time }}</text>
-                  <text class="detail-link">查看详情</text>
+                  <view class="item-footer">
+                    <text class="time" v-if="item.delivery_time">审批时间：{{ item.delivery_time }}</text>
+                    <text class="detail-link">查看详情</text>
+                  </view>
                 </view>
               </view>
 
@@ -116,25 +120,31 @@
                 :style="{ boxShadow: currentReadTab == 0 ? 'inset 4rpx 0rpx 0rpx 0rpx #F53F3F33' : '' }"
               >
                 <view class="dot" v-if="currentReadTab == 0"></view>
-                <view class="item-header">
-                  <text class="title">{{ item.form_name }}</text>
-                  <status-tag :status="item.status" style="margin-left: auto" />
-                </view>
-
-                <view class="user-info">
-                  <view
-                    class="avatar"
-                    :style="{
-                      background: `linear-gradient(${item.back_ground})`
-                    }"
-                    >{{ item.applicant?.slice(-1) }}
+                <view class="item-container-read">
+                  <view class="item-header">
+                    <text class="title">{{ item.form_name }}</text>
+                    <status-tag :status="item.status" style="margin-left: auto" />
                   </view>
-                  <text class="name">{{ item.applicant }}</text>
-                  <text class="dept">{{ item.application_department }}</text>
-                </view>
 
-                <view class="item-desc">{{ item.reason }}</view>
-                <view class="item-time">提交时间：{{ item.application_time }}</view>
+                  <view class="user-info">
+                    <view
+                      class="avatar"
+                      :style="{
+                        background: `linear-gradient(${item.back_ground})`
+                      }"
+                      >{{ item.applicant?.slice(-1) }}
+                    </view>
+                    <text class="name">{{ item.applicant }}</text>
+                    <text class="dept">{{ item.application_department }}</text>
+                  </view>
+
+                  <view class="item-desc">{{ item.reason }}</view>
+                  <view class="item-time">提交时间：{{ item.application_time }}</view>
+                  <view class="item-footer">
+                    <text class="time"></text>
+                    <text class="detail-link">查看详情</text>
+                  </view>
+                </view>
               </view>
             </view>
           </scroll-view>
@@ -146,14 +156,14 @@
       <view class="left-info">
         <view class="check-all" @click="toggleAll">
           <view class="checkbox" :class="{ checked: isAllChecked }">
-            <text class="check-mark" v-if="isAllChecked">✓</text>
+            <image src="/static/checked.svg" style="width: 18rpx; height: 14rpx" v-if="isAllChecked" />
           </view>
           <text>全选</text>
         </view>
       </view>
       <view class="right-btns">
-        <button class="btn btn-reject-bulk">拒绝</button>
-        <button class="btn btn-agree-bulk">同意</button>
+        <button class="btn btn-reject-bulk" @click.stop="handleRejectBatch()">拒绝</button>
+        <button class="btn btn-agree-bulk" @click.stop="handleAgreeBatch()">同意</button>
       </view>
     </view>
   </view>
@@ -162,7 +172,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { makeToast } from '@/hooks/base/toast'
-import { approvedList, ccList } from '@/apis/modules/center'
+import { approvedList, ccList, agreeOperation, rejectOperation } from '@/apis/modules/center'
 import type { ApprovedItem } from '@/apis/typings/center'
 import personUtil from '@/utils/person'
 import bus from '@/utils/bus'
@@ -195,8 +205,8 @@ const onSwiperChange = (e: any) => {
 
 function getData() {
   const tabIndex = currentTab.value
-  if (tabIndex < 2 && dataSource.value[tabIndex].length > 0) return
-
+  // 不缓存
+  // if (tabIndex < 2 && dataSource.value[tabIndex].length > 0) return
   toast.loading('')
   switch (tabIndex) {
     case 0:
@@ -283,6 +293,7 @@ const gotoDetail = (item: any) => {
   const canApprove: boolean = currentTab.value !== 1
   const applicaitonItem = {
     instance_id: item.instance_id,
+    form_instance_code: item.form_instance_code,
     applicant: item.applicant,
     application_time: item.application_time,
     permission: {
@@ -347,12 +358,86 @@ const toggleAll = () => {
   })
 }
 
-const handleReject = (item: any) => {
-  uni.showToast({ title: '已拒绝', icon: 'none' })
+const handleReject = (item: ApprovedItem) => {
+  toast.loading('')
+  rejectOperation([item.instance_id])
+    .then((res) => {
+      if (res.code == 200) {
+        uni.showToast({ title: '已拒绝', icon: 'success' })
+        getData()
+      } else {
+        uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
+      }
+    })
+    .catch((err: any) => console.error(err))
+    .finally(() => toast.hiddenLoading())
 }
 
-const handleAgree = (item: any) => {
-  uni.showToast({ title: '已同意', icon: 'success' })
+const handleAgree = (item: ApprovedItem) => {
+  toast.loading('')
+  agreeOperation([item.instance_id])
+    .then((res) => {
+      if (res.code == 200) {
+        uni.showToast({ title: '已同意', icon: 'success' })
+        getData()
+      } else {
+        uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
+      }
+    })
+    .catch((err: any) => console.error(err))
+    .finally(() => toast.hiddenLoading())
+}
+
+const handleAgreeBatch = () => {
+  if (currentTab.value !== 0) return
+  const instance_id_list = []
+  const dataList = filteredDataSource.value[0]
+  for (var index = 0; index < dataList.length; index++) {
+    var item = dataList[index]
+    if (item.checked) {
+      instance_id_list.push(item.instance_id)
+    }
+  }
+  if (instance_id_list.length == 0) return
+
+  toast.loading('')
+  agreeOperation(instance_id_list)
+    .then((res) => {
+      if (res.code == 200) {
+        uni.showToast({ title: '已同意', icon: 'success' })
+        getData()
+      } else {
+        uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
+      }
+    })
+    .catch((err: any) => console.error(err))
+    .finally(() => toast.hiddenLoading())
+}
+
+const handleRejectBatch = () => {
+  if (currentTab.value !== 0) return
+  const instance_id_list = []
+  const dataList = filteredDataSource.value[0]
+  for (var index = 0; index < dataList.length; index++) {
+    var item = dataList[index]
+    if (item.checked) {
+      instance_id_list.push(item.instance_id)
+    }
+  }
+  if (instance_id_list.length == 0) return
+
+  toast.loading('')
+  rejectOperation(instance_id_list)
+    .then((res) => {
+      if (res.code == 200) {
+        uni.showToast({ title: '已拒绝', icon: 'success' })
+        getData()
+      } else {
+        uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
+      }
+    })
+    .catch((err: any) => console.error(err))
+    .finally(() => toast.hiddenLoading())
 }
 
 onMounted(() => {
@@ -377,12 +462,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background-color: #f5f7f9;
+  overflow: hidden;
 }
 
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 999;
+  flex-shrink: 0;
 }
 
 .tabs-box {
@@ -427,12 +511,14 @@ onUnmounted(() => {
 
 .swiper-content {
   flex: 1;
-  /* 自动撑开剩余高度 */
+  height: 0; /* 配合 flex:1 解决部分小程序平台高度计算的 bug */
+  background-color: transparent;
 }
 
 .search-filter-box {
   background-color: #fff;
   padding: 20rpx 30rpx;
+  height: 164rpx;
 
   .search-bar {
     background-color: #f5f7f9;
@@ -518,13 +604,22 @@ onUnmounted(() => {
 }
 
 .list-content {
-  flex: 1;
+  height: 100%;
   padding: 20rpx 30rpx;
+  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
+.list-content.tab-0 {
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+}
+
+.list-content.tab-1 {
+  padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
+}
+
 .list-item {
-  display: flex;
+  // display: flex;
   background-color: transparent;
   border-radius: 16rpx;
   margin-bottom: 20rpx;
@@ -538,9 +633,17 @@ onUnmounted(() => {
   .item-main {
     flex: 1;
     overflow: hidden;
-    padding: 30rpx;
+    padding: 0rpx;
     border-radius: 16rpx;
     background-color: #fff;
+  }
+
+  .item-container {
+    padding: 30rpx;
+  }
+
+  .item-container-read {
+    padding: 10rpx 30rpx;
   }
 
   .item-header {
@@ -674,9 +777,8 @@ onUnmounted(() => {
   }
 
   .dot {
-    position: absolute;
-    left: 16rpx;
-    top: 12rpx;
+    margin-left: 16rpx;
+    margin-top: 12rpx;
     width: 16rpx;
     height: 16rpx;
     background-color: #f53f3f99;

@@ -28,11 +28,15 @@
     <view v-else-if="props.formItem.component_code === 'COMP_SINGLE_INPUT'">
       <SingleInput :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_VALUE_LIST'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_VALUE_LIST'">
+      <ValueList :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SWITCH'">
       <ASwitch :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_NUMBER'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_NUMBER'">
+      <ANumber :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_CITY'"> text </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SELECTION_BOX'">
       <SelectionBox :formItem="props.formItem" />
@@ -64,6 +68,8 @@ import UserSelect from '@/components/form/UserSelect.vue'
 import CostBear from '@/components/form/CostBear.vue'
 import DepartmentSelect from '@/components/form/DepartmentSelect.vue'
 import type { FormItem } from './typings'
+import ANumber from '@/components/form/ANumber.vue'
+import ValueList from '@/components/form/ValueList.vue'
 
 defineOptions({
   name: 'Renderer',

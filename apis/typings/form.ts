@@ -29,3 +29,8 @@ export interface Location {
   col: number
   row: number
 }
+
+export interface ConditionNodeValueListItem {
+  code: string
+  name: string
+}

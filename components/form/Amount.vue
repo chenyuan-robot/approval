@@ -7,20 +7,11 @@
       </view>
     </view>
     <view class="component-value">
-      <picker
-        :range="AMountOpts"
-        :value="index"
-        :name="`COMP_AMOUNT_${props.formItem.sequence}_picker`"
-        range-key="label"
-        @change="index = $event.detail.value"
-      >
+      <picker :range="AMountOpts" :value="index" range-key="label" @change="bindValueChange">
         <view class="input-result">{{ AMountOpts[index]?.label || '请选择' }}</view>
       </picker>
-      <input
-        class="component-style"
-        :name="`COMP_AMOUNT_${props.formItem.sequence}_input`"
-        placeholder="这是一个输入框"
-      />
+      <input hidden :name="`COMP_AMOUNT___${props.formItem.sequence}_picker`" :value="selectedValue" />
+      <input class="component-style" :name="`COMP_AMOUNT___${props.formItem.sequence}_input`" placeholder="请输入" />
     </view>
   </view>
 </template>
@@ -29,6 +20,7 @@
 import { computed, ref } from 'vue'
 import { AMountOpts } from '../../pages/form/data'
 import type { FormItem } from '../../pages/form/typings'
+import { onLoad } from '@dcloudio/uni-app'
 
 defineOptions({
   name: 'Amount',
@@ -49,6 +41,26 @@ const config = computed(() => {
 })
 
 const index = ref<number>(0)
+const selectedValue = ref<string>('')
+
+const bindValueChange = (event: Event) => {
+  const e = event as unknown as {
+    detail: {
+      value: number
+    }
+  }
+  index.value = e.detail.value
+  const selectedOption = AMountOpts[index.value]
+  if (selectedOption) {
+    selectedValue.value = selectedOption.value
+  } else {
+    selectedValue.value = ''
+  }
+}
+
+onLoad(() => {
+  selectedValue.value = AMountOpts[0]?.value || ''
+})
 </script>
 
 <style lang="scss" scoped>
