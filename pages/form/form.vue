@@ -97,15 +97,15 @@ const formSubmit = (event: Event) => {
       } else if (comp === 'COMP_VALUE_LIST') {
         // 处理自定义控件选项列表组件的值
         const multiple =
-          formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多项'
+          formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多选'
         if (multiple) {
-          find.form_values = value.split(',').map((val) => val.trim())
+          find.form_values = value.split(',')
         } else {
           find.form_value = value
         }
       } else if (comp === 'COMP_AMOUNT') {
         // 处理自定义控件金额输入组件的值
-        if (!find.form_values) {
+        if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
           find.form_values = []
         }
         ;(find.form_values as string[]).push(value)

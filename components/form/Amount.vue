@@ -11,7 +11,11 @@
         <view class="input-result">{{ AMountOpts[index]?.label || '请选择' }}</view>
       </picker>
       <input hidden :name="`COMP_AMOUNT___${props.formItem.sequence}_picker`" :value="selectedValue" />
-      <input class="component-style" :name="`COMP_AMOUNT___${props.formItem.sequence}_input`" placeholder="请输入" />
+      <input
+        class="component-style"
+        :name="`COMP_AMOUNT___${props.formItem.sequence}_input`"
+        :placeholder="config.placeholder"
+      />
     </view>
   </view>
 </template>
@@ -21,6 +25,7 @@ import { computed, ref } from 'vue'
 import { AMountOpts } from '../../pages/form/data'
 import type { FormItem } from '../../pages/form/typings'
 import { onLoad } from '@dcloudio/uni-app'
+import { formRulesUtil } from '@/pages/form/utils/rules'
 
 defineOptions({
   name: 'Amount',
@@ -33,9 +38,20 @@ const props = defineProps<{
 
 const config = computed(() => {
   console.log('formItem values: ', props.formItem.values)
+  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  formRulesUtil.depRules({
+    name: `COMP_AMOUNT___${props.formItem.sequence}_input`,
+    rules: [
+      {
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `${props.formItem.label}不能为空`
+      }
+    ]
+  })
   return {
+    placeholder: placeholder || '请输入内容',
     required: required
   }
 })
