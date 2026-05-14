@@ -34,7 +34,7 @@ const props = defineProps<{
 }>()
 
 const config = computed(() => {
-  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
+  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false

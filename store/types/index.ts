@@ -1,4 +1,4 @@
-import type { IPerson } from '@/apis/typings/global'
+import type { IPerson, DepartmentsResponse } from '@/apis/typings/global'
 import type { UserState } from './user'
 
 /**
@@ -7,6 +7,7 @@ import type { UserState } from './user'
 export interface RootState {
   device_id: string
   userList: Array<IPerson>
+  departments: DepartmentsResponse | null
 }
 
 export interface StoreState extends RootState {

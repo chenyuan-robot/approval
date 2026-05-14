@@ -5,44 +5,22 @@
       <view class="form-row">
         <view class="component-label">
           <view class="field-desc">
-            <text>开始{{ config.dateType === '年' ? '年份' : config.dateType === '年-月' ? '月份' : '日期' }}</text>
+            <text>{{ props.formItem.label }}</text>
             <text class="required" v-if="config.required">*</text>
           </view>
           <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
         </view>
         <picker
           class="component-style"
-          :name="`COMP_DATE_${props.formItem.sequence}_start`"
+          :name="`COMP_DATE___${props.formItem.sequence}`"
           mode="date"
           :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
-          :value="startDate"
+          :value="selectedDate"
           :start="getDate('start')"
           :end="getDate('end')"
-          @change="bindDateChange($event, 'start')"
+          @change="bindDateChange($event)"
         >
-          <view class="action-result">{{ startDate }}</view>
-        </picker>
-      </view>
-      <view class="splite-border"></view>
-      <view class="form-row">
-        <view class="component-label">
-          <view class="field-desc">
-            <text>结束{{ config.dateType === '年' ? '年份' : config.dateType === '年-月' ? '月份' : '日期' }}</text>
-            <text class="required" v-if="config.required">*</text>
-          </view>
-          <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
-        </view>
-        <picker
-          class="component-style"
-          :name="`COMP_DATE_${props.formItem.sequence}_end`"
-          mode="date"
-          :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
-          :value="endDate"
-          :start="getDate('start')"
-          :end="getDate('end')"
-          @change="bindDateChange($event, 'end')"
-        >
-          <view class="action-result">{{ endDate }}</view>
+          <view class="action-result">{{ selectedDate || config.placeholder }}</view>
         </picker>
       </view>
     </view>
@@ -52,6 +30,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
+import { formRulesUtil } from '@/pages/form/utils/rules'
 
 defineOptions({
   name: 'ADate',
@@ -62,18 +41,26 @@ const props = defineProps<{
   formItem: FormItem
 }>()
 
-const startDate = ref<string>('开始日期')
-const endDate = ref<string>('结束日期')
+const selectedDate = ref<string>('')
 
 const config = computed(() => {
   console.log('formItem values: ', props.formItem.values)
-  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
+  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const fieldStyle = props.formItem.values.find((item) => item.name === '字段样式')
   const dateType = fieldStyle?.value ?? '年'
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  formRulesUtil.depRules({
+    name: `COMP_DATE___${props.formItem.sequence}`,
+    rules: [
+      {
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `请选择${props.formItem.label}`
+      }
+    ]
+  })
   return {
     placeholder: placeholder || '请选择日期范围',
     dateType: dateType,
@@ -98,17 +85,13 @@ const getDate = (type: 'start' | 'end'): string => {
   return `${year}-${month}-${day}`
 }
 
-const bindDateChange = (event: Event, type: 'start' | 'end') => {
+const bindDateChange = (event: Event) => {
   const e = event as unknown as {
     detail: {
       value: string
     }
   }
-  if (type === 'start') {
-    startDate.value = e.detail.value
-  } else {
-    endDate.value = e.detail.value
-  }
+  selectedDate.value = e.detail.value
 }
 </script>
 

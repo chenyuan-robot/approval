@@ -34,3 +34,17 @@ export interface ConditionNodeValueListItem {
   code: string
   name: string
 }
+
+export interface ProvinceCityAreaItem {
+  city: string
+  code: string
+  country: string
+  county: string
+  id: number
+  level: number
+  province: string
+}
+
+export interface ProvinceCityAreaListResponse {
+  city_levels: ProvinceCityAreaItem[]
+}

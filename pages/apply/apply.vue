@@ -167,18 +167,18 @@ function onRefresh() {
     /* 使用 :deep() 穿透组件修改内部的 .uni-select 样式 */
     :deep(.uni-select) {
       border-radius: 50rpx;
-      border: 1rpx solid #e5e5e5;
+      border: 1rpx solid #0000001A;
       height: 68rpx;
       padding: 0 30rpx;
     }
 
     :deep(.uni-select__input-placeholder) {
-      color: #888;
+      color: #85909F;
       font-size: 28rpx;
     }
 
     :deep(.uni-select__input-text) {
-      color: #888;
+      color: #85909F;
       font-size: 28rpx;
     }
   }

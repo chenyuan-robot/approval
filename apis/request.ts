@@ -39,7 +39,7 @@ export function http<T>(options: UniNamespace.RequestOptions) {
 
           case HTTP_CODE.INTERNAL_SERVER_ERROR:
             uni.showToast({
-              title: '服务器错误',
+              title: (data.message as string) || '服务器错误',
               icon: 'error',
               duration: 2000,
               mask: true

@@ -3,7 +3,7 @@ import createPersistedState from 'vuex-persistedstate'
 import user from './modules/user'
 import storage from '@/utils/storage'
 import type { RootState, StoreState } from './types'
-import type { IPerson } from '@/apis/typings/global'
+import type { IPerson, DepartmentsResponse } from '@/apis/typings/global'
 
 const store = createStore<RootState>({
   modules: {
@@ -12,7 +12,8 @@ const store = createStore<RootState>({
 
   state: (): RootState => ({
     device_id: '',
-    userList: []
+    userList: [],
+	departments: null
   }),
 
   mutations: {
@@ -22,7 +23,11 @@ const store = createStore<RootState>({
 
     SET_USER_LIST(state, list: Array<IPerson>) {
       state.userList = list
-    }
+    },
+	
+	SET_DEPARTMENTS(state, data: DepartmentsResponse) {
+		state.departments = data
+	}
   },
 
   plugins: [

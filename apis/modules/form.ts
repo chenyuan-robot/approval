@@ -1,5 +1,6 @@
+import { NEW_BASE_URL } from '@/constants/common'
 import { http } from '../request'
-import type { ConditionNodeValueListItem, FormDetailResponse } from '../typings/form'
+import type { ConditionNodeValueListItem, FormDetailResponse, ProvinceCityAreaListResponse } from '../typings/form'
 
 /**
  * 获取表单详情
@@ -37,4 +38,13 @@ export const queryConditionNodeValueList = (code: string, col: string) => {
     code,
     col
   })
+}
+
+/**
+ * 获取省市区列表
+ * @param data
+ * @returns
+ */
+export const getProvinceCityAreaList = (data: Record<string, string | number>) => {
+  return http.post<ProvinceCityAreaListResponse>(`${NEW_BASE_URL}/api/v1/basis/location/city-level/query`, data)
 }

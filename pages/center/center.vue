@@ -119,7 +119,7 @@
                 v-if="currentTab === 2"
                 :style="{ boxShadow: currentReadTab == 0 ? 'inset 4rpx 0rpx 0rpx 0rpx #F53F3F33' : '' }"
               >
-                <view class="dot" v-if="currentReadTab == 0"></view>
+                <view class="dot"  :style="{ visibility: currentReadTab == 0 ? 'visible' : 'hidden' }"></view>
                 <view class="item-container-read">
                   <view class="item-header">
                     <text class="title">{{ item.form_name }}</text>
@@ -518,7 +518,7 @@ onUnmounted(() => {
 .search-filter-box {
   background-color: #fff;
   padding: 20rpx 30rpx;
-  height: 164rpx;
+  height: 168rpx;
 
   .search-bar {
     background-color: #f5f7f9;
@@ -555,18 +555,18 @@ onUnmounted(() => {
 
       :deep(.uni-select) {
         border-radius: 50rpx;
-        border: 1rpx solid #e5e5e5;
+        border: 1rpx solid #0000001A;
         height: 68rpx;
         padding: 0 30rpx;
       }
-
+      
       :deep(.uni-select__input-placeholder) {
-        color: #888;
+        color: #85909F;
         font-size: 28rpx;
       }
-
+      
       :deep(.uni-select__input-text) {
-        color: #888;
+        color: #85909F;
         font-size: 28rpx;
       }
     }
@@ -576,30 +576,25 @@ onUnmounted(() => {
 .tab-container {
   display: flex;
   gap: 24rpx;
-  /* 两个 Tab 之间的间距 */
   padding: 24rpx 32rpx 0rpx 32rpx;
 
   .tab-item {
-    padding: 8px 24px;
-    border: 1px solid #ccc;
-    /* 未选中时的边框 */
+    padding: 10rpx 30rpx;
+    border: 0rpx;
     border-radius: 8rpx;
-    /* 圆角 */
-    color: #666;
-    /* 未选中时的文字颜色 */
-    font-size: 14px;
+    color: #4B5563;
+    background-color: #fff;
+    font-size: 24rpx;
     cursor: pointer;
     transition: all 0.3s ease;
-    /* 过渡动画 */
+	box-shadow: 0 2rpx 4rpx #00000033;
   }
 
   .tab-item.active {
-    border-color: #007aff;
-    /* 选中时的边框颜色（蓝色） */
-    color: #007aff;
-    /* 选中时的文字颜色（蓝色） */
-    background-color: #eaf4ff;
-    /* 可选：选中时的背景色（浅蓝） */
+	border: 1rpx solid #1262EE;
+    border-color: #1262EE;
+    color: #1262EE;
+    background-color: #F6FAFF;
   }
 }
 
@@ -643,7 +638,7 @@ onUnmounted(() => {
   }
 
   .item-container-read {
-    padding: 10rpx 30rpx;
+    padding: 10rpx 30rpx 30rpx 30rpx;
   }
 
   .item-header {

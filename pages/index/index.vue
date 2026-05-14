@@ -7,7 +7,6 @@
         <input v-model.trim="searchQuery" type="text" placeholder="搜索单据名称" placeholder-class="ph-color" />
       </view>
     </view>
-
     <scroll-view scroll-y class="scroll-content">
       <!--      <view class="section">
         <view class="section-title">我常用的</view>
@@ -73,6 +72,11 @@ function getData() {
       const documents = res.message.documents
       for (var index = 0; index < documents.length; index++) {
         var element = documents[index]
+        // ------ 临时代码，后面会删除
+        // if (element.name !== '开发组') {
+        //   continue
+        // }
+        // -------临时代码，后面会删除
 
         var item = {
           id: element.id,

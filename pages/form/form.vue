@@ -109,6 +109,37 @@ const formSubmit = (event: Event) => {
           find.form_values = []
         }
         ;(find.form_values as string[]).push(value)
+      } else if (comp === 'COMP_SELECTION_BOX') {
+        // 处理自定义控件选择框组件的值
+        const multiple =
+          formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多选'
+        if (multiple) {
+          find.form_values = value.split(',')
+        } else {
+          find.form_value = value
+        }
+      } else if (comp === 'COMP_CITY') {
+        // 处理自定义控件城市选择组件的值
+        const multiple =
+          formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多选'
+        if (multiple) {
+          console.log('城市选择组件的多选值：', value)
+          find.form_values = value.split(',')
+        } else {
+          find.form_values = value.split('/')
+        }
+      } else if (comp === 'COMP_DATE') {
+        // 处理自定义控件日期选择组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_DATE_RANGE') {
+        // 处理自定义控件日期范围选择组件的值
+        if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
+          find.form_values = []
+        }
+        ;(find.form_values as string[]).push(value)
+      } else if (comp === 'COMP_ATTACHMENT') {
+        // 处理自定义控件附件组件的值
+        find.form_values = value.split(',')
       }
     }
     console.log('form keys', formInfo)

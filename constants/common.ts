@@ -11,7 +11,7 @@ export const BASE_URL = 'https://approval.softtest.cowarobot.com'
 
 export const DIGITAL_BASE_URL = 'https://digital.softtest.cowarobot.com'
 
-export const BASE_LOGIN_URL = 'https://newbasis.softtest.cowarobot.com'
+export const NEW_BASE_URL = 'https://newbasis.softtest.cowarobot.com'
 
 export const APP_ID = 'cli_aa896edfa6b91cc4'
 

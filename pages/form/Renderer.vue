@@ -37,19 +37,27 @@
     <view v-else-if="props.formItem.component_code === 'COMP_NUMBER'">
       <ANumber :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_CITY'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_CITY'">
+      <City :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SELECTION_BOX'">
       <SelectionBox :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_ATTACHMENT'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_ATTACHMENT'">
+      <Attachment :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_DATE'">
       <ADate :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_COMPANY_SELECT'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_COMPANY_SELECT'">
+      <CompanySelect :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_USER_SELECT'">
       <UserSelect :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_DATE_RANGE'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_DATE_RANGE'">
+      <DateRange :formItem="props.formItem" />
+    </view>
     <view v-else>
       <text>未知控件</text>
     </view>
@@ -66,10 +74,14 @@ import SingleInput from '@/components/form/SingleInput.vue'
 import StartEndDate from '@/components/form/StartEndDate.vue'
 import UserSelect from '@/components/form/UserSelect.vue'
 import CostBear from '@/components/form/CostBear.vue'
+import CompanySelect from '@/components/form/CompanySelect.vue'
 import DepartmentSelect from '@/components/form/DepartmentSelect.vue'
 import type { FormItem } from './typings'
 import ANumber from '@/components/form/ANumber.vue'
+import Attachment from '@/components/form/Attachment.vue'
 import ValueList from '@/components/form/ValueList.vue'
+import City from '@/components/form/City.vue'
+import DateRange from '@/components/form/DateRange.vue'
 
 defineOptions({
   name: 'Renderer',

@@ -1,6 +1,6 @@
 <template>
   <view class="container">
-    <image src="/static/logo.png" alt="logo" class="logo" />
+    <image src="/static/logo.svg" alt="logo" class="logo" />
   </view>
 </template>
 

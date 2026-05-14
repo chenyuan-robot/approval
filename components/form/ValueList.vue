@@ -104,11 +104,7 @@ const bindValueChange = (event: Event) => {
   }
   index.value = e.detail.value
   const selectedOption = options.value[index.value]
-  if (selectedOption) {
-    selectedValue.value = selectedOption.name
-  } else {
-    selectedValue.value = ''
-  }
+  selectedValue.value = selectedOption.name
 }
 
 const newOpts = computed(() => {
@@ -208,6 +204,13 @@ onLoad(() => {
         height: 64rpx;
         font-size: 32rpx;
         box-sizing: border-box;
+        .action-result {
+          display: flex;
+          align-items: center;
+          font-size: 32rpx;
+          box-sizing: border-box;
+          color: #606266;
+        }
       }
     }
   }
