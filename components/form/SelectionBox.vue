@@ -1,14 +1,17 @@
 <template>
   <view class="selection-box">
-    <view class="uni-form-component">
+    <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
       <view class="component-label">
         <view class="field-desc">
-          <text>{{ props.formItem.label }}</text>
-          <text class="required" v-if="config.required">*</text>
+          <text class="field-label">{{ props.formItem.label }}</text>
+          <text class="required" v-if="!props.renderOnly && config.required">*</text>
         </view>
         <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
       </view>
-      <view class="component-value" @click="handleOpenPanel">
+      <view class="component-value" v-if="props.renderOnly">
+        <text class="render-text">{{ config.value }}</text>
+      </view>
+      <view class="component-value" @click="handleOpenPanel" v-else>
         <picker
           class="component-picker"
           @change="bindValueChange"
@@ -17,9 +20,24 @@
           :value="index"
           :range="config.options"
         >
-          <view class="uni-input">{{ config.options[index]?.name ?? config.placeholder }}</view>
+          <view
+            class="action-result"
+            :style="{
+              color: config.options[index]?.name ? '#31373d' : '#adb5bd'
+            }"
+          >
+            {{ config.options[index]?.name ?? config.placeholder }}
+          </view>
         </picker>
-        <input :value="selectedValue" v-else class="component-style" disabled :placeholder="config.placeholder" />
+        <input
+          placeholder-style="color: #adb5bd; font-size: 28rpx;"
+          :value="selectedValue"
+          v-else
+          class="component-style"
+          disabled
+          :placeholder="config.placeholder"
+        />
+        <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
         <input hidden :name="`COMP_SELECTION_BOX___${props.formItem.sequence}`" :value="selectedValue" />
       </view>
     </view>
@@ -68,6 +86,7 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
 const index = ref<number>(-1)
@@ -84,6 +103,11 @@ const handleClick = (opt: OptionItem) => {
     selectedLists.value.push(opt.name)
   }
   selectedValue.value = selectedLists.value.join(',')
+}
+
+const handleClear = () => {
+  selectedValue.value = ''
+  index.value = -1
 }
 
 const handleOpenPanel = () => {
@@ -122,6 +146,7 @@ const config = computed(() => {
   const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
   const defaultSelcetion = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  const titleItem = props.formItem.values.find((item) => item.name === '标题')
   formRulesUtil.depRules({
     name: `COMP_SELECTION_BOX___${props.formItem.sequence}`,
     rules: [
@@ -131,11 +156,12 @@ const config = computed(() => {
       }
     ]
   })
+  const single = selectionMode === '单项' // 是否单选
   return {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    single: selectionMode === '单项',
+    single: single,
     options: ((sectionOptions?.selection_list as string[]) ?? []).map((opt) => {
       return {
         name: opt,
@@ -143,7 +169,12 @@ const config = computed(() => {
       }
     }),
     defaultValue: defaultSelcetion?.specific_value ?? [],
-    required: required
+    required: required,
+    value: single
+      ? ((titleItem?.form_value as string) ?? '')
+      : Array.isArray(titleItem?.form_values)
+        ? titleItem?.form_values?.join(', ')
+        : ''
   }
 })
 </script>
@@ -152,9 +183,6 @@ const config = computed(() => {
 .selection-box {
   width: 100%;
   .uni-form-component {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     .component-label {
       margin-left: 32rpx;
       color: #374151;
@@ -177,6 +205,15 @@ const config = computed(() => {
       display: flex;
       align-items: center;
       margin-right: 32rpx;
+      position: relative;
+      .clear-icon {
+        width: 18rpx;
+        height: 18rpx;
+        position: absolute;
+        right: 15rpx;
+        top: 50%;
+        transform: translateY(-50%);
+      }
       .input-result {
         display: flex;
         align-items: center;
@@ -190,23 +227,67 @@ const config = computed(() => {
         box-sizing: border-box;
       }
       .component-picker {
-        width: 240rpx;
-        border: 1px solid #dcdfe6;
-        border-radius: 6px;
+        width: 300rpx;
+        border: 1px solid #d4d6d9;
+        border-radius: 4px;
+        padding: 12rpx 20rpx;
+        height: 64rpx;
+        font-size: 32rpx;
+        box-sizing: border-box;
+        .action-result {
+          font-size: 28rpx;
+          box-sizing: border-box;
+          color: #31373d;
+        }
+      }
+      .component-style {
+        pointer-events: none;
+        width: 300rpx;
+        border: 1px solid #d4d6d9;
+        border-radius: 4px;
         padding: 12rpx 20rpx;
         height: 64rpx;
         font-size: 32rpx;
         box-sizing: border-box;
       }
-      .component-style {
-        pointer-events: none;
-        width: 240rpx;
-        border: 1px solid #dcdfe6;
-        border-radius: 6px;
-        padding: 12rpx 20rpx;
-        height: 64rpx;
-        font-size: 32rpx;
-        box-sizing: border-box;
+    }
+    &.readable {
+      .component-label {
+        margin-left: 0;
+        margin-bottom: 10rpx;
+        .field-desc {
+          .field-label {
+            color: #727c88;
+            font-size: 26rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #727c88;
+        }
+      }
+      .component-value {
+        .render-text {
+          color: #1b1f26;
+          font-size: 28rpx;
+        }
+      }
+    }
+    &.editable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .component-label {
+        .field-desc {
+          .field-label {
+            color: #374151;
+            font-size: 32rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #9ca3af;
+        }
       }
     }
   }

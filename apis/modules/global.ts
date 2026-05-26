@@ -28,5 +28,5 @@ export const uploadAttachment = () => {
  * @returns
  */
 export const getDepartments = () => {
-  return http.get<DepartmentsResponse>(`${DIGITAL_BASE_URL}/api/v1/appmsg/public/department/tree/coowa`)
+  return http.get<Array<DepartmentsResponse>>(`${DIGITAL_BASE_URL}/api/v1/appmsg/public/department/tree/coowa`)
 }

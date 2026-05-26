@@ -55,4 +55,6 @@ export interface ReturnNodeResponse {
 export interface ReturnNodeItem {
   node_id: string
   node_name: string
+  node_info: string
+  approvers: string
 }

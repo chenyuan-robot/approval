@@ -7,6 +7,7 @@ export interface PageOptions {
 export interface InstanceDetail extends FormDetailResponse {
   applicant: string
   application_time: string
+  task_node_instance_id: string
   department: string
   back_ground: string
 }

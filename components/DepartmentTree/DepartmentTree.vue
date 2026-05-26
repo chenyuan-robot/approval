@@ -10,9 +10,9 @@
 				<view v-else class="expand-icon-placeholder"></view>
 				<text class="department-name">{{ item.name }}</text>
 			</view>
-			<view v-if="item.children && item.children.length > 0 && expandedKeys.includes(item.key)"
+			<view v-show="item.children && item.children.length > 0 && expandedKeys.includes(item.key)"
 				class="department-children">
-				<DepartmentTree :departments="item.children" :selected-keys="selectedKeys"
+				<DepartmentTree :key="item.key" :departments="item.children" :selected-keys="selectedKeys"
 					@select="handleChildSelect" />
 			</view>
 		</view>
@@ -22,6 +22,10 @@
 <script setup lang="ts">
 	import { defineProps, defineEmits, ref } from 'vue'
 	import type { DepartmentsResponse } from '@/apis/typings/global'
+
+	defineOptions({
+	  name: 'DepartmentTree'
+	})
 
 	const props = defineProps<{
 		departments : DepartmentsResponse[]
@@ -34,13 +38,13 @@
 
 	const expandedKeys = ref<string[]>([])
 
-	const handleExpand = (item : DepartmentsResponse) => {
-		const index = expandedKeys.value.indexOf(item.key)
-		if (index > -1) {
-			expandedKeys.value.splice(index, 1)
-		} else {
-			expandedKeys.value.push(item.key)
-		}
+	const handleExpand = (item: DepartmentsResponse) => {
+	    const index = expandedKeys.value.indexOf(item.key)
+	    if (index > -1) {
+	        expandedKeys.value = expandedKeys.value.filter(k => k !== item.key)
+	    } else {
+	        expandedKeys.value = [...expandedKeys.value, item.key]
+	    }
 	}
 
 	const handleSelect = (item : DepartmentsResponse) => {

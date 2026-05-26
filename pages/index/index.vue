@@ -7,7 +7,11 @@
         <input v-model.trim="searchQuery" type="text" placeholder="搜索单据名称" placeholder-class="ph-color" />
       </view>
     </view>
-    <scroll-view scroll-y class="scroll-content">
+    <view v-if="filteredDataSource.length == 0" class="empty-box">
+      <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
+      <text>暂无数据</text>
+    </view>
+    <scroll-view v-else scroll-y class="scroll-content">
       <!--      <view class="section">
         <view class="section-title">我常用的</view>
         <view class="grid-wrap white-bg">
@@ -18,14 +22,14 @@
         </view>
       </view> -->
 
-      <view class="section" v-for="(item1, idx1) in filteredDataSource" :key="item1.code + idx1">
+      <view class="section" v-for="(item1, idx1) in filteredDataSource" :key="`${item1.code}_${idx1}`">
         <view class="section-title">{{ item1.name }}</view>
         <view class="card-wrap">
           <view
             class="func-card"
             v-for="(item2, idx2) in item1.form_list"
-            :key="item2.code + idx2"
-            @click="goToForm(item2.code)"
+            :key="`${item2.code}_${idx2}`"
+            @click="goToForm(`${item2.code}`)"
           >
             <image class="card-icon" :src="item2.icon ? item2.icon : '/static/icon_1.svg'" mode="aspectFit"> </image>
             <view class="card-info">
@@ -39,23 +43,31 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { treeWithForm } from '@/apis/modules/home'
-import { makeToast } from '@/hooks/base/toast'
-import { queryUserList } from '@/apis/modules/global'
+import { makeToast } from '@/utils/toast'
+import { queryUserList, getDepartments } from '@/apis/modules/global'
 import { useStore } from 'vuex'
 import _head from 'lodash/first'
+import type { DepartmentsResponse } from '@/apis/typings/global'
+import type {
+  FormListItem,
+  FormGroupItem,
+  DocumentItem,
+  TreeWithFormResponse,
+  TreeWithFormReqParams
+} from '@/apis/typings/home'
 
 const store = useStore()
 const loading = ref(true)
-const dataSource = ref()
+const dataSource = ref<FormGroupItem[]>([])
 const searchQuery = ref('')
 const toast = makeToast()
 
 // 跳转到创建页
-const goToForm = (id) => {
+const goToForm = (id: string) => {
   uni.navigateTo({
     url: `/pages/form/form?id=${id}`
   })
@@ -64,12 +76,14 @@ const goToForm = (id) => {
 function getData() {
   toast.loading('')
 
-  treeWithForm({})
+  const params: TreeWithFormReqParams = {}
+  treeWithForm(params)
     .then((res) => {
       console.log(res)
+      const datas = res.message as TreeWithFormResponse
 
-      var _dataSource = []
-      const documents = res.message.documents
+      var _dataSource: FormGroupItem[] = []
+      const documents = datas.documents
       for (var index = 0; index < documents.length; index++) {
         var element = documents[index]
         // ------ 临时代码，后面会删除
@@ -78,7 +92,7 @@ function getData() {
         // }
         // -------临时代码，后面会删除
 
-        var item = {
+        var item: FormGroupItem = {
           id: element.id,
           name: element.name,
           code: element.code,
@@ -109,18 +123,19 @@ const filteredDataSource = computed(() => {
 
   if (!keyword) return dataSource.value
 
-  return dataSource.value
-    .map((item1) => {
-      const filteredList = item1.form_list.filter((item2) => item2.name.toLowerCase().includes(keyword))
-      if (filteredList.length > 0) {
-        return {
+  return dataSource.value.flatMap((item1) => {
+    const filteredList = item1.form_list.filter((item2) => item2.name.toLowerCase().includes(keyword))
+
+    if (filteredList.length > 0) {
+      return [
+        {
           ...item1,
           form_list: filteredList
         }
-      }
-      return null
-    })
-    .filter((item) => item !== null)
+      ]
+    }
+    return []
+  })
 })
 
 onMounted(() => {
@@ -148,8 +163,32 @@ const getUserList = () => {
     })
 }
 
+const getDepartment = () => {
+  getDepartments()
+    .then((res) => {
+      const datas = res.message as Array<DepartmentsResponse>
+      store.commit('SET_DEPARTMENTS', datas)
+
+      const departmentModelMap: Record<string, DepartmentsResponse> = {}
+      function traverse(node: DepartmentsResponse) {
+        departmentModelMap[node.key] = node
+        for (const child of node.children) {
+          traverse(child)
+        }
+      }
+      for (const node of datas) {
+        traverse(node)
+      }
+      store.commit('SET_DEPARTMENTS_MAP', departmentModelMap)
+    })
+    .catch((err) => {
+      console.error('获取部门树失败：', err)
+    })
+}
+
 onLoad(() => {
   getUserList()
+  getDepartment()
 })
 </script>
 
@@ -201,8 +240,22 @@ onLoad(() => {
   }
 }
 
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 800rpx;
+
+  .no_data_img {
+    width: 200rpx;
+    height: 200rpx;
+  }
+}
+
+
 .scroll-content {
-  padding: 32rpx 32rpx;
+  padding: 0 32rpx 32rpx 32rpx;
   box-sizing: border-box;
 }
 
@@ -213,7 +266,8 @@ onLoad(() => {
     font-size: 32rpx;
     font-weight: bold;
     color: #1b1f26;
-    margin-bottom: 10rpx;
+    margin-bottom: 14rpx;
+    margin-top: 32rpx;
   }
 }
 
@@ -251,22 +305,23 @@ onLoad(() => {
 .card-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
+  gap: 18rpx;
 
   .func-card {
-    width: calc(50% - 26rpx);
+    width: calc(50% - 10rpx);
     background-color: #fff;
     border-radius: 16rpx;
     padding: 24rpx 24rpx;
     display: flex;
+    margin-top: 6rpx;
     align-items: center;
-    margin-bottom: 40rpx;
+    // margin-bottom: 40rpx;
     box-sizing: border-box;
-    margin-right: 16rpx;
+    // margin-right: 16rpx;
 
     .card-icon {
-      width: 64rpx;
-      height: 64rpx;
+      width: 60rpx;
+      height: 50rpx;
       margin-right: 20rpx;
       flex-shrink: 0;
     }

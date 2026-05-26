@@ -15,5 +15,5 @@ export const addComment = (params: Record<string, unknown>) => {
  * @returns
  */
 export const previewAttachment = (osskey: string) => {
-  return http.get(`/api/v1/dl_approval/file/preview/${osskey}`)
+  return http.get(`/api/v1/dl_approval/file/preview/proxy/${osskey}`)
 }

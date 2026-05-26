@@ -3,11 +3,12 @@
     <scroll-view ref="scrollRef" scroll-with-animation scroll-y class="scroll-content">
       <view class="card-section header-card">
         <view class="main-title">
-          <text>{{ instanceDetail.form_name }}</text>
+          <text class="form-title">{{ instanceDetail.form_name }}</text>
           <status-tag :status="instanceDetail.status" />
         </view>
-        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code ?? '' }}</view>
-        <view class="sub-info">提交时间：{{ instanceDetail?.application_time ?? '' }}</view>
+        <view class="sub-info">申请编号：{{ instanceDetail?.form_instance_code ?? '-' }}</view>
+        <image src="/static/underline.png" alt="附件" class="underline" />
+        <view class="sub-info">提交时间：{{ instanceDetail?.application_time ?? '-' }}</view>
       </view>
 
       <view class="card-section detail-card">
@@ -27,6 +28,7 @@
         <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
           <Renderer style="width: 100%" :formItem="formItem" />
         </view>
+        <view v-if="!formItems.length" class="no-data">暂未数据</view>
       </view>
       <view class="card-section timeline-card">
         <view class="section-title">审批记录</view>
@@ -45,9 +47,9 @@
     </scroll-view>
 
     <view class="bottom-action-bar">
-      <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.comment" @click="toComment">
+      <!-- <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.comment" @click="toComment">
         评论
-      </button>
+      </button> -->
       <button class="btn btn-primary" hover-class="btn-primary-hover" v-if="permission.return" @click="handlerReturn">
         退回
       </button>
@@ -69,13 +71,22 @@
         同意
       </button>
       <button
-        :class="['btn', isWithdraw ? 'btn-light' : 'btn-error']"
-        :hover-class="isWithdraw ? 'btn-light-hover' : 'btn-error-hover'"
-        v-if="submitted && instanceDetail.applicant === user_name"
-        @click="handlerSelfApproval"
+        :class="['btn', 'btn-light']"
+        hover-class="btn-light-hover"
+        v-if="apply && getStatusType(instanceDetail.status) === 'in_progress'"
+        @click="handlerWithdraw"
       >
-        {{ isWithdraw ? '撤回' : '删除' }}
+        撤回
       </button>
+      <button
+        :class="['btn', 'btn-error']"
+        hover-class="btn-error-hover"
+        v-if="apply && getStatusType(instanceDetail.status) === 'withdraw'"
+        @click="handlerDelete"
+      >
+        删除
+      </button>
+      <button class="btn btn-primary" hover-class="btn-primary-hover" @click="handlerBack">返回</button>
     </view>
   </view>
 </template>
@@ -84,12 +95,18 @@
 import { computed, onMounted, onUnmounted, reactive, ref, toRefs } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { InstanceHistoryItem, PageOptions } from './typings'
-import { deleteApproval, queryInstanceDetail, queryInstanceHistory, withdrawApproval } from '@/apis/modules/detail'
+import {
+  deleteApproval,
+  queryInstanceDetail,
+  queryInstanceHistory,
+  withdrawApproval,
+  ccReadReport
+} from '@/apis/modules/detail'
 import type { InstanceDetail } from './typings'
 import personUtil from '@/utils/person'
 import Renderer from './Renderer.vue'
 import type { FormItem } from './../form/typings'
-import { makeToast } from '@/hooks/base/toast'
+import { makeToast } from '@/utils/toast'
 import type { OperateHistoryResponse } from '@/apis/typings/detail'
 import { getTimeAgo } from '@/utils'
 import TimeLine from './components/TimeLine.vue'
@@ -103,7 +120,7 @@ const toast = makeToast()
 const instanceDetail = ref<InstanceDetail>({} as InstanceDetail)
 const formItems = ref<FormItem[]>([])
 const histories = ref<InstanceHistoryItem[]>([])
-const submitted = ref<boolean>(false)
+const apply = ref<boolean>(false)
 const permission = reactive({
   pass: false,
   reject: false,
@@ -116,11 +133,7 @@ const permission = reactive({
 
 const userInfo = computed(() => (store.state as StoreState).user)
 const { user_name } = toRefs(userInfo.value)
-
-const isWithdraw = computed(
-  () =>
-    instanceDetail.value.applicant === user_name.value && getStatusType(instanceDetail.value.status) === 'in_progress'
-)
+console.log('user_name:', user_name)
 
 const getApprovalHistory = (id: string) => {
   queryInstanceHistory(id)
@@ -149,16 +162,25 @@ const getApprovalHistory = (id: string) => {
     })
 }
 
-const getInstance = (id: string, applicant: string, application_time: string) => {
+const getInstance = (
+  id: string,
+  applicant: string,
+  application_time: string,
+  task_node_instance_id: string,
+  form_instance_code: string,
+  status: string,
+  form_name: string
+) => {
   queryInstanceDetail(id)
     .then((res) => {
+      const result = personUtil.lookup(applicant)
       if (res.code === 200) {
-        const result = personUtil.lookup(applicant)
         const message = res.message || {}
         instanceDetail.value = {
           ...message,
           applicant: applicant || '',
           application_time: application_time || '',
+          task_node_instance_id: task_node_instance_id || '',
           department: result.departments,
           back_ground: result.back_ground
         }
@@ -175,11 +197,51 @@ const getInstance = (id: string, applicant: string, application_time: string) =>
         })
         formItems.value = depItems
       } else {
+        instanceDetail.value = {
+          status,
+          reform: '',
+          operation_comment: '',
+          instance_code: '',
+          form_name,
+          form_instance_code: form_instance_code,
+          form_instance: [],
+          operation_config: {
+            agree: false,
+            post_add_sign: false,
+            pre_add_sign: false,
+            reject: false,
+            return_no_reapprove: false,
+            return_reapprove: false,
+            terminate: false,
+            transfer: false
+          },
+          applicant: applicant || '',
+          application_time: application_time || '',
+          task_node_instance_id: task_node_instance_id || '',
+          department: result.departments,
+          back_ground: result.back_ground
+        }
         console.error('获取单据详情失败：', res.message)
       }
     })
     .catch((error) => {
       console.error('获取单据详情失败：', error)
+    })
+}
+
+const handlerBack = () => {
+  uni.navigateBack()
+}
+
+const ccRead = (id: string) => {
+  ccReadReport(id)
+    .then((res) => {
+      if (res.code == 200) {
+        bus.emit('center:refresh')
+      }
+    })
+    .catch((error) => {
+      console.error('已读上报失败：', error)
     })
 }
 
@@ -206,7 +268,7 @@ const handlerReject = (): void => {
  */
 const handlerAgree = (): void => {
   uni.navigateTo({
-    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=agree`
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&task_node_instance_id=${instanceDetail.value.task_node_instance_id}&type=agree`
   })
 }
 
@@ -228,18 +290,16 @@ const handlerSign = (): void => {
   })
 }
 
-const handlerSelfApproval = (): void => {
-  if (isWithdraw.value) {
-    handlerWithdraw()
-  } else {
-    handlerDelete()
-  }
-}
-
 const handlerWithdraw = (): void => {
   const params: Record<string, unknown> = {
     operate_type: 'withdraw',
-    instance_id: [instanceDetail.value.instance_code]
+    // instance_id: [instanceDetail.value.instance_code]
+    instance_id: [
+      {
+        instance_id: instanceDetail.value.instance_code,
+        task_node_instance_id: instanceDetail.value.task_node_instance_id
+      }
+    ]
   }
   withdrawApproval(params)
     .then((res) => {
@@ -282,7 +342,7 @@ onLoad((options?: PageOptions) => {
   const obj = JSON.parse(decodeURIComponent(options?.data ?? '{}'))
   if (obj?.instance_id) {
     console.log('obj:', obj)
-    submitted.value = obj.submitted
+    apply.value = obj.apply
     permission.pass = obj.permission.pass
     permission.reject = obj.permission.reject
     permission.transfer = obj.permission.transfer
@@ -290,9 +350,21 @@ onLoad((options?: PageOptions) => {
     permission.withdraw = obj.permission.withdraw
     permission.comment = obj.permission.comment
     permission.sign = obj.permission.sign
-    const { instance_id, applicant, application_time, form_instance_code } = obj
-    getInstance(instance_id, applicant, application_time)
+    const {
+      instance_id,
+      applicant,
+      application_time,
+      form_instance_code,
+      task_node_instance_id,
+      is_report_read,
+      status,
+      form_name
+    } = obj
+    getInstance(instance_id, applicant, application_time, task_node_instance_id, form_instance_code, status, form_name)
     getApprovalHistory(form_instance_code)
+    if (is_report_read) {
+      ccRead(instance_id)
+    }
   }
 })
 
@@ -319,7 +391,8 @@ onUnmounted(() => {
   background-color: #f5f6f8;
 }
 .scroll-content {
-  flex: 1;
+  // flex: 1;
+  height: 100vh;
   padding: 20rpx 30rpx;
   box-sizing: border-box;
   padding-bottom: 140rpx; /* 为底部操作栏留白 */
@@ -327,7 +400,8 @@ onUnmounted(() => {
 .card-section {
   background-color: #fff;
   border-radius: 16rpx;
-  padding: 30rpx;
+  // padding: 30rpx;
+  padding: 32rpx;
   margin-bottom: 20rpx;
 }
 
@@ -337,10 +411,12 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 36rpx;
-    font-weight: bold;
-    color: #333;
     margin-bottom: 16rpx;
+    .form-title {
+      font-weight: bold;
+      color: #1b1f26;
+      font-size: 30rpx;
+    }
     .status-tag {
       font-size: 26rpx;
       padding: 6rpx 16rpx;
@@ -354,11 +430,16 @@ onUnmounted(() => {
   }
   .sub-info {
     font-size: 26rpx;
-    color: #666;
-    margin-bottom: 8rpx;
+    color: #727c88;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .underline {
+    width: 100%;
+    height: 1.5rpx;
+    display: block;
+    margin: 16rpx 0;
   }
 }
 
@@ -367,27 +448,28 @@ onUnmounted(() => {
   .user-row {
     display: flex;
     align-items: center;
-    margin-bottom: 30rpx;
-    padding-bottom: 20rpx;
-    border-bottom: 1rpx solid #f0f0f0;
+    margin-bottom: 40rpx;
+    // padding-bottom: 20rpx;
+    // border-bottom: 1rpx solid #f0f0f0;
     .avatar {
-      width: 48rpx;
-      height: 48rpx;
+      width: 44rpx;
+      height: 44rpx;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 24rpx;
       border-radius: 50%;
-      margin-right: 20rpx;
+      margin-right: 16rpx;
       color: #fff;
     }
     .user-info {
       display: flex;
       align-items: center;
       .name {
-        font-size: 30rpx;
+        color: #1b1f26;
+        font-size: 28rpx;
         font-weight: bold;
-        margin-right: 16rpx;
+        margin-right: 12rpx;
       }
       .dept {
         font-size: 26rpx;
@@ -399,15 +481,24 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 26rpx 0;
+    // padding: 10rpx 0;
+    margin-bottom: 35rpx;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  .no-data {
+    font-size: 26rpx;
+    color: #868e96;
   }
 }
 
 /* 时间轴 (核心样式) */
 .timeline-card {
   .section-title {
-    font-size: 30rpx;
+    font-size: 28rpx;
     font-weight: bold;
+    color: #1b1f26;
     margin-bottom: 30rpx;
   }
   .timeline {

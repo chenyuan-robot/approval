@@ -19,11 +19,9 @@
 </template>
 
 <script setup lang="ts">
-	import { getDepartments } from '@/apis/modules/global'
 	import type { DepartmentsResponse } from '@/apis/typings/global'
 	import { computed, ref, onMounted } from 'vue'
 	import { useStore } from 'vuex'
-	import DepartmentTree from '@/components/DepartmentTree.vue'
 
 	const store = useStore()
 
@@ -32,7 +30,7 @@
 	})
 
 	const props = defineProps({
-
+    single: { type: Boolean, default: false, required: false }
 	})
 
 	const popup = ref()
@@ -42,14 +40,19 @@
 	const selectedKeys = ref<string[]>([])
 
 	const handleDepartmentSelect = (key : string, item : DepartmentsResponse) => {
-		const index = selectedKeys.value.indexOf(key)
+		if (props.single) {
+		  selectedKeys.value = [key]
+		  emit('update:modelValue', item)
+		  close()
+		  return
+		}
+    const index = selectedKeys.value.indexOf(key)
 		if (index > -1) {
 			selectedKeys.value.splice(index, 1)
 		} else {
 			selectedKeys.value.push(key)
 		}
-
-		emit('update:modelValue', departmentList)
+		emit('update:modelValue', item)
 	}
 
 
@@ -87,16 +90,6 @@
 	defineExpose({
 		open,
 		close
-	})
-	
-	onMounted(() => {
-		if (!store.state.departments) {
-			getDepartments()
-				.then((res) => {
-					store.commit('SET_DEPARTMENTS', res.message)
-				})
-				.catch(console.error)
-		}
 	})
 
 </script>

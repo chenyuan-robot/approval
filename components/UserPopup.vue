@@ -7,14 +7,13 @@
     border-radius="10px 10px 0 0"
     :mask-closable="true"
   >
-  
     <view class="popup-content">
-		<view class="filter-header">
-		  <view class="search-bar">
-		    <image class="search-icon" src="/static/search.svg" mode="aspectFit" />
-		    <input v-model.trim="searchQuery" type="text" placeholder="搜索人员" placeholder-class="ph-color" />
-		  </view>
-		</view>
+      <view class="filter-header">
+        <view class="search-bar">
+          <image class="search-icon" src="/static/search.svg" mode="aspectFit" />
+          <input v-model.trim="searchQuery" type="text" placeholder="搜索人员" placeholder-class="ph-color" />
+        </view>
+      </view>
       <scroll-view
         scroll-top="0"
         scroll-y
@@ -48,7 +47,8 @@ defineOptions({
 
 const props = defineProps({
   showAll: { type: Boolean, default: true, required: false },
-  departUserList: { type: Array as () => string[], default: () => [], required: false }
+  departUserList: { type: Array as () => string[], default: () => [], required: false },
+  single: { type: Boolean, default: false, required: false }
 })
 
 const popup = ref()
@@ -61,7 +61,7 @@ const userLists = computed(() => {
   let filterUsers = props.showAll ? allUsers : allUsers.filter((user) => props.departUserList.includes(user.account))
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filterUsers = filterUsers.filter(user => {
+    filterUsers = filterUsers.filter((user) => {
       const nameMatch = user.name?.toLowerCase().includes(query)
       const jobTitleMatch = user.job_title?.toLowerCase().includes(query)
       return nameMatch || jobTitleMatch
@@ -87,6 +87,12 @@ const close = () => {
 }
 
 const handleClick = (userList: IPerson): void => {
+  if (props.single) {
+    selectedAccounts.value = [userList.account]
+    emit('update:modelValue', userList)
+    close()
+    return
+  }
   const index = selectedAccounts.value.findIndex((item) => item === userList.account)
   if (index > -1) {
     selectedAccounts.value.splice(index, 1)
@@ -120,7 +126,7 @@ defineExpose({
       }
     }
   }
-  
+
   .filter-header {
     padding: 20rpx 32rpx;
     background-color: #fff;
@@ -131,18 +137,18 @@ defineExpose({
       padding: 20rpx 16rpx;
       display: flex;
       align-items: center;
-  
+
       .search-icon {
         margin-right: 20rpx;
         width: 28rpx;
         height: 28rpx;
       }
-  
+
       input {
         flex: 1;
         font-size: 28rpx;
       }
-  
+
       .ph-color {
         color: #bdc5cf;
       }

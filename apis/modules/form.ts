@@ -34,7 +34,7 @@ export const submitApplicationInstance = (data: Record<string, unknown>, id: str
  * @returns
  */
 export const queryConditionNodeValueList = (code: string, col: string) => {
-  return http.get<ConditionNodeValueListItem[]>(`/api/v1/dl_approval/value_list/col/detail`, {
+  return http.get<ConditionNodeValueListItem[] | string>(`/api/v1/dl_approval/value_list/col/detail`, {
     code,
     col
   })

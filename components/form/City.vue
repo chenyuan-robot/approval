@@ -1,81 +1,88 @@
 <template>
-  <view class="uni-form-component">
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text>{{ props.formItem.label }}</text>
-        <text class="required" v-if="config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
       </view>
+      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value" @click="handleOpenPanel">
+      <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
       <!-- 城市单选 -->
       <input
+        v-else
+        placeholder-style="color: #adb5bd; font-size: 28rpx;"
         :name="`COMP_CITY___${props.formItem.sequence}`"
         class="component-style"
         disabled="true"
         :placeholder="config.placeholder"
         :value="selectedValue"
       />
+      <view class="clear-icon" @click.stop="handleClear">
+        <image class="clear-icon-svg" src="/static/clear.svg" mode="aspectFit" />
+      </view>
       <!-- <picker class="component-style" v-if="config.single" mode="region">
         <view class="select-result">1234</view>
       </picker> -->
       <!-- 城市多选 -->
       <!-- <view v-else class="component-style"> 多选 </view> -->
     </view>
-    <uni-popup
-      ref="popupRef"
-      type="bottom"
-      style="z-index: 9999"
-      background-color="#fff"
-      border-radius="10px 10px 0 0"
-      :mask-closable="true"
-    >
-      <view class="popup-content" :style="{ height: scrollHeight + 'px' }">
-        <view class="tabs">
-          <view class="tab-item">省份</view>
-          <view class="tab-item">城市</view>
-          <view class="tab-item">区县</view>
-        </view>
-        <scroll-view
-          scroll-top="0"
-          scroll-y
-          scroll-with-animation
-          :show-scrollbar="false"
-          class="overlay-content-province"
-          @click.stop
-        >
-          <view class="overlay-item" v-for="value in provinceList" :key="value.id" @click="handleProvinceItem(value)">
-            {{ value.province }}
-          </view>
-        </scroll-view>
-        <scroll-view
-          scroll-top="0"
-          scroll-y
-          scroll-with-animation
-          :show-scrollbar="false"
-          class="overlay-content-city"
-          @click.stop
-        >
-          <view class="overlay-item" v-for="value in cityList" :key="value.id" @click="handleCityItem(value)">
-            <text>{{ value.city }}</text>
-            <text class="check-icon" v-if="value.checked">√</text>
-          </view>
-        </scroll-view>
-        <scroll-view
-          scroll-top="0"
-          scroll-y
-          scroll-with-animation
-          :show-scrollbar="false"
-          class="overlay-content-area"
-          @click.stop
-        >
-          <view class="overlay-item" v-for="value in areaList" :key="value.id" @click="handleAreaItem(value)">
-            <text>{{ value.county }}</text>
-            <text class="check-icon" v-if="value.checked">√</text>
-          </view>
-        </scroll-view>
-      </view>
-    </uni-popup>
   </view>
+  <uni-popup
+    ref="popupRef"
+    type="bottom"
+    style="z-index: 9999"
+    background-color="#fff"
+    border-radius="10px 10px 0 0"
+    :mask-closable="true"
+  >
+    <view class="popup-content" :style="{ height: scrollHeight + 'px' }">
+      <view class="tabs">
+        <view class="tab-item">省份</view>
+        <view class="tab-item">城市</view>
+        <view class="tab-item">区县</view>
+      </view>
+      <scroll-view
+        scroll-top="0"
+        scroll-y
+        scroll-with-animation
+        :show-scrollbar="false"
+        class="overlay-content-province"
+        @click.stop
+      >
+        <view class="overlay-item" v-for="value in provinceList" :key="value.id" @click="handleProvinceItem(value)">
+          {{ value.province }}
+        </view>
+      </scroll-view>
+      <scroll-view
+        scroll-top="0"
+        scroll-y
+        scroll-with-animation
+        :show-scrollbar="false"
+        class="overlay-content-city"
+        @click.stop
+      >
+        <view class="overlay-item" v-for="value in cityList" :key="value.id" @click="handleCityItem(value)">
+          <text>{{ value.city }}</text>
+          <text class="check-icon" v-if="value.checked">√</text>
+        </view>
+      </scroll-view>
+      <scroll-view
+        scroll-top="0"
+        scroll-y
+        scroll-with-animation
+        :show-scrollbar="false"
+        class="overlay-content-area"
+        @click.stop
+      >
+        <view class="overlay-item" v-for="value in areaList" :key="value.id" @click="handleAreaItem(value)">
+          <text>{{ value.county }}</text>
+          <text class="check-icon" v-if="value.checked">√</text>
+        </view>
+      </scroll-view>
+    </view>
+  </uni-popup>
 </template>
 
 <script setup lang="ts">
@@ -96,6 +103,7 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
 const page = {
@@ -112,8 +120,12 @@ const selectedValue = ref<string>('')
 const selectedLists = ref<string[]>([])
 const scrollHeight = uni.getSystemInfoSync().windowHeight - 200
 
+const handleClear = () => {
+  selectedValue.value = ''
+}
 const handleOpenPanel = () => {
   console.log(config.value.single)
+  if (props.renderOnly) return
   popupRef?.value?.open()
 }
 
@@ -199,7 +211,10 @@ const config = computed(() => {
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
+  const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  const single = selectionMode === '单项'
+  const formValues = (titleItem?.form_values as string[]) ?? []
   formRulesUtil.depRules({
     name: `COMP_CITY___${props.formItem.sequence}`,
     rules: [
@@ -212,9 +227,11 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请选择内容',
     showFieldDesc: showFieldDesc,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     desc: fieldDesc?.value as string,
-    single: selectionMode === '单项',
-    required
+    single,
+    required,
+    value: single ? formValues?.join('/') : formValues?.join(', ')
   }
 })
 
@@ -289,9 +306,6 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .uni-form-component {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   .component-label {
     margin-left: 32rpx;
     .field-desc {
@@ -314,11 +328,30 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     margin-right: 32rpx;
+    position: relative;
+    .clear-icon {
+      background-color: white;
+      position: absolute;
+      top: 50%;
+      right: 15rpx;
+      transform: translateY(-50%);
+      width: 25rpx;
+      display: flex;
+      align-items: center;
+      height: calc(100% - 6rpx);
+      .clear-icon-svg {
+        width: 18rpx;
+        height: 18rpx;
+        position: absolute;
+        right: 0;
+      }
+    }
+
     .component-style {
       pointer-events: none;
       width: 380rpx;
-      border: 1px solid #dcdfe6;
-      border-radius: 6px;
+      border: 1px solid #d4d6d9;
+      border-radius: 4px;
       padding: 12rpx 20rpx;
       height: 64rpx;
       font-size: 32rpx;
@@ -332,53 +365,93 @@ onMounted(async () => {
       }
     }
   }
-  .popup-content {
-    position: relative;
-    background-color: #fff;
-    width: 100%;
-    .tabs {
-      height: 39px;
-      width: 100%;
-      display: flex;
-      border-bottom: 1px solid #f0f0f0;
-      .tab-item {
-        font-size: 28rpx;
-        line-height: 40px;
-        text-align: left;
-        padding-left: 10rpx;
-        width: 33.33%;
+  &.readable {
+    .component-label {
+      margin-left: 0;
+      margin-bottom: 10rpx;
+      .field-desc {
+        .field-label {
+          color: #727c88;
+          font-size: 26rpx;
+        }
+      }
+      .field-sub-desc {
+        font-size: 24rpx;
+        color: #727c88;
       }
     }
-    .overlay-content-province {
-      position: absolute;
-      left: 0;
-      top: 40px;
-      height: calc(100% - 40px);
+    .component-value {
+      .render-text {
+        color: #1b1f26;
+        font-size: 28rpx;
+      }
+    }
+  }
+  &.editable {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    .component-label {
+      .field-desc {
+        .field-label {
+          color: #374151;
+          font-size: 32rpx;
+        }
+      }
+      .field-sub-desc {
+        font-size: 24rpx;
+        color: #9ca3af;
+      }
+    }
+  }
+}
+
+.popup-content {
+  position: relative;
+  background-color: #fff;
+  width: 100%;
+  .tabs {
+    height: 39px;
+    width: 100%;
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+    .tab-item {
+      font-size: 28rpx;
+      line-height: 40px;
+      text-align: left;
+      padding-left: 10rpx;
       width: 33.33%;
-      border-right: 1px solid #f0f0f0;
     }
-    .overlay-content-city {
-      position: absolute;
-      left: 33.33%;
-      top: 40px;
-      height: calc(100% - 40px);
-      width: 33.33%;
-      border-right: 1px solid #f0f0f0;
-    }
-    .overlay-content-area {
-      position: absolute;
-      left: 66.66%;
-      top: 40px;
-      height: calc(100% - 40px);
-      width: 33.33%;
-    }
-    .overlay-item {
-      padding: 10rpx;
-      width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+  }
+  .overlay-content-province {
+    position: absolute;
+    left: 0;
+    top: 40px;
+    height: calc(100% - 40px);
+    width: 33.33%;
+    border-right: 1px solid #f0f0f0;
+  }
+  .overlay-content-city {
+    position: absolute;
+    left: 33.33%;
+    top: 40px;
+    height: calc(100% - 40px);
+    width: 33.33%;
+    border-right: 1px solid #f0f0f0;
+  }
+  .overlay-content-area {
+    position: absolute;
+    left: 66.66%;
+    top: 40px;
+    height: calc(100% - 40px);
+    width: 33.33%;
+  }
+  .overlay-item {
+    padding: 10rpx;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

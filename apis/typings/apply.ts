@@ -10,15 +10,17 @@ export interface SubmittedListResponse {
 }
 
 export interface SubmittedItem {
-  form_id: String,
-  form_name: String,
-  application_time: String,
-  applicant: String,
-  instance_id: String,
-  status: String,
-  reason: String,
+  form_id: string,
+  form_name: string,
+  application_time: string,
+  applicant: string,
+  instance_id: string,
+  status: string,
+  reason: string,
   operation_flags: OperationFlags,
-  workflow_cfg: WorkflowCfg
+  workflow_cfg: WorkflowCfg,
+  form_instance_code: string,
+  task_node_instance_id: string
 }
 
 export interface OperationFlags {

@@ -13,7 +13,8 @@ const store = createStore<RootState>({
   state: (): RootState => ({
     device_id: '',
     userList: [],
-	departments: null
+    departments: null,
+    departmentsMap: {},
   }),
 
   mutations: {
@@ -24,10 +25,14 @@ const store = createStore<RootState>({
     SET_USER_LIST(state, list: Array<IPerson>) {
       state.userList = list
     },
-	
-	SET_DEPARTMENTS(state, data: DepartmentsResponse) {
-		state.departments = data
-	}
+
+    SET_DEPARTMENTS(state, data: DepartmentsResponse) {
+      state.departments = data
+    },
+    
+    SET_DEPARTMENTS_MAP(state, data: Record<string, DepartmentsResponse>) {
+      state.departmentsMap = data
+    }
   },
 
   plugins: [

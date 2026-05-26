@@ -1,27 +1,44 @@
 <template>
   <view class="value-list" style="width: 100%">
-    <view class="uni-form-component">
+    <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
       <view class="component-label">
         <view class="field-desc">
-          <text>{{ props.formItem.label }}</text>
-          <text class="required" v-if="config.required">*</text>
+          <text class="field-label">{{ props.formItem.label }}</text>
+          <text class="required" v-if="!props.renderOnly && config.required">*</text>
         </view>
         <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
       </view>
-      <view class="component-value" @click="openPanel">
-        <picker
-          class="component-style"
-          v-if="config.single"
-          :range="options"
-          range-key="name"
-          mode="selector"
-          :value="index"
-          @change="bindValueChange"
-        >
-          <view class="action-result">{{ options[index]?.name }}</view>
-        </picker>
-        <input :value="selectedValue" v-else class="component-style" disabled :placeholder="config.placeholder" />
-        <input hidden :name="`COMP_VALUE_LIST___${props.formItem.sequence}`" :value="selectedValue" />
+      <view class="component-value" @click="handlerOpenPanel">
+        <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
+        <view v-else>
+          <picker
+            class="component-style"
+            v-if="config.single"
+            :range="options"
+            range-key="name"
+            mode="selector"
+            :value="index"
+            @change="bindValueChange"
+          >
+            <view
+              class="action-result"
+              :style="{
+                color: options[index]?.name ? '#31373d' : '#adb5bd'
+              }"
+            >
+              {{ options[index]?.name ?? config.placeholder }}
+            </view>
+          </picker>
+          <input
+            :value="selectedValue"
+            v-else
+            placeholder-style="color: #adb5bd; font-size: 28rpx;"
+            class="component-style event"
+            disabled
+            :placeholder="config.placeholder"
+          />
+          <input hidden :name="`COMP_VALUE_LIST___${props.formItem.sequence}`" :value="selectedValue" />
+        </view>
       </view>
     </view>
     <uni-popup
@@ -53,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { onLoad } from '@dcloudio/uni-app'
 import { queryConditionNodeValueList } from '@/apis/modules/form'
@@ -70,6 +87,7 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
 const index = ref<number>(0)
@@ -89,9 +107,10 @@ const handleClick = (opt: OptionItem) => {
   selectedValue.value = selectedLists.value.join(',')
 }
 
-const openPanel = () => {
-  console.log(config.value.single)
-  if (!config.value.single) {
+const handlerOpenPanel = () => {
+  console.log(!props.renderOnly)
+  if (!props.renderOnly && !config.value.single) {
+    console.log('打开选择面板')
     popup?.value?.open()
   }
 }
@@ -123,36 +142,47 @@ const config = computed(() => {
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  const titleItem = props.formItem.values.find((item) => item.name === '标题')
+  const single = selectionMode === '单项' // 是否单选
   return {
-    placeholder: placeholder || '请输入内容',
+    placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    single: selectionMode === '单项',
-    required: required
+    single,
+    required: required,
+    value: single
+      ? ((titleItem?.form_value as string) ?? '')
+      : Array.isArray(titleItem?.form_values)
+        ? titleItem?.form_values?.join(', ')
+        : ''
   }
 })
 
-onLoad(() => {
+onMounted(() => {
+  console.log('sectionOptions: ', props.renderOnly)
+  if (props.renderOnly) return
   const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
   const value = sectionOptions?.value ?? ''
+  console.log('sectionOptions11: ', value)
   if (value) {
     const arr = (value as string).split(':')
     queryConditionNodeValueList(arr[0], arr[1])
       .then((res) => {
         if (res.code === 200) {
-          options.value = (res.message || []).map((option) => {
+          options.value = ((res.message as ConditionNodeValueListItem[]) || []).map((option) => {
             return {
               ...option,
               checked: false
             }
           })
+          console.log('获取到的选项列表：', options.value)
           selectedValue.value = options.value[0]?.name ?? ''
           if (selectedValue.value) {
             selectedLists.value = [selectedValue.value]
           }
         } else {
           uni.showToast({
-            title: '获取选项列表失败',
+            title: (res?.message as string) || '获取选项列表失败',
             icon: 'none'
           })
         }
@@ -170,9 +200,6 @@ onLoad(() => {
 <style lang="scss" scoped>
 .value-list {
   .uni-form-component {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     .component-label {
       margin-left: 32rpx;
       .field-desc {
@@ -196,20 +223,61 @@ onLoad(() => {
       align-items: center;
       margin-right: 32rpx;
       .component-style {
-        pointer-events: none;
-        width: 240rpx;
-        border: 1px solid #dcdfe6;
-        border-radius: 6px;
+        width: 300rpx;
+        border: 1px solid #d4d6d9;
+        border-radius: 4px;
         padding: 12rpx 20rpx;
         height: 64rpx;
-        font-size: 32rpx;
+        font-size: 28rpx;
         box-sizing: border-box;
         .action-result {
           display: flex;
           align-items: center;
-          font-size: 32rpx;
+          font-size: 28rpx;
           box-sizing: border-box;
-          color: #606266;
+          color: #31373d;
+        }
+        &.event {
+          pointer-events: none;
+        }
+      }
+    }
+    &.readable {
+      .component-label {
+        margin-left: 0;
+        margin-bottom: 10rpx;
+        .field-desc {
+          .field-label {
+            color: #727c88;
+            font-size: 26rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #727c88;
+        }
+      }
+      .component-value {
+        .render-text {
+          color: #1b1f26;
+          font-size: 28rpx;
+        }
+      }
+    }
+    &.editable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .component-label {
+        .field-desc {
+          .field-label {
+            color: #374151;
+            font-size: 32rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #9ca3af;
         }
       }
     }

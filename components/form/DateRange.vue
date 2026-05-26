@@ -1,11 +1,22 @@
 <template>
   <!-- ["年", "年-月", "年-月-日"] -->
-  <view class="uni-form-component">
-    <view>
-      <view class="form-row">
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
+    <view v-if="props.renderOnly">
+      <view class="form-row readable">
         <view class="component-label">
           <view class="field-desc">
-            <text>开始{{ config.dateType === '年' ? '年份' : config.dateType === '年-月' ? '月份' : '日期' }}</text>
+            <text class="field-label">{{ props.formItem.label }}</text>
+          </view>
+          <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
+        </view>
+        <text class="render-text">{{ config.value }}</text>
+      </view>
+    </view>
+    <view v-else>
+      <view class="form-row editable">
+        <view class="component-label">
+          <view class="field-desc">
+            <text>{{ props.formItem.label }}</text>
             <text class="required" v-if="config.required">*</text>
           </view>
           <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
@@ -20,17 +31,21 @@
           :end="getDate('end')"
           @change="bindDateChange($event, 'start')"
         >
-          <view class="action-result">{{ startDate || config.placeholder }}</view>
+          <view 
+            class="action-result" 
+            :style="{
+              color: startDate ? '#31373d' : '#adb5bd',
+            }"
+          >
+            {{ startDate || '请选择开始时间' }}
+          </view>
         </picker>
       </view>
       <view class="splite-border"></view>
-      <view class="form-row">
+      <view class="form-row editable">
         <view class="component-label">
-          <view class="field-desc">
-            <text>结束{{ config.dateType === '年' ? '年份' : config.dateType === '年-月' ? '月份' : '日期' }}</text>
-            <text class="required" v-if="config.required">*</text>
-          </view>
-          <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
+          <view class="field-desc"></view>
+          <!-- <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view> -->
         </view>
         <picker
           class="component-style"
@@ -42,7 +57,14 @@
           :end="getDate('end')"
           @change="bindDateChange($event, 'end')"
         >
-          <view class="action-result">{{ endDate || config.placeholder }}</view>
+          <view
+            class="action-result" 
+            :style="{
+              color: startDate ? '#31373d' : '#adb5bd',
+            }"
+          >
+            {{ endDate || '请选择结束时间' }}
+          </view>
         </picker>
       </view>
     </view>
@@ -50,8 +72,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
+import { formRulesUtil } from '@/pages/form/utils/rules'
+import dayjs from 'dayjs'
+import { makeToast } from '@/utils/toast'
 
 defineOptions({
   name: 'DateRange',
@@ -60,8 +85,10 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
+const toast = makeToast()
 const startDate = ref<string>('')
 const endDate = ref<string>('')
 
@@ -73,14 +100,73 @@ const config = computed(() => {
   const dateType = fieldStyle?.value ?? '年'
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  const titleItem = props.formItem.values.find((item) => item.name === '标题')
+
+  // 该表单项校验规则
+  formRulesUtil.depRules({
+    name: `COMP_DATE_RANGE___${props.formItem.sequence}_start`,
+    rules: [
+      {
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `请选择开始时间`
+      }
+    ]
+  })
+  formRulesUtil.depRules({
+    name: `COMP_DATE_RANGE___${props.formItem.sequence}_end`,
+    rules: [
+      {
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `请选择结束时间`
+      }
+    ]
+  })
+
+  var value = ''
+  const form_values = titleItem?.form_values as Array<string>
+  if (form_values && form_values.length > 1) {
+    if (form_values[0].length > 0 || form_values[1].length > 0) {
+      value = (titleItem?.form_values as Array<string>)?.join(' 至 ')
+    }
+  }
+
   return {
     placeholder: placeholder || '请选择日期范围',
     dateType: dateType,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    required: required
+    required: required,
+    value: value
   }
 })
+
+watch(
+  () => startDate.value,
+  () => {
+    if (endDate.value) {
+      const startTimeStamp = dayjs(startDate.value).unix()
+      const endTimeStamp = dayjs(endDate.value).unix()
+      if (startTimeStamp > endTimeStamp) {
+        endDate.value = ''
+        toast.info('开始时间不能大于结束时间', 2000)
+      }
+    }
+  }
+)
+
+watch(
+  () => endDate.value,
+  () => {
+    if (startDate.value) {
+      const startTimeStamp = dayjs(startDate.value).unix()
+      const endTimeStamp = dayjs(endDate.value).unix()
+      if (startTimeStamp > endTimeStamp) {
+        startDate.value = ''
+        toast.info('结束时间不能小于开始时间', 2000)
+      }
+    }
+  }
+)
 
 const getDate = (type: 'start' | 'end'): string => {
   const date = new Date()
@@ -114,9 +200,6 @@ const bindDateChange = (event: Event, type: 'start' | 'end') => {
 <style lang="scss" scoped>
 .uni-form-component {
   .form-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding-right: 32rpx;
     .component-label {
       margin-left: 32rpx;
@@ -137,28 +220,61 @@ const bindDateChange = (event: Event, type: 'start' | 'end') => {
       }
     }
     .component-style {
-      width: 240rpx;
-      border: 1px solid #dcdfe6;
-      border-radius: 6px;
+      width: 300rpx;
+      border: 1px solid #d4d6d9;
+      border-radius: 4px;
       padding: 0 20rpx;
       height: 64rpx;
       display: flex;
       align-items: center;
-      font-size: 32rpx;
+      font-size: 28rpx;
       box-sizing: border-box;
       .action-result {
         display: flex;
         align-items: center;
-        font-size: 32rpx;
+        font-size: 28rpx;
         box-sizing: border-box;
-        color: #606266;
+      }
+    }
+    &.readable {
+      .component-label {
+        margin-left: 0;
+        margin-bottom: 10rpx;
+        .field-desc {
+          .field-label {
+            color: #727c88;
+            font-size: 26rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #727c88;
+        }
+      }
+      .render-text {
+        color: #1b1f26;
+        font-size: 28rpx;
+      }
+    }
+    &.editable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .component-label {
+        .field-desc {
+          .field-label {
+            color: #374151;
+            font-size: 32rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #9ca3af;
+        }
       }
     }
   }
   .splite-border {
-    width: 100%;
-    height: 1px;
-    background-color: #f3f4f6;
     margin: 26rpx 0;
   }
 }

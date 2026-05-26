@@ -1,5 +1,5 @@
 export interface TreeWithFormReqParams {
-  data: Map<any, any>
+  data?: Map<any, any>
 }
 
 export interface TreeWithFormResponse {
@@ -26,4 +26,5 @@ export interface FormListItem {
   name: String,
   icon: String,
   tenant: String,
+  desc: String,
 }

@@ -4,7 +4,7 @@ import store from '@/store'
 class Person {
   private result: Map<string, IPerson> = new Map()
   private _defaultPerson: IPerson = {
-    account: '未知账户',
+    account: 'unknown',
     name: '未知用户',
     job_title: '未知岗位',
     departments: '未知部门',

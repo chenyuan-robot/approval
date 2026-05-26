@@ -7,8 +7,12 @@ class FormRulesUtil {
   public rules: FormValue[] = []
 
   public depRules(rule: FormValue) {
+    const existedRule = this.rules.find((item) => item.name === rule.name)
+    if (existedRule) {
+      return
+    }
     this.rules.push(rule)
-    console.log('当前规则列表：', this.rules)
+    console.log('this.rules', this.rules)
   }
 
   public clearRules() {

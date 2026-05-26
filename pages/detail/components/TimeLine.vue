@@ -4,22 +4,25 @@
     <view class="node node-blue"></view>
     <view class="content">
       <view class="step-title">
-        <text v-if="history.node_name === '开始'">提交</text>
-        <text v-else-if="history.comment">添加评论</text>
-        <text v-else>审批</text>
+        <!-- <text class="node-text" v-if="history.node_name === '开始'">提交</text>
+        <text class="node-text" v-else-if="history.comment">添加评论</text> -->
+        <text class="node-text">{{ history.node_name }}</text>
       </view>
       <view class="person-box">
         <view
           class="mini-avatar"
+          v-if="getPersonInfo(history.operate_user) !== 'unknown'"
           :style="{
             background: `linear-gradient(${history.back_ground})`
           }"
-          >{{ history.operate_user ? history.operate_user.slice(-1) : '' }}
+          >{{ getPersonInfo(history.operate_user) }}
         </view>
         <view class="person-info">
           <view class="p-top">
             <text class="p-name">{{ history.operate_user }}</text>
-            <text class="p-role">{{ history.job_title }}</text></view
+            <text class="p-role" v-if="getPersonInfo(history.operate_user) !== 'unknown'">{{
+              history.job_title
+            }}</text></view
           >
           <view class="p-content">
             <view v-if="history.node_name === '开始'" class="submited">已提交</view>
@@ -48,6 +51,7 @@ import { ref } from 'vue'
 import store from '@/store'
 import type { StoreState } from '@/store/types'
 import { BASE_URL } from '@/constants/common'
+import personUtil from '@/utils/person'
 
 defineOptions({
   name: 'TimeLine',
@@ -62,6 +66,16 @@ const props = defineProps<{
 
 const blobURL = ref<string>('')
 
+const getPersonInfo = (userName: string) => {
+  // history.operate_user ? history.operate_user.slice(-1) : ''
+  const r = personUtil.lookup(userName)
+  console.log('user', r)
+  if (r.account === 'unknown') {
+    return 'unknown'
+  }
+  return r.name.slice(-1)
+}
+
 const handlerPreview = () => {
   if (!blobURL.value) return
   uni.previewImage({
@@ -73,7 +87,7 @@ onLoad(() => {
   if (props.history.attachment) {
     const attachmentId = props.history.attachment[0]
     uni.request({
-      url: `${BASE_URL}/api/v1/dl_approval/file/preview/${attachmentId}`,
+      url: `${BASE_URL}/api/v1/dl_approval/file/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -114,7 +128,7 @@ onLoad(() => {
     width: 20rpx;
     height: 20rpx;
     border-radius: 50%;
-    border: 4rpx solid #fff;
+    border: 2rpx solid #fff;
     box-shadow: 0 0 0 2rpx #2979ff;
     background: #fff;
   }
@@ -127,17 +141,22 @@ onLoad(() => {
   .content {
     padding-left: 40rpx;
     .step-title {
-      font-size: 28rpx;
-      font-weight: bold;
-      color: #333;
       margin-bottom: 16rpx;
+      .node-text {
+        font-size: 26rpx;
+        font-weight: bold;
+        color: #1b1f26;
+        vertical-align: text-top;
+        position: relative;
+        top: 2rpx;
+      }
     }
     .person-box {
       display: flex;
       align-items: flex-start;
       .mini-avatar {
-        width: 60rpx;
-        height: 60rpx;
+        width: 64rpx;
+        height: 64rpx;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -154,12 +173,12 @@ onLoad(() => {
           margin-bottom: 6rpx;
           .p-name {
             font-size: 28rpx;
-            color: #333;
+            color: #1b1f26;
             margin-right: 10rpx;
           }
           .p-role {
             font-size: 22rpx;
-            color: #999;
+            color: #727c88;
           }
         }
         .p-content {

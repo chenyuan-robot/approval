@@ -11,7 +11,13 @@
             <Renderer style="width: 100%" :formItem="formItem" />
           </view>
           <view class="bottom-submit-bar">
-            <button class="submit-btn" form-type="submit">提交申请</button>
+            <button
+              :class="['submit-btn', isUploading ? 'disabled' : 'activite']"
+              :disabled="isUploading"
+              form-type="submit"
+            >
+              {{ isUploading ? '提交中...' : '提交申请' }}
+            </button>
           </view>
         </form>
       </view>
@@ -30,7 +36,7 @@ import type { FormInfo, FormItem, PageOptions } from './typings'
 import Renderer from './Renderer.vue'
 import type { WorkflowCfg } from '@/apis/typings/form'
 import { formRulesUtil } from './utils/rules'
-import { makeToast } from '@/hooks/base/toast'
+import { makeToast } from '@/utils/toast'
 
 interface FormValues {
   [key: string]: string
@@ -38,6 +44,7 @@ interface FormValues {
 
 const toast = makeToast()
 
+const isUploading = ref<boolean>(false)
 const formInfo = reactive<FormInfo>({
   form_code: '',
   form_group: '',
@@ -65,6 +72,7 @@ const formSubmit = (event: Event) => {
       for (let j = 0; j < componentRules.length; j++) {
         const ruleItem = componentRules[j]
         const reg = new RegExp(ruleItem.ruleType)
+        console.log(`正则表达式 ${ruleItem.ruleType} 的测试结果为：`, reg.test(value), value)
         if (!reg.test(value)) {
           console.warn(`表单项 ${key} 的值 "${value}" 不符合规则：`, ruleItem.errorMessage)
           toast.error(ruleItem.errorMessage)
@@ -104,11 +112,12 @@ const formSubmit = (event: Event) => {
           find.form_value = value
         }
       } else if (comp === 'COMP_AMOUNT') {
-        // 处理自定义控件金额输入组件的值
-        if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
-          find.form_values = []
+        console.log(`金额输入组件 ${sequence} 的值为：`, value)
+        if (value.endsWith('_')) {
+          return
         }
-        ;(find.form_values as string[]).push(value)
+        // 处理自定义控件金额输入组件的值
+        find.form_values = value.split('_')
       } else if (comp === 'COMP_SELECTION_BOX') {
         // 处理自定义控件选择框组件的值
         const multiple =
@@ -123,7 +132,6 @@ const formSubmit = (event: Event) => {
         const multiple =
           formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多选'
         if (multiple) {
-          console.log('城市选择组件的多选值：', value)
           find.form_values = value.split(',')
         } else {
           find.form_values = value.split('/')
@@ -140,11 +148,48 @@ const formSubmit = (event: Event) => {
       } else if (comp === 'COMP_ATTACHMENT') {
         // 处理自定义控件附件组件的值
         find.form_values = value.split(',')
+      } else if (comp === 'COMP_USER_SELECT') {
+        // 处理自定义控件用户选择组件的值
+        find.form_values = value.split(', ')
+      } else if (comp === 'COMP_START_END_DATE') {
+        if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
+          find.form_values = []
+        }
+        ;(find.form_values as string[]).push(value)
+      } else if (comp === 'COMP_HAPPEN_DATE') {
+        find.form_value = value
+      } else if (comp === 'COMP_SUBSTITUTE') {
+        // 处理自定义控件替班组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_SECRET_ATTACHMENT') {
+        // 处理自定义控件附件组件的值
+        find.form_values = value.split(',')
+      } else if (comp === 'COMP_REASON') {
+        // 处理自定义控件原因组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_SECRET_MULTI_INPUT') {
+        // 处理自定义控件多行输入组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_INVOICE') {
+        // 处理自定义控件发票组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_COST_BEAR') {
+        // 处理自定义控件费用承担组件的值
+        find.form_value = value
+      } else if (comp === 'COMP_DEPARTMENT_SELECT') {
+        // 处理自定义控件选部门组件的值
+        find.form_values = value.split(', ')
+      } else {
+        // 处理其他组件的值
+        console.warn(`未处理组件 ${comp} 的值`)
       }
     }
-    console.log('form keys', formInfo)
+    console.log('提交表单数据：', formInfo)
     return
   }
+
+  isUploading.value = true
+  // console.log('form keys', formInfo)
   createForm(formInfo)
     .then((res) => {
       console.log('提交表单成功：', res)
@@ -156,21 +201,32 @@ const formSubmit = (event: Event) => {
             form_instance: formInfo.form_instance
           },
           instanceId
-        ).then((res) => {
-          console.log('提交申请单实例成功：', res)
-          if (res.code === 200) {
+        )
+          .then((res) => {
+            console.log('提交申请单实例成功：', res)
+            if (res.code === 200) {
+              uni.showToast({
+                title: '提交成功',
+                icon: 'success'
+              })
+              uni.navigateBack()
+            } else {
+              uni.showToast({
+                title: res.message.toString() || '提交申请单实例失败',
+                icon: 'error'
+              })
+            }
+          })
+          .catch((err) => {
+            console.error('提交申请单实例失败：', err)
             uni.showToast({
-              title: '提交成功',
-              icon: 'success'
-            })
-            uni.navigateBack()
-          } else {
-            uni.showToast({
-              title: res.message || '提交申请单实例失败',
+              title: err.toString() || '提交申请单实例出现异常',
               icon: 'error'
             })
-          }
-        })
+          })
+          .finally(() => {
+            isUploading.value = false
+          })
       } else {
         uni.showToast({
           title: res.message || '创建申请单实例失败',
@@ -241,7 +297,7 @@ onLoad((options?: PageOptions) => {
   .form-container {
     background-color: #fff;
     border-radius: 16rpx;
-    border: 1px solid #e5e7eb;
+    // border: 1px solid #e5e7eb;
     .uni-form-item {
       display: flex;
       align-items: center;
@@ -268,8 +324,6 @@ onLoad((options?: PageOptions) => {
   z-index: 99;
 
   .submit-btn {
-    background-color: #2979ff;
-    color: #fff;
     font-size: 32rpx;
     height: 88rpx;
     line-height: 88rpx;
@@ -277,9 +331,16 @@ onLoad((options?: PageOptions) => {
     &::after {
       border: none;
     }
-
-    &:active {
-      opacity: 0.8;
+    &.disabled {
+      background-color: rgba(0, 0, 0, 0.1);
+      color: rgba(109, 115, 123, 1);
+    }
+    &.activite {
+      background-color: #2979ff;
+      color: #fff;
+      &:active {
+        opacity: 0.8;
+      }
     }
   }
 }

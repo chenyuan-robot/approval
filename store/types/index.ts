@@ -8,6 +8,7 @@ export interface RootState {
   device_id: string
   userList: Array<IPerson>
   departments: DepartmentsResponse | null
+  departmentsMap: Record<string, DepartmentsResponse>
 }
 
 export interface StoreState extends RootState {

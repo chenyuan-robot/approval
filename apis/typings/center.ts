@@ -1,9 +1,9 @@
 import type { WorkflowCfg } from './common'
 
 export interface ApprovedListReqParams {
-  page_num: Number,
-  page_size: Number,
-  approved: Boolean
+  page_num: number,
+  page_size: number,
+  approved: boolean
 }
 
 export interface ApprovedListResponse {
@@ -11,28 +11,32 @@ export interface ApprovedListResponse {
 }
 
 export interface ApprovedItem {
-  instance_id: String,
-  form_id: String,
-  form_name: String,
-  application_time: String,
-  applicant: String,
-  application_company: String,
-  application_department: String,
-  status: String,
-  reason: String,
+  task_node_instance_id: string,
+  instance_id: string,
+  form_id: string,
+  form_name: string,
+  application_time: string,
+  applicant: string,
+  application_company: string,
+  application_department: string,
+  status: string,
+  reason: string,
   workflow_cfg: WorkflowCfg,
-  can_view_detail: Boolean,
-  is_reviewer: Boolean,
+  can_view_detail: boolean,
+  is_reviewer: boolean,
+  applicant_person_key: string,
+  form_instance_code: string,
+  delivery_time: string,
   
   //本地自定义属性
-  checked: Boolean,
-  back_ground: String
+  checked?: boolean,
+  back_ground?: string
 }
 
 export interface CCListReqParams {
-  page_num: Number,
-  page_size: Number,
-  read: Boolean
+  page_num: number,
+  page_size: number,
+  read: boolean
 }
 
 export interface CCListResponse {

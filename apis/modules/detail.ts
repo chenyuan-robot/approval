@@ -45,3 +45,12 @@ export const withdrawApproval = (params: Record<string, unknown>) => {
 export const queryReturnNodes = (id: string) => {
   return http.get<ReturnNodeResponse | string>(`/api/v1/dl_approval/instance/return/nodes/${id}`)
 }
+
+/**
+ * 抄送已读上报
+ * @param params
+ * @returns
+ */
+export const ccReadReport = (instance_id: string) => {
+  return http.put<boolean | string>(`/api/v1/dl_approval/instance/cc/read/${instance_id}`)
+}

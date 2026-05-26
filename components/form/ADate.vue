@@ -1,28 +1,36 @@
 <template>
   <!-- ["年", "年-月", "年-月-日"] -->
   <view class="uni-form-component">
-    <view>
-      <view class="form-row">
-        <view class="component-label">
-          <view class="field-desc">
-            <text>{{ props.formItem.label }}</text>
-            <text class="required" v-if="config.required">*</text>
-          </view>
-          <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
+    <view :class="['form-row', props.renderOnly ? 'readable' : 'editable']">
+      <view class="component-label">
+        <view class="field-desc">
+          <text class="field-label">{{ props.formItem.label }}</text>
+          <text class="required" v-if="!props.renderOnly && config.required">*</text>
         </view>
-        <picker
-          class="component-style"
-          :name="`COMP_DATE___${props.formItem.sequence}`"
-          mode="date"
-          :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
-          :value="selectedDate"
-          :start="getDate('start')"
-          :end="getDate('end')"
-          @change="bindDateChange($event)"
-        >
-          <view class="action-result">{{ selectedDate || config.placeholder }}</view>
-        </picker>
+        <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
       </view>
+      <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
+      <picker
+        v-else
+        class="component-style"
+        :name="`COMP_DATE___${props.formItem.sequence}`"
+        mode="date"
+        :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
+        :value="selectedDate"
+        :start="getDate('start')"
+        :end="getDate('end')"
+        @change="bindDateChange($event)"
+      >
+        <view
+          class="action-result"
+          :style="{
+            color: selectedDate ? '#31373d' : '#adb5bd'
+          }"
+        >
+          {{ selectedDate || config.placeholder }}
+        </view>
+        <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
+      </picker>
     </view>
   </view>
 </template>
@@ -39,6 +47,7 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
 const selectedDate = ref<string>('')
@@ -52,6 +61,7 @@ const config = computed(() => {
   const dateType = fieldStyle?.value ?? '年'
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  const titleItem = props.formItem.values.find((item) => item.name === '标题')
   formRulesUtil.depRules({
     name: `COMP_DATE___${props.formItem.sequence}`,
     rules: [
@@ -66,9 +76,14 @@ const config = computed(() => {
     dateType: dateType,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    required: required
+    required: required,
+    value: titleItem?.form_value ?? '-'
   }
 })
+
+const handleClear = () => {
+  selectedDate.value = ''
+}
 
 const getDate = (type: 'start' | 'end'): string => {
   const date = new Date()
@@ -98,9 +113,6 @@ const bindDateChange = (event: Event) => {
 <style lang="scss" scoped>
 .uni-form-component {
   .form-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding-right: 32rpx;
     .component-label {
       margin-left: 32rpx;
@@ -121,21 +133,69 @@ const bindDateChange = (event: Event) => {
       }
     }
     .component-style {
-      width: 240rpx;
-      border: 1px solid #dcdfe6;
-      border-radius: 6px;
+      width: 300rpx;
+      border: 1px solid #d4d6d9;
+      border-radius: 4px;
       padding: 0 20rpx;
       height: 64rpx;
       display: flex;
       align-items: center;
-      font-size: 32rpx;
+      font-size: 28rpx;
       box-sizing: border-box;
       .action-result {
+        position: relative;
         display: flex;
         align-items: center;
-        font-size: 32rpx;
+        font-size: 28rpx;
         box-sizing: border-box;
-        color: #606266;
+        color: #31373d;
+      }
+      .clear-icon {
+        width: 18rpx;
+        height: 18rpx;
+        position: absolute;
+        right: 15rpx;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+    }
+    &.readable {
+      .component-label {
+        margin-left: 0;
+        margin-bottom: 10rpx;
+        .field-desc {
+          .field-label {
+            color: #727c88;
+            font-size: 26rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #727c88;
+        }
+      }
+      .component-value {
+        .render-text {
+          color: #1b1f26;
+          font-size: 28rpx;
+        }
+      }
+    }
+    &.editable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .component-label {
+        .field-desc {
+          .field-label {
+            color: #374151;
+            font-size: 32rpx;
+          }
+        }
+        .field-sub-desc {
+          font-size: 24rpx;
+          color: #9ca3af;
+        }
       }
     }
   }

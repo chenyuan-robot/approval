@@ -16,7 +16,17 @@
       ></uni-data-select>
     </view>
     <view class="list-wrapper">
-      <scroll-view scroll-y>
+      <view v-if="dataSource.length == 0" class="empty-box">
+        <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
+        <text>暂无数据</text>
+      </view>
+      <scroll-view
+        v-else
+        scroll-y
+        :style="{ height: scrollHeight + 'px' }"
+        @scrolltolower="getData"
+        :lower-threshold="50"
+      >
         <!-- 
 	  有bug，去掉下拉刷新
 	  @refresherrefresh="onRefresh"
@@ -45,27 +55,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { submittedList } from '@/apis/modules/apply'
 import type { SubmittedItem, SubmittedListResponse } from '@/apis/typings/apply'
-import { makeToast } from '@/hooks/base/toast'
+import { makeToast } from '@/utils/toast'
+// @ts-expect-error ignore
+import UniDataSelect from '@/uni_modules/uni-data-select/components/uni-data-select/uni-data-select.vue'
 
 const loading = ref(false)
-const dataSource = ref([])
-const filteredDataSource = ref()
+const dataSource = ref<SubmittedItem[]>([])
+const filteredDataSource = ref<SubmittedItem[]>([])
 const toast = makeToast()
 const typeList = ref()
-const selectedType = ref()
+const selectedType = ref('all')
 const statusList = ref()
-const selectedStatus = ref()
+const selectedStatus = ref('all')
+
+const pageSize = 10000
+var pageNum = 1
+var isEnd = false
+const scrollHeight = uni.getSystemInfoSync().windowHeight
 
 function getData() {
+  if (loading.value || isEnd) return
+
   loading.value = true
 
-  submittedList({ page_num: 1, page_size: 10000 })
+  submittedList({ page_num: pageNum, page_size: pageSize })
     .then((res) => {
       console.log(res)
-      dataSource.value = res.message.submitted_instances
+      const datas = res.message as SubmittedListResponse
+      if (datas.submitted_instances.length < pageSize) {
+        isEnd = true
+      }
+      if (pageNum == 1) {
+        dataSource.value = [...datas.submitted_instances]
+      } else {
+        dataSource.value = [...dataSource.value, ...datas.submitted_instances]
+      }
 
       const formNameSet = new Set()
       const statusSet = new Set()
@@ -85,8 +113,7 @@ function getData() {
         ...Array.from(statusSet).map((name) => ({ value: name, text: name }))
       ]
 
-      selectedType.value = 'all'
-      selectedStatus.value = 'all'
+      pageNum++
     })
     .catch((err) => {
       console.error(err)
@@ -97,7 +124,7 @@ function getData() {
 }
 
 watch(
-  [selectedType, selectedStatus],
+  [selectedType, selectedStatus, dataSource],
   () => {
     filteredDataSource.value = dataSource.value.filter((item: SubmittedItem) => {
       const matchType = selectedType.value === 'all' || item.form_name === selectedType.value
@@ -111,13 +138,15 @@ watch(
 )
 
 // 跳转到详情页
-const goToDetail = (item) => {
+const goToDetail = (item: SubmittedItem) => {
   const applicaitonItem = {
-    submitted: true,
+    apply: true,
     instance_id: item.instance_id,
     form_instance_code: item.form_instance_code,
     applicant: item.applicant,
     application_time: item.application_time,
+    task_node_instance_id: item.task_node_instance_id,
+    is_report_read: false,
     permission: {
       pass: false,
       reject: false,
@@ -133,7 +162,9 @@ const goToDetail = (item) => {
   })
 }
 
-onMounted(() => {
+onShow(() => {
+  pageNum = 1
+  isEnd = false
   onRefresh()
 })
 
@@ -167,18 +198,18 @@ function onRefresh() {
     /* 使用 :deep() 穿透组件修改内部的 .uni-select 样式 */
     :deep(.uni-select) {
       border-radius: 50rpx;
-      border: 1rpx solid #0000001A;
+      border: 1rpx solid #0000001a;
       height: 68rpx;
       padding: 0 30rpx;
     }
 
     :deep(.uni-select__input-placeholder) {
-      color: #85909F;
+      color: #85909f;
       font-size: 28rpx;
     }
 
     :deep(.uni-select__input-text) {
-      color: #85909F;
+      color: #85909f;
       font-size: 28rpx;
     }
   }
@@ -187,6 +218,19 @@ function onRefresh() {
 .list-wrapper {
   width: auto;
   padding: 20rpx 30rpx;
+}
+
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 800rpx;
+
+  .no_data_img {
+    width: 200rpx;
+    height: 200rpx;
+  }
 }
 
 .apply-card {

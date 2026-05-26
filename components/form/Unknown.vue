@@ -2,33 +2,34 @@
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
+        <text class="field-label">{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
       </view>
       <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value">
-      <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
-      <textarea
+      <!-- <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text> -->
+      <!-- <input
         v-else
-        placeholder-style="color: #adb5bd; font-size: 28rpx;"
-        :name="`COMP_MULTI_INPUT___${props.formItem.sequence}`"
+        :name="`COMP_SINGLE_INPUT___${props.formItem.sequence}`"
         class="component-style"
+        placeholder-style="color: #adb5bd; font-size: 28rpx;"
         :value="config.defaultValue"
         :placeholder="config.placeholder"
         :maxlength="config.maxlength"
-      />
+      /> -->
+      <text class="render-text">未知控件</text>
     </view>
   </view>
 </template>
-
+<!-- #adb5bd -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
-import { formRulesUtil } from '@/pages/form/utils/rules'
+// import { formRulesUtil } from '@/pages/form/utils/rules'
 
 defineOptions({
-  name: 'MultiInput',
+  name: 'SingleInput',
   inheritAttrs: false
 })
 
@@ -47,26 +48,25 @@ const config = computed(() => {
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   // 该表单项校验规则
-  formRulesUtil.depRules({
-    name: `COMP_MULTI_INPUT___${props.formItem.sequence}`,
-    rules: [
-      {
-        // ^.+$: 至少一个字符（必填）
-        // .*: 任意字符（非必填）
-        ruleType: required ? '^.+$' : '.*',
-        errorMessage: `${props.formItem.label}不能为空`
-      }
-    ]
-  })
+  // formRulesUtil.depRules({
+  //   name: `COMP_SINGLE_INPUT___${props.formItem.sequence}`,
+  //   rules: [
+  //     {
+  //       // ^.+$: 至少一个字符（必填）
+  //       // .*: 任意字符（非必填）
+  //       ruleType: required ? '^.+$' : '.*',
+  //       errorMessage: `${props.formItem.label}不能为空`
+  //     }
+  //   ]
+  // })
   return {
     placeholder: placeholder || '请输入内容',
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
     maxlength: Number(maxlength) || 1000,
     required: required,
-    value: (titleItem?.form_value as string) ?? ''
+    value: titleItem?.form_value ?? '-'
   }
 })
 </script>
@@ -100,7 +100,7 @@ const config = computed(() => {
       border: 1px solid #d4d6d9;
       border-radius: 4px;
       padding: 12rpx 20rpx;
-      height: 100rpx;
+      height: 64rpx;
       font-size: 32rpx;
       box-sizing: border-box;
     }
@@ -141,6 +141,12 @@ const config = computed(() => {
       .field-sub-desc {
         font-size: 24rpx;
         color: #9ca3af;
+      }
+    }
+    .component-value {
+      .render-text {
+        color: #1b1f26;
+        font-size: 28rpx;
       }
     }
   }

@@ -3,7 +3,7 @@
     <view class="component-label">
       <view class="field-desc">
         <text>{{ props.formItem.label }}</text>
-        <text class="required" v-if="config.required">*</text>
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
       </view>
     </view>
     <view class="component-value">
@@ -25,6 +25,7 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  renderOnly?: boolean
 }>()
 
 const config = computed(() => {
@@ -70,13 +71,18 @@ const config = computed(() => {
     align-items: center;
     margin-right: 32rpx;
     .component-style {
-      width: 240rpx;
-      border: 1px solid #dcdfe6;
-      border-radius: 6px;
+      width: 300rpx;
+      border: 1px solid #d4d6d9;
+      border-radius: 4px;
       padding: 12rpx 20rpx;
       height: 64rpx;
       font-size: 32rpx;
       box-sizing: border-box;
+    }
+    .input-result {
+      font-size: 28rpx;
+      box-sizing: border-box;
+      color: #31373d;
     }
   }
 }

@@ -7,17 +7,31 @@
     <view v-else-if="props.formItem.component_code === 'COMP_START_END_DATE'">
       <StartEndDate :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_HAPPEN_DATE'"> text </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_ALLOCATION_BUDGET'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_HAPPEN_DATE'">
+      <HappenDate :formItem="props.formItem" />
+    </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_ALLOCATION_BUDGET'">
+      <AllocationBudget :formItem="props.formItem" />
+    </view>
     <!-- 专用控件 -->
-    <view v-else-if="props.formItem.component_code === 'COMP_SECRET_MULTI_INPUT'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_SECRET_MULTI_INPUT'">
+      <SecretMultiInput :formItem="props.formItem" />
+    </view>
     <view v-else-if="props.formItem.component_code === 'COMP_COST_BEAR'">
       <CostBear :formItem="props.formItem" />
     </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_SECRET_ATTACHMENT'"> text </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_SUBSTITUTE'"> text </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_INVOICE'"> text </view>
-    <view v-else-if="props.formItem.component_code === 'COMP_REASON'"> text </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_SECRET_ATTACHMENT'">
+      <SecretAttachment :formItem="props.formItem" />
+    </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_SUBSTITUTE'">
+      <Substitute :formItem="props.formItem" />
+    </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_INVOICE'">
+      <Invoice :formItem="props.formItem" />
+    </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_REASON'">
+      <Reason :formItem="props.formItem" />
+    </view>
     <!-- 自定义控件 -->
     <view v-else-if="props.formItem.component_code === 'COMP_MULTI_INPUT'">
       <MultiInput :formItem="props.formItem" />
@@ -59,7 +73,7 @@
       <DateRange :formItem="props.formItem" />
     </view>
     <view v-else>
-      <text>未知控件</text>
+       <Unknown :formItem="props.formItem" />
     </view>
   </view>
 </template>
@@ -82,6 +96,14 @@ import Attachment from '@/components/form/Attachment.vue'
 import ValueList from '@/components/form/ValueList.vue'
 import City from '@/components/form/City.vue'
 import DateRange from '@/components/form/DateRange.vue'
+import AllocationBudget from '@/components/form/AllocationBudget.vue'
+import HappenDate from '@/components/form/HappenDate.vue'
+import Substitute from '@/components/form/Substitute.vue'
+import SecretAttachment from '@/components/form/SecretAttachment.vue'
+import Reason from '@/components/form/Reason.vue'
+import SecretMultiInput from '@/components/form/SecretMultiInput.vue'
+import Invoice from '@/components/form/Invoice.vue'
+import Unknown from '@/components/form/Unknown.vue'
 
 defineOptions({
   name: 'Renderer',

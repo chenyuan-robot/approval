@@ -17,7 +17,12 @@
       <view class="search-filter-box">
         <view class="search-bar">
           <image class="search-icon" src="/static/search.svg" mode="aspectFit" />
-          <input v-model.trim="searchQuery" type="text" placeholder="搜索单据名称" placeholder-class="ph-color" />
+          <input
+            v-model.trim="searchQuery"
+            type="text"
+            placeholder="搜索单据名称、发起人"
+            placeholder-class="ph-color"
+          />
         </view>
 
         <view class="filter-row">
@@ -47,10 +52,15 @@
           </view>
 
           <scroll-view scroll-y class="list-content" :class="{ 'tab-0': currentTab === 0, 'tab-1': currentTab === 1 }">
+            <view v-if="getVisibleList(tabItem, tabIndex).length == 0" class="empty-box">
+              <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
+              <text>暂无数据</text>
+            </view>
             <view
+              v-else
               class="list-item"
               :class="{ 'is-checked': item.checked }"
-              v-for="(item, itemIdx) in currentTab < 2 ? tabItem : tabItem[currentReadTab]"
+              v-for="(item, itemIdx) in getVisibleList(tabItem, tabIndex)"
               :key="itemIdx"
               @click="gotoDetail(item)"
             >
@@ -119,7 +129,7 @@
                 v-if="currentTab === 2"
                 :style="{ boxShadow: currentReadTab == 0 ? 'inset 4rpx 0rpx 0rpx 0rpx #F53F3F33' : '' }"
               >
-                <view class="dot"  :style="{ visibility: currentReadTab == 0 ? 'visible' : 'hidden' }"></view>
+                <view class="dot" :style="{ visibility: currentReadTab == 0 ? 'visible' : 'hidden' }"></view>
                 <view class="item-container-read">
                   <view class="item-header">
                     <text class="title">{{ item.form_name }}</text>
@@ -153,6 +163,9 @@
     </swiper>
 
     <view class="bottom-action-bar" v-if="currentTab === 0">
+      <view class="top-info"> 
+        <text>已勾选 <text class="count"> {{checkedCount}} </text> 条</text>
+      </view>
       <view class="left-info">
         <view class="check-all" @click="toggleAll">
           <view class="checkbox" :class="{ checked: isAllChecked }">
@@ -171,50 +184,70 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { makeToast } from '@/hooks/base/toast'
+import { makeToast } from '@/utils/toast'
 import { approvedList, ccList, agreeOperation, rejectOperation } from '@/apis/modules/center'
-import type { ApprovedItem } from '@/apis/typings/center'
+import type { ApprovedItem, ApprovedListResponse, CCListResponse } from '@/apis/typings/center'
 import personUtil from '@/utils/person'
 import bus from '@/utils/bus'
-import { onShow } from '@dcloudio/uni-app'
+import { getStatusType } from '@/hooks/base/status'
 
-const dataSource = ref([[], [], [[], []]])
+interface FilterOption {
+  value: string
+  text: string
+}
+
+interface SwiperChangeEvent {
+  detail: {
+    current: number
+  }
+}
+
+const dataSource = ref<{
+  0: ApprovedItem[]
+  1: ApprovedItem[]
+  2: [ApprovedItem[], ApprovedItem[]]
+}>({
+  0: [],
+  1: [],
+  2: [[], []]
+})
 const toast = makeToast()
 
-const currentTab = ref(0)
-const currentReadTab = ref(0)
-const searchQuery = ref('')
+const currentTab = ref<number>(0)
+const currentReadTab = ref<number>(0)
+const searchQuery = ref<string>('')
 
-// 三个 Tab 的下拉选项和选中值状态
-const typeList = ref([[], [], []])
-const selectedType = ref(['all', 'all', 'all'])
-const statusList = ref([[], [], []])
-const selectedStatus = ref(['all', 'all', 'all'])
+const typeList = ref<FilterOption[][]>([[], [], []])
+const selectedType = ref<string[]>(['all', 'all', 'all'])
+const statusList = ref<FilterOption[][]>([[], [], []])
+const selectedStatus = ref<string[]>(['all', 'all', 'all'])
 
-const tabList = ref([{ name: '待审批' }, { name: '已审批' }, { name: '抄送我的' }])
+const tabList = ref<{ name: string }[]>([{ name: '待审批' }, { name: '已审批' }, { name: '抄送我的' }])
 
 const switchTab = (index: number) => {
   currentTab.value = index
-  getData()
 }
 
-const onSwiperChange = (e: any) => {
+const onSwiperChange = (e: SwiperChangeEvent) => {
   currentTab.value = e.detail.current
   getData()
 }
 
-function getData() {
+function getData(showLoading=true) {
   const tabIndex = currentTab.value
   // 不缓存
   // if (tabIndex < 2 && dataSource.value[tabIndex].length > 0) return
-  toast.loading('')
+  if (showLoading) {
+    toast.loading('')
+  }
   switch (tabIndex) {
     case 0:
     case 1:
       let approved = tabIndex === 0 ? false : true
       approvedList({ page_num: 1, page_size: 10000, approved: approved })
-        .then((res: any) => {
-          const result = res.message.approval_instances
+        .then((res) => {
+          const datas = res.message as ApprovedListResponse
+          const result = datas.approval_instances
           for (var index = 0; index < result.length; index++) {
             var element = result[index]
             const r = personUtil.lookup(element.applicant_person_key)
@@ -223,8 +256,8 @@ function getData() {
 
           dataSource.value[tabIndex] = result
 
-          const formNameSet = new Set()
-          const statusSet = new Set()
+          const formNameSet = new Set<string>()
+          const statusSet = new Set<string>()
 
           for (const item of result) {
             if (item.form_name) formNameSet.add(item.form_name)
@@ -245,13 +278,16 @@ function getData() {
           selectedStatus.value[tabIndex] = 'all'
         })
         .catch((err: any) => console.error(err))
-        .finally(() => toast.hiddenLoading())
+        .finally(() => {
+          if (showLoading) { toast.hiddenLoading()}
+        })
       break
     case 2:
       let read = currentReadTab.value === 0 ? false : true
       ccList({ page_num: 1, page_size: 10000, read: read })
-        .then((res: any) => {
-          const result = res.message.cc_instances
+        .then((res) => {
+          const datas = res.message as CCListResponse
+          const result = datas.cc_instances
 
           for (var index = 0; index < result.length; index++) {
             var element = result[index]
@@ -261,8 +297,8 @@ function getData() {
 
           dataSource.value[tabIndex][currentReadTab.value] = result
 
-          const formNameSet = new Set()
-          const statusSet = new Set()
+          const formNameSet = new Set<string>()
+          const statusSet = new Set<string>()
 
           for (const item of result) {
             if (item.form_name) formNameSet.add(item.form_name)
@@ -283,27 +319,31 @@ function getData() {
           selectedStatus.value[tabIndex] = 'all'
         })
         .catch((err: any) => console.error(err))
-        .finally(() => toast.hiddenLoading())
+        .finally(() => {
+          if (showLoading) { toast.hiddenLoading()}
+        })
       break
   }
 }
 
-const gotoDetail = (item: any) => {
-  //跳转详情页
-  const canApprove: boolean = currentTab.value !== 1
+const gotoDetail = (item: ApprovedItem) => {
   const applicaitonItem = {
+    form_name: item.form_name,
+    status: item.status,
     instance_id: item.instance_id,
     form_instance_code: item.form_instance_code,
     applicant: item.applicant,
     application_time: item.application_time,
+    task_node_instance_id: item.task_node_instance_id,
+    is_report_read: currentTab.value == 2 && currentReadTab.value == 0,
     permission: {
-      pass: canApprove,
-      reject: canApprove,
-      transfer: canApprove,
-      return: canApprove,
+      pass: currentTab.value === 0,
+      reject: currentTab.value === 0,
+      transfer: currentTab.value === 0,
+      return: currentTab.value === 0,
       withdraw: false,
-      comment: true,
-      sign: canApprove
+      comment: currentTab.value === 0,
+      sign: currentTab.value === 0
     }
   }
   uni.navigateTo({
@@ -311,7 +351,7 @@ const gotoDetail = (item: any) => {
   })
 }
 
-const toggleCheck = (item: any) => {
+const toggleCheck = (item: ApprovedItem) => {
   if (currentTab.value !== 0) return
   item.checked = !item.checked
 }
@@ -321,33 +361,55 @@ const switchReadTab = (flag: number) => {
   getData()
 }
 
-const filteredDataSource = computed(() => {
+type TabData = ApprovedItem[] | [ApprovedItem[], ApprovedItem[]]
+type FilteredDataSource = TabData[]
+
+const filteredDataSource = computed<FilteredDataSource>(() => {
   const keyword = searchQuery.value.trim().toLowerCase()
 
-  return dataSource.value.map((tabData, tabIndex) => {
-    const typeVal = selectedType.value[tabIndex] || 'all'
-    const statusVal = selectedStatus.value[tabIndex] || 'all'
+  const filterFn = (item: ApprovedItem, tabIdx: number): boolean => {
+    const typeVal: string = selectedType.value[tabIdx] ?? 'all'
+    const statusVal: string = selectedStatus.value[tabIdx] ?? 'all'
 
-    const filterFn = (item: any) => {
-      const matchKeyword = !keyword || (item.form_name && item.form_name.toLowerCase().includes(keyword))
-      const matchType = typeVal === 'all' || item.form_name === typeVal
-      const matchStatus = statusVal === 'all' || item.status === statusVal
-      return matchKeyword && matchType && matchStatus
-    }
+    const matchKeyword =
+      !keyword ||
+      (typeof item.form_name === 'string' && item.form_name.toLowerCase().includes(keyword)) ||
+      (typeof item.applicant === 'string' && item.applicant.toLowerCase().includes(keyword))
 
-    if (tabIndex < 2) {
-      return (tabData || []).filter(filterFn)
-    } else {
-      const unreadData = (tabData[0] || []).filter(filterFn)
-      const readData = (tabData[1] || []).filter(filterFn)
-      return [unreadData, readData]
-    }
-  })
+    const matchType = typeVal === 'all' || item.form_name === typeVal
+    const matchStatus = statusVal === 'all' || item.status === statusVal
+
+    return matchKeyword && matchType && matchStatus
+  }
+
+  return [
+    dataSource.value[0].filter((item) => filterFn(item, 0)),
+    dataSource.value[1].filter((item) => filterFn(item, 1)),
+    [
+      dataSource.value[2][0].filter((item) => filterFn(item, 2)),
+      dataSource.value[2][1].filter((item) => filterFn(item, 2))
+    ]
+  ]
 })
+
+const getVisibleList = (
+  tabItem: ApprovedItem[] | [ApprovedItem[], ApprovedItem[]],
+  tabIndex: number
+): ApprovedItem[] => {
+  if (tabIndex < 2) {
+    return tabItem as ApprovedItem[]
+  }
+  return (tabItem as [ApprovedItem[], ApprovedItem[]])[currentReadTab.value] || []
+}
 
 const isAllChecked = computed(() => {
   const currentVisibleData = filteredDataSource.value[0] || []
   return currentVisibleData.length > 0 && currentVisibleData.every((item: any) => item.checked)
+})
+
+const checkedCount = computed(() => {
+  const currentVisibleData = filteredDataSource.value[0] || []
+  return currentVisibleData.filter((item: any) => item.checked).length;
 })
 
 const toggleAll = () => {
@@ -359,85 +421,99 @@ const toggleAll = () => {
 }
 
 const handleReject = (item: ApprovedItem) => {
-  toast.loading('')
-  rejectOperation([item.instance_id])
+  rejectOperation([
+    {
+      instance_id: item.instance_id,
+      task_node_instance_id: item.task_node_instance_id
+    }
+  ])
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已拒绝', icon: 'success' })
-        getData()
+        getData(false)
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
     })
     .catch((err: any) => console.error(err))
-    .finally(() => toast.hiddenLoading())
 }
 
 const handleAgree = (item: ApprovedItem) => {
-  toast.loading('')
-  agreeOperation([item.instance_id])
+  agreeOperation([
+    {
+      instance_id: item.instance_id,
+      task_node_instance_id: item.task_node_instance_id
+    }
+  ])
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已同意', icon: 'success' })
-        getData()
+        getData(false)
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
     })
     .catch((err: any) => console.error(err))
-    .finally(() => toast.hiddenLoading())
 }
 
-const handleAgreeBatch = () => {
+type BatchItemType = Pick<ApprovedItem, 'instance_id' | 'task_node_instance_id'>
+
+const handleAgreeBatch = (): void => {
   if (currentTab.value !== 0) return
-  const instance_id_list = []
+  const instance_id_list: BatchItemType[] = []
   const dataList = filteredDataSource.value[0]
-  for (var index = 0; index < dataList.length; index++) {
-    var item = dataList[index]
+  for (const _item of dataList) {
+    const item = _item as ApprovedItem
     if (item.checked) {
-      instance_id_list.push(item.instance_id)
+      instance_id_list.push({
+        instance_id: item.instance_id,
+        task_node_instance_id: item.task_node_instance_id
+      })
     }
   }
-  if (instance_id_list.length == 0) return
-
-  toast.loading('')
+  if (instance_id_list.length == 0) {
+    uni.showToast({ title: '请选择单据', icon: 'none' })
+    return
+  }
   agreeOperation(instance_id_list)
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已同意', icon: 'success' })
-        getData()
+        getData(false)
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
     })
     .catch((err: any) => console.error(err))
-    .finally(() => toast.hiddenLoading())
 }
 
 const handleRejectBatch = () => {
   if (currentTab.value !== 0) return
   const instance_id_list = []
   const dataList = filteredDataSource.value[0]
-  for (var index = 0; index < dataList.length; index++) {
-    var item = dataList[index]
+  for (const _item of dataList) {
+    const item = _item as ApprovedItem
     if (item.checked) {
-      instance_id_list.push(item.instance_id)
+      instance_id_list.push({
+        instance_id: item.instance_id,
+        task_node_instance_id: item.task_node_instance_id
+      })
     }
   }
-  if (instance_id_list.length == 0) return
-
-  toast.loading('')
+  if (instance_id_list.length == 0) {
+    uni.showToast({ title: '请选择单据', icon: 'none' })
+    return
+  }
   rejectOperation(instance_id_list)
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已拒绝', icon: 'success' })
-        getData()
+        getData(false)
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
     })
     .catch((err: any) => console.error(err))
-    .finally(() => toast.hiddenLoading())
 }
 
 onMounted(() => {
@@ -445,7 +521,7 @@ onMounted(() => {
 
   // 刷新列表
   bus.on('center:refresh', () => {
-    console.log('refreshing data...')
+    getData()
   })
 })
 
@@ -555,18 +631,18 @@ onUnmounted(() => {
 
       :deep(.uni-select) {
         border-radius: 50rpx;
-        border: 1rpx solid #0000001A;
+        border: 1rpx solid #0000001a;
         height: 68rpx;
         padding: 0 30rpx;
       }
-      
+
       :deep(.uni-select__input-placeholder) {
-        color: #85909F;
+        color: #85909f;
         font-size: 28rpx;
       }
-      
+
       :deep(.uni-select__input-text) {
-        color: #85909F;
+        color: #85909f;
         font-size: 28rpx;
       }
     }
@@ -582,19 +658,20 @@ onUnmounted(() => {
     padding: 10rpx 30rpx;
     border: 0rpx;
     border-radius: 8rpx;
-    color: #4B5563;
+    color: #4b5563;
     background-color: #fff;
     font-size: 24rpx;
     cursor: pointer;
     transition: all 0.3s ease;
-	box-shadow: 0 2rpx 4rpx #00000033;
+    // box-shadow: 0 2rpx 4rpx #00000033;
+    box-shadow: 0px 1px 2px 0px #0000000d;
   }
 
   .tab-item.active {
-	border: 1rpx solid #1262EE;
-    border-color: #1262EE;
-    color: #1262EE;
-    background-color: #F6FAFF;
+    color: #1262ee;
+    background-color: #f6faff;
+    border: 1rpx solid #1262ee;
+    box-shadow: 0px 1px 2px 0px #1262ee0d;
   }
 }
 
@@ -606,11 +683,24 @@ onUnmounted(() => {
 }
 
 .list-content.tab-0 {
-  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
 }
 
 .list-content.tab-1 {
   padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
+}
+
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 50%;
+
+  .no_data_img {
+    width: 200rpx;
+    height: 200rpx;
+  }
 }
 
 .list-item {
@@ -753,21 +843,19 @@ onUnmounted(() => {
       height: 60rpx;
       line-height: 60rpx;
       font-size: 26rpx;
-      border-radius: 30rpx;
-
-      &::after {
-        border: none;
-      }
+      border-radius: 8rpx;
     }
 
     .btn-reject {
       background-color: #f5f7f9;
       color: #666;
+      border: none;
     }
 
     .btn-agree {
       background-color: #2979ff;
       color: #fff;
+      border: none;
     }
   }
 
@@ -788,19 +876,34 @@ onUnmounted(() => {
   /* 如果有系统tabBar在下方，这里可能需要调整bottom值，例如 bottom: 50px */
   left: 0;
   right: 0;
-  height: 110rpx;
+  height: 80rpx;
   background-color: #fff;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 0 30rpx;
+  padding: 100rpx 30rpx 0 30rpx;
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
 
-  .left-info {
+  .top-info {
+    position: absolute;
+    left: 32rpx;
+    top: 28rpx;
+    font-size: 32rpx;
+    color: #1B1F26;
     display: flex;
     align-items: center;
+  }
+
+  .count {
+    color: #F53F3F;
+    font-weight: bold;
+    margin: 0 4rpx;
+  }
+
+  .left-info {
+    display: flex;
 
     .check-all {
       display: flex;
@@ -854,16 +957,13 @@ onUnmounted(() => {
     display: flex;
 
     .btn {
-      margin-left: 20rpx;
-      padding: 0 40rpx;
-      height: 72rpx;
-      line-height: 72rpx;
+      margin-left: 32rpx;
+      padding: 0 60rpx;
+      height: 64rpx;
+      line-height: 64rpx;
       font-size: 28rpx;
-      border-radius: 36rpx;
-
-      &::after {
-        border: none;
-      }
+      border-radius: 8rpx;
+      border: none;
     }
 
     .btn-reject-bulk {
@@ -875,6 +975,7 @@ onUnmounted(() => {
     .btn-agree-bulk {
       background-color: #2979ff;
       color: #fff;
+      border: none;
     }
   }
 }

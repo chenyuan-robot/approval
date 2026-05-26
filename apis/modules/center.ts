@@ -19,7 +19,7 @@ export const ccList = (params : CCListReqParams) => {
  * @param params
  * @returns
  */
-export const agreeOperation = (instance_id_list : Array<String>) => {
+export const agreeOperation = (instance_id_list : Array<Record<string, string>>) => {
 	return http.put<boolean | string>('/api/v1/dl_approval/instance/operation', 
 	{ "instance_id": instance_id_list, "operate_type": "agree", "comment": "" })
 }
@@ -29,7 +29,7 @@ export const agreeOperation = (instance_id_list : Array<String>) => {
  * @param params
  * @returns
  */
-export const rejectOperation = (instance_id_list : Array<String>) => {
+export const rejectOperation = (instance_id_list : Array<Record<string, string>>) => {
 	return http.put<boolean | string>('/api/v1/dl_approval/instance/operation', 
 	{ "instance_id": instance_id_list, "operate_type": "reject", "comment": "" })
 }

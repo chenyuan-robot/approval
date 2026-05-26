@@ -10,7 +10,7 @@
           </label>
           <label class="uni-list-cell uni-list-cell-pd">
             <radio value="PostAddSign" :checked="currentSign === 'PostAddSign'" />
-            <text>后加签</text>
+            <text>同意并后加签</text>
           </label>
         </radio-group>
       </view>
@@ -22,10 +22,12 @@
           @change="nodeIndex = $event.detail.value"
           :value="nodeIndex"
           :range="returnableNodes"
-          range-key="node_name"
+          range-key="node_info"
           placeholder="请选择退回节点"
         >
-          <view class="uni-input">{{ returnableNodes[nodeIndex]?.node_name }}</view>
+          <view class="uni-input"
+            >{{ returnableNodes[nodeIndex]?.node_name }}（{{ returnableNodes[nodeIndex]?.approvers }}）</view
+          >
         </picker>
       </view>
       <button
@@ -103,6 +105,7 @@ import type { ReturnNodeResponse } from '@/apis/typings/detail'
 
 const commentValue = ref<string>('')
 const instanceId = ref<string>('')
+const taskNodeInstanceId = ref<string>('')
 const user = ref<IPerson | null>(null)
 const type = ref<string>('')
 const blobURL = ref<string>('')
@@ -110,7 +113,7 @@ const fileOSSKey = ref<string>('')
 const userPopupRef = ref()
 const currentSign = ref<'PreAddSign' | 'PostAddSign'>('PreAddSign')
 const scrollHeight = uni.getSystemInfoSync().windowHeight - 200
-const returnableNodes = ref<Array<{ node_id: string; node_name: string }>>([])
+const returnableNodes = ref<Array<{ node_id: string; node_name: string; approvers: string }>>([])
 const nodeIndex = ref<number>(0)
 
 const handlerChoose = (): void => {
@@ -135,7 +138,7 @@ const handlerChoose = (): void => {
           fileOSSKey.value = url
           if (url) {
             uni.request({
-              url: `${BASE_URL}/api/v1/dl_approval/file/preview/${url}`,
+              url: `${BASE_URL}/api/v1/dl_approval/file/preview/proxy/${url}`,
               method: 'GET',
               responseType: 'arraybuffer',
               header: {
@@ -191,7 +194,12 @@ const handleSend = (): void => {
                 ? 'agree'
                 : 'reject',
     comment: commentValue.value,
-    instance_id: [instanceId.value]
+    instance_id: [
+      {
+        instance_id: instanceId.value,
+        task_node_instance_id: taskNodeInstanceId.value
+      }
+    ]
   }
   // 转交
   if (type.value === 'transfer') {
@@ -230,6 +238,7 @@ const handleSend = (): void => {
   if (fileOSSKey.value) {
     params['attachment'] = [fileOSSKey.value]
   }
+  console.log('params: ', params)
   addComment(params)
     .then((res) => {
       if (res.code === 200) {
@@ -237,24 +246,28 @@ const handleSend = (): void => {
           title: '操作成功',
           icon: 'success'
         })
-        switch (type.value) {
-          case 'agree':
-          case 'reject':
-          case 'transfer':
-          case 'sign':
-          case 'return':
-            bus.emit('center:refresh')
-            uni.navigateBack({
-              delta: 2
-            })
-            break
-          case 'comment':
-            bus.emit('detail:refresh-history')
-            uni.navigateBack()
-            break
-          default:
-            break
-        }
+        // switch (type.value) {
+        //   case 'agree':
+        //   case 'reject':
+        //   case 'transfer':
+        //   case 'sign':
+        //   case 'return':
+        //     bus.emit('center:refresh')
+        //     uni.navigateBack({
+        //       delta: 2
+        //     })
+        //     break
+        //   case 'comment':
+        //     bus.emit('detail:refresh-history')
+        //     uni.navigateBack()
+        //     break
+        //   default:
+        //     break
+        // }
+        bus.emit('center:refresh')
+        uni.navigateBack({
+          delta: 2
+        })
       } else {
         uni.showToast({
           title: (res.message as string) || '操作失败',
@@ -274,7 +287,14 @@ const getNodeList = (): void => {
   queryReturnNodes(instanceId.value)
     .then((res) => {
       if (res.code === 200) {
-        returnableNodes.value = (res.message as ReturnNodeResponse).returnable_nodes || []
+        returnableNodes.value = ((res.message as ReturnNodeResponse).returnable_nodes || []).map((node) => {
+          return {
+            node_id: node.node_id,
+            node_name: node.node_name,
+            approvers: node.approvers,
+            node_info: `${node.node_name}（${node.approvers}）`
+          }
+        })
         console.log('returnableNodes: ', returnableNodes.value)
       } else {
         uni.showToast({
@@ -294,6 +314,7 @@ const getNodeList = (): void => {
 onLoad((options?: PageOptions) => {
   if (options?.id) {
     instanceId.value = options.id
+    taskNodeInstanceId.value = options.task_node_instance_id || ''
     type.value = options.type as string
     if (type.value === 'return') {
       getNodeList()
@@ -355,6 +376,11 @@ onLoad((options?: PageOptions) => {
         border: 1px solid #dcdfe6;
         border-radius: 6px;
         padding: 16rpx 20rpx;
+        .uni-input {
+          font-size: 28rpx;
+          box-sizing: border-box;
+          color: #31373d;
+        }
       }
     }
     .component-textarea {
