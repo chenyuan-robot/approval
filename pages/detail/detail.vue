@@ -73,7 +73,7 @@
       <button
         :class="['btn', 'btn-light']"
         hover-class="btn-light-hover"
-        v-if="apply && getStatusType(instanceDetail.status) === 'in_progress'"
+        v-if="isMyInitiation && getStatusType(instanceDetail.status) === 'in_progress'"
         @click="handlerWithdraw"
       >
         撤回
@@ -81,7 +81,7 @@
       <button
         :class="['btn', 'btn-error']"
         hover-class="btn-error-hover"
-        v-if="apply && getStatusType(instanceDetail.status) === 'withdraw'"
+        v-if="isMyInitiation && getStatusType(instanceDetail.status) === 'withdraw'"
         @click="handlerDelete"
       >
         删除
@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, toRefs } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, toRefs, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { InstanceHistoryItem, PageOptions } from './typings'
 import {
@@ -114,13 +114,17 @@ import bus from '@/utils/bus'
 import { useStore } from 'vuex'
 import type { StoreState } from '@/store/types'
 import { getStatusType } from '@/hooks/base/status'
+import { ccList } from '@/apis/modules/center'
+import type { CCListResponse } from '@/apis/typings/center'
+
+type InstanceType = 'myInitiation' | 'pending' | 'approved' | 'cc'
 
 const store = useStore()
 const toast = makeToast()
 const instanceDetail = ref<InstanceDetail>({} as InstanceDetail)
 const formItems = ref<FormItem[]>([])
 const histories = ref<InstanceHistoryItem[]>([])
-const apply = ref<boolean>(false)
+const isMyInitiation = ref<boolean>(false) // 本人提交
 const permission = reactive({
   pass: false,
   reject: false,
@@ -133,8 +137,6 @@ const permission = reactive({
 
 const userInfo = computed(() => (store.state as StoreState).user)
 const { user_name } = toRefs(userInfo.value)
-console.log('user_name:', user_name)
-
 const getApprovalHistory = (id: string) => {
   queryInstanceHistory(id)
     .then((res) => {
@@ -162,27 +164,21 @@ const getApprovalHistory = (id: string) => {
     })
 }
 
-const getInstance = (
-  id: string,
-  applicant: string,
-  application_time: string,
-  task_node_instance_id: string,
-  form_instance_code: string,
-  status: string,
-  form_name: string
-) => {
-  queryInstanceDetail(id)
+const getInstance = (instance_id: string, type: InstanceType) => {
+  queryInstanceDetail(instance_id)
     .then((res) => {
-      const result = personUtil.lookup(applicant)
       if (res.code === 200) {
         const message = res.message || {}
+        const key = message.applicant || ''
+        const find = personUtil.lookupV2(key)
+        isMyInitiation.value = find.name === user_name.value
         instanceDetail.value = {
           ...message,
-          applicant: applicant || '',
-          application_time: application_time || '',
-          task_node_instance_id: task_node_instance_id || '',
-          department: result.departments,
-          back_ground: result.back_ground
+          applicant: find.name,
+          application_time: message.application_time,
+          task_node_instance_id: '',
+          department: find.departments,
+          back_ground: find.back_ground
         }
         console.log('获取单据详情成功：', instanceDetail.value)
         let depItems: FormItem[] = []
@@ -196,31 +192,30 @@ const getInstance = (
           })
         })
         formItems.value = depItems
-      } else {
-        instanceDetail.value = {
-          status,
-          reform: '',
-          operation_comment: '',
-          instance_code: '',
-          form_name,
-          form_instance_code: form_instance_code,
-          form_instance: [],
-          operation_config: {
-            agree: false,
-            post_add_sign: false,
-            pre_add_sign: false,
-            reject: false,
-            return_no_reapprove: false,
-            return_reapprove: false,
-            terminate: false,
-            transfer: false
-          },
-          applicant: applicant || '',
-          application_time: application_time || '',
-          task_node_instance_id: task_node_instance_id || '',
-          department: result.departments,
-          back_ground: result.back_ground
+        getApprovalHistory(message.form_instance_code)
+        if (isMyInitiation.value && type === 'myInitiation') {
+          console.log('【我的申请】点击进入')
+          permission.pass = false
+          permission.reject = false
+          permission.transfer = false
+          permission.return = false
+          permission.withdraw = true
+          permission.comment = false
+          permission.sign = false
+        } else {
+          console.log('【审批中心】点击进入')
+          const allow = getStatusType(message.status) === 'in_progress'
+          permission.pass = allow
+          permission.reject = allow
+          permission.transfer = allow
+          permission.return = allow
+          permission.withdraw = false
+          permission.comment = allow
+          permission.sign = allow
         }
+        // 处理未读消息
+        handlerUnRead(instance_id)
+      } else {
         console.error('获取单据详情失败：', res.message)
       }
     })
@@ -230,19 +225,38 @@ const getInstance = (
 }
 
 const handlerBack = () => {
-  uni.navigateBack()
+  if (globalInstanceId.value) {
+    uni.switchTab({
+      url: '/pages/index/index'
+    })
+  } else {
+    uni.navigateBack()
+  }
 }
 
 const ccRead = (id: string) => {
   ccReadReport(id)
     .then((res) => {
-      if (res.code == 200) {
+      if (res.code === 200) {
         bus.emit('center:refresh')
       }
     })
     .catch((error) => {
       console.error('已读上报失败：', error)
     })
+}
+
+const handlerUnRead = (instance_id: string) => {
+  ccList({ page_num: 1, page_size: 10000, read: false })
+    .then((res) => {
+      const message = res.message as CCListResponse
+      const lists = message.cc_instances || []
+      const find = lists.find((item) => item.instance_id === instance_id)
+      if (find) {
+        ccRead(find.instance_id)
+      }
+    })
+    .catch((err) => console.error(err))
 }
 
 /**
@@ -293,7 +307,6 @@ const handlerSign = (): void => {
 const handlerWithdraw = (): void => {
   const params: Record<string, unknown> = {
     operate_type: 'withdraw',
-    // instance_id: [instanceDetail.value.instance_code]
     instance_id: [
       {
         instance_id: instanceDetail.value.instance_code,
@@ -330,41 +343,23 @@ const handlerDelete = (): void => {
     })
 }
 
-const toComment = () => {
-  uni.navigateTo({
-    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=comment`
-  })
-}
+// 此处处理飞书消息跳转
+const globalInstanceId = computed(() => store.state.instance.instance_id)
+watch(globalInstanceId.value, (newVal: string) => {
+  if (newVal) {
+    const globalInstanceType = store.state.instance.instance_type
+    getInstance(globalInstanceId.value, globalInstanceType)
+  }
+})
 
 // onLoad 生命周期接收路由参数
 onLoad((options?: PageOptions) => {
-  console.log('onLoad:', options)
   const obj = JSON.parse(decodeURIComponent(options?.data ?? '{}'))
+  // 代表从单据列表进入
   if (obj?.instance_id) {
     console.log('obj:', obj)
-    apply.value = obj.apply
-    permission.pass = obj.permission.pass
-    permission.reject = obj.permission.reject
-    permission.transfer = obj.permission.transfer
-    permission.return = obj.permission.return
-    permission.withdraw = obj.permission.withdraw
-    permission.comment = obj.permission.comment
-    permission.sign = obj.permission.sign
-    const {
-      instance_id,
-      applicant,
-      application_time,
-      form_instance_code,
-      task_node_instance_id,
-      is_report_read,
-      status,
-      form_name
-    } = obj
-    getInstance(instance_id, applicant, application_time, task_node_instance_id, form_instance_code, status, form_name)
-    getApprovalHistory(form_instance_code)
-    if (is_report_read) {
-      ccRead(instance_id)
-    }
+    const { instance_id, instance_type } = obj
+    getInstance(instance_id, instance_type)
   }
 })
 

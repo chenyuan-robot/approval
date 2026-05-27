@@ -34,7 +34,7 @@
             <image class="card-icon" :src="item2.icon ? item2.icon : '/static/icon_1.svg'" mode="aspectFit"> </image>
             <view class="card-info">
               <text class="card-title">{{ item2.name }}</text>
-              <text class="card-desc">{{ item2.desc }}</text>
+              <text class="card-desc">{{ item2.description }}</text>
             </view>
           </view>
         </view>

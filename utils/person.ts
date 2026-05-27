@@ -42,6 +42,38 @@ class Person {
       return this._defaultPerson
     }
   }
+
+  /**
+   * 根据key查询用户信息
+   * key的值唯一
+   * @param key
+   * @returns
+   */
+  lookupV2(key: string): IPerson {
+    try {
+      const cached = this.result.get(key)
+      if (cached) {
+        return cached
+      }
+      const userList = store.state.userList
+      const find = userList.find((person) => person.account === key)
+      if (!find) {
+        return this._defaultPerson
+      }
+      const result: IPerson = {
+        account: find.account,
+        name: find.name,
+        departments: find.departments,
+        job_title: find.job_title,
+        back_ground: find.back_ground
+      }
+      this.result.set(key, result)
+      return result
+    } catch (error) {
+      console.error(error)
+      return this._defaultPerson
+    }
+  }
 }
 
 const personUtil = new Person()

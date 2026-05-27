@@ -2,6 +2,8 @@
  * FormDetailResponse
  */
 export interface FormDetailResponse {
+  application_time: string
+  applicant: string
   status: string
   reform: string | null // 关联申请单
   operation_comment: string | null

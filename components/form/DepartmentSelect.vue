@@ -18,6 +18,7 @@
         disabled
         :placeholder="config.placeholder"
       />
+      <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
       <input hidden :name="`COMP_DEPARTMENT_SELECT___${props.formItem.sequence}`" :value="submitValue" />
     </view>
   </view>
@@ -116,6 +117,12 @@ const handleDepartmentSelect = (selectedDepartment: DepartmentsResponse) => {
   selectedValue.value = selectedDepartments.value.map((item) => item.name).join(', ')
   submitValue.value = selectedDepartments.value.map((item) => item.key).join(', ')
 }
+
+const handleClear = () => {
+  submitValue.value = ''
+  selectedValue.value = ''
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -142,15 +149,24 @@ const handleDepartmentSelect = (selectedDepartment: DepartmentsResponse) => {
     display: flex;
     align-items: center;
     margin-right: 32rpx;
+    position: relative;
     .component-style {
       pointer-events: none;
       width: 300rpx;
       border: 1px solid #d4d6d9;
       border-radius: 4px;
-      padding: 12rpx 20rpx;
+      padding: 12rpx 50rpx 12rpx 20rpx;
       height: 64rpx;
       font-size: 32rpx;
       box-sizing: border-box;
+    }
+    .clear-icon {
+      width: 18rpx;
+      height: 18rpx;
+      position: absolute;
+      right: 15rpx;
+      top: 50%;
+      transform: translateY(-50%);
     }
   }
   &.readable {

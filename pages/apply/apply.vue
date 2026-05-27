@@ -16,14 +16,14 @@
       ></uni-data-select>
     </view>
     <view class="list-wrapper">
-      <view v-if="dataSource.length == 0" class="empty-box">
+      <view v-if="filteredDataSource.length == 0" class="empty-box">
         <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
         <text>暂无数据</text>
       </view>
       <scroll-view
         v-else
         scroll-y
-        :style="{ height: scrollHeight + 'px' }"
+        class="scroll-area"
         @scrolltolower="getData"
         :lower-threshold="50"
       >
@@ -60,8 +60,6 @@ import { onShow } from '@dcloudio/uni-app'
 import { submittedList } from '@/apis/modules/apply'
 import type { SubmittedItem, SubmittedListResponse } from '@/apis/typings/apply'
 import { makeToast } from '@/utils/toast'
-// @ts-expect-error ignore
-import UniDataSelect from '@/uni_modules/uni-data-select/components/uni-data-select/uni-data-select.vue'
 
 const loading = ref(false)
 const dataSource = ref<SubmittedItem[]>([])
@@ -75,7 +73,6 @@ const selectedStatus = ref('all')
 const pageSize = 10000
 var pageNum = 1
 var isEnd = false
-const scrollHeight = uni.getSystemInfoSync().windowHeight
 
 function getData() {
   if (loading.value || isEnd) return
@@ -140,22 +137,8 @@ watch(
 // 跳转到详情页
 const goToDetail = (item: SubmittedItem) => {
   const applicaitonItem = {
-    apply: true,
     instance_id: item.instance_id,
-    form_instance_code: item.form_instance_code,
-    applicant: item.applicant,
-    application_time: item.application_time,
-    task_node_instance_id: item.task_node_instance_id,
-    is_report_read: false,
-    permission: {
-      pass: false,
-      reject: false,
-      transfer: false,
-      return: false,
-      withdraw: true,
-      comment: false,
-      sign: false
-    }
+    instance_type: 'myInitiation' // 由我发起的申请 @：'myInitiation' | 'pending' | 'approved' | 'cc'
   }
   uni.navigateTo({
     url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`
@@ -175,22 +158,21 @@ function onRefresh() {
 
 <style lang="scss" scoped>
 .container {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #f5f7f9;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .filter-header {
-  position: sticky;
-  top: 0;
-  z-index: 999;
+  flex-shrink: 0;
   display: flex;
   background-color: #fff;
   padding: 20rpx 32rpx;
   justify-content: space-between;
   gap: 14rpx;
-  height: 60rpx;
+  // height: 60rpx;
 
   .filter-item {
     flex: 1;
@@ -216,8 +198,14 @@ function onRefresh() {
 }
 
 .list-wrapper {
-  width: auto;
+  flex: 1;
+  overflow: hidden; 
   padding: 20rpx 30rpx;
+  // box-sizing: border-box;
+}
+
+.scroll-area {
+  height: 100%;
 }
 
 .empty-box {

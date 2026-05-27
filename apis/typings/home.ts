@@ -26,5 +26,5 @@ export interface FormListItem {
   name: String,
   icon: String,
   tenant: String,
-  desc: String,
+  description: String,
 }

@@ -163,13 +163,16 @@
     </swiper>
 
     <view class="bottom-action-bar" v-if="currentTab === 0">
-      <view class="top-info"> 
-        <text>已勾选 <text class="count"> {{checkedCount}} </text> 条</text>
+      <view class="top-info">
+        <text
+          >已勾选 <text class="count"> {{ checkedCount }} </text> 条</text
+        >
       </view>
       <view class="left-info">
         <view class="check-all" @click="toggleAll">
           <view class="checkbox" :class="{ checked: isAllChecked }">
             <image src="/static/checked.svg" style="width: 18rpx; height: 14rpx" v-if="isAllChecked" />
+            <image src="/static/unchecked.svg" style="width: 18rpx; height: 14rpx" v-else />
           </view>
           <text>全选</text>
         </view>
@@ -189,7 +192,6 @@ import { approvedList, ccList, agreeOperation, rejectOperation } from '@/apis/mo
 import type { ApprovedItem, ApprovedListResponse, CCListResponse } from '@/apis/typings/center'
 import personUtil from '@/utils/person'
 import bus from '@/utils/bus'
-import { getStatusType } from '@/hooks/base/status'
 
 interface FilterOption {
   value: string
@@ -233,7 +235,7 @@ const onSwiperChange = (e: SwiperChangeEvent) => {
   getData()
 }
 
-function getData(showLoading=true) {
+function getData(showLoading = true) {
   const tabIndex = currentTab.value
   // 不缓存
   // if (tabIndex < 2 && dataSource.value[tabIndex].length > 0) return
@@ -279,7 +281,9 @@ function getData(showLoading=true) {
         })
         .catch((err: any) => console.error(err))
         .finally(() => {
-          if (showLoading) { toast.hiddenLoading()}
+          if (showLoading) {
+            toast.hiddenLoading()
+          }
         })
       break
     case 2:
@@ -320,7 +324,9 @@ function getData(showLoading=true) {
         })
         .catch((err: any) => console.error(err))
         .finally(() => {
-          if (showLoading) { toast.hiddenLoading()}
+          if (showLoading) {
+            toast.hiddenLoading()
+          }
         })
       break
   }
@@ -328,23 +334,8 @@ function getData(showLoading=true) {
 
 const gotoDetail = (item: ApprovedItem) => {
   const applicaitonItem = {
-    form_name: item.form_name,
-    status: item.status,
     instance_id: item.instance_id,
-    form_instance_code: item.form_instance_code,
-    applicant: item.applicant,
-    application_time: item.application_time,
-    task_node_instance_id: item.task_node_instance_id,
-    is_report_read: currentTab.value == 2 && currentReadTab.value == 0,
-    permission: {
-      pass: currentTab.value === 0,
-      reject: currentTab.value === 0,
-      transfer: currentTab.value === 0,
-      return: currentTab.value === 0,
-      withdraw: false,
-      comment: currentTab.value === 0,
-      sign: currentTab.value === 0
-    }
+    instance_type: ''
   }
   uni.navigateTo({
     url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`
@@ -409,7 +400,7 @@ const isAllChecked = computed(() => {
 
 const checkedCount = computed(() => {
   const currentVisibleData = filteredDataSource.value[0] || []
-  return currentVisibleData.filter((item: any) => item.checked).length;
+  return currentVisibleData.filter((item: any) => item.checked).length
 })
 
 const toggleAll = () => {
@@ -891,13 +882,13 @@ onUnmounted(() => {
     left: 32rpx;
     top: 28rpx;
     font-size: 32rpx;
-    color: #1B1F26;
+    color: #1b1f26;
     display: flex;
     align-items: center;
   }
 
   .count {
-    color: #F53F3F;
+    color: #f53f3f;
     font-weight: bold;
     margin: 0 4rpx;
   }
