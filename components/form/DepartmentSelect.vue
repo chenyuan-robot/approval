@@ -2,31 +2,33 @@
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text class="field-label">{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label">{{ props.formItem.label }}</text>
       </view>
-      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
-    <view class="component-value" v-if="props.renderOnly" >
-      <text class="render-text">{{ config.value  }}</text>
+    <view class="component-value" v-if="props.renderOnly">
+      <text class="render-text">{{ config.value }}</text>
     </view>
     <view class="component-value" v-else @click="openPanel">
       <input
         :value="selectedValue"
-        placeholder-style="color: #adb5bd; font-size: 28rpx;"
+        placeholder-style="color: #86909C; font-size: 28rpx;"
         class="component-style"
         disabled
         :placeholder="config.placeholder"
       />
-      <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
+      <image
+        class="clear-icon"
+        v-if="!props.renderOnly"
+        @click.stop="handleClear"
+        src="/static/clear.svg"
+        mode="aspectFit"
+      />
       <input hidden :name="`COMP_DEPARTMENT_SELECT___${props.formItem.sequence}`" :value="submitValue" />
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
-  <DepartmentPopup 
-    ref="departmentPopupRef" 
-    @update:modelValue="handleDepartmentSelect"
-    :single="config.single"
-   />
+  <DepartmentPopup ref="departmentPopupRef" @update:modelValue="handleDepartmentSelect" :single="config.single" />
 </template>
 
 <script setup lang="ts">
@@ -45,7 +47,7 @@ defineOptions({
 })
 
 const props = defineProps<{
-  formItem: FormItem,
+  formItem: FormItem
   renderOnly?: boolean
 }>()
 
@@ -122,89 +124,78 @@ const handleClear = () => {
   submitValue.value = ''
   selectedValue.value = ''
 }
-
 </script>
 
 <style lang="scss" scoped>
 .uni-form-component {
+  width: calc(100% - 64rpx);
   .component-label {
-    margin-left: 32rpx;
+    margin-bottom: 10rpx;
+    position: relative;
     .field-desc {
-      color: #374151;
-      font-size: 32rpx;
+      font-size: 26rpx;
       .required {
-        color: #e53e3e;
+        color: #fb2c36;
         font-size: 28rpx;
-        position: relative;
-        left: 5rpx;
-        top: -6rpx;
+        margin-right: 6rpx;
+        vertical-align: middle;
+        font-weight: bold;
       }
     }
-    .field-sub-desc {
-      color: #868e96;
-      font-size: 28rpx;
-    }
+  }
+  .field-sub-desc {
+    color: #4e5969;
+    font-size: 22rpx;
+    margin-top: 10rpx;
+    margin-left: 16rpx;
   }
   .component-value {
     display: flex;
     align-items: center;
-    margin-right: 32rpx;
     position: relative;
     .component-style {
       pointer-events: none;
-      width: 300rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
+      width: 100%;
+      border: 1px solid rgba(229, 230, 235, 0.6);
+      background-color: rgba(249, 250, 251, 1);
+      border-radius: 8px;
       padding: 12rpx 50rpx 12rpx 20rpx;
-      height: 64rpx;
-      font-size: 32rpx;
+      height: 80rpx;
+      font-size: 28rpx;
       box-sizing: border-box;
+      color: rgba(16, 20, 28, 1);
     }
     .clear-icon {
       width: 18rpx;
       height: 18rpx;
       position: absolute;
-      right: 15rpx;
+      right: 32rpx;
       top: 50%;
       transform: translateY(-50%);
     }
   }
   &.readable {
     .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
       .field-desc {
         .field-label {
           color: #727c88;
-          font-size: 26rpx;
         }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
       }
     }
     .component-value {
       .render-text {
-        color: #1b1f26;
+        color: #10141c;
         font-size: 28rpx;
       }
     }
   }
   &.editable {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    margin-left: 32rpx;
     .component-label {
       .field-desc {
         .field-label {
-          color: #374151;
-          font-size: 32rpx;
+          color: #10141c;
         }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #9ca3af;
       }
     }
   }

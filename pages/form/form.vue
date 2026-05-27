@@ -3,11 +3,7 @@
     <scroll-view scroll-y class="scroll-content">
       <view class="form-container" v-if="formItems.length > 0">
         <form @submit="formSubmit">
-          <view
-            v-for="(formItem, index) in formItems"
-            :key="formItem.sequence"
-            :class="['uni-form-item', index < formItems.length - 1 ? 'border-bottom' : '']"
-          >
+          <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
             <Renderer style="width: 100%" :formItem="formItem" />
           </view>
           <view class="bottom-submit-bar">
@@ -297,15 +293,11 @@ onLoad((options?: PageOptions) => {
   .form-container {
     background-color: #fff;
     border-radius: 16rpx;
-    // border: 1px solid #e5e7eb;
     .uni-form-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 26rpx 0;
-      &.border-bottom {
-        border-bottom: 1px solid #f3f4f6;
-      }
+      padding: 16rpx 0;
     }
   }
 }

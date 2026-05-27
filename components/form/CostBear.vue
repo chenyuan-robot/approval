@@ -2,21 +2,22 @@
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text class="field-label">{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label">{{ props.formItem.label }}</text>
       </view>
-      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value">
       <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
       <input
         v-else
-        placeholder-style="color: #adb5bd; font-size: 28rpx;"
+        placeholder-style="color: #86909C; font-size: 28rpx;"
         :name="`COMP_COST_BEAR___${props.formItem.sequence}`"
         class="component-style"
+        style="height: 80rpx"
         :placeholder="config.placeholder"
       />
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
 </template>
 
@@ -65,77 +66,5 @@ const config = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  .component-label {
-    margin-left: 32rpx;
-    .field-desc {
-      color: #374151;
-      font-size: 32rpx;
-      .required {
-        color: #e53e3e;
-        font-size: 28rpx;
-        position: relative;
-        left: 5rpx;
-        top: -6rpx;
-      }
-    }
-    .field-sub-desc {
-      color: #868e96;
-      font-size: 28rpx;
-    }
-  }
-  .component-value {
-    display: flex;
-    align-items: center;
-    margin-right: 32rpx;
-    .component-style {
-      width: 300rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 12rpx 20rpx;
-      height: 64rpx;
-      font-size: 32rpx;
-      box-sizing: border-box;
-    }
-  }
-  &.readable {
-    .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
-      .field-desc {
-        .field-label {
-          color: #727c88;
-          font-size: 26rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
-      }
-    }
-    .component-value {
-      .render-text {
-        color: #1b1f26;
-        font-size: 28rpx;
-      }
-    }
-  }
-  &.editable {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #374151;
-          font-size: 32rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #9ca3af;
-      }
-    }
-  }
-}
+@import './../../styles/common_input.scss';
 </style>

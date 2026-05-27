@@ -476,8 +476,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    // padding: 10rpx 0;
-    margin-bottom: 35rpx;
+    margin-bottom: 20rpx;
     &:last-child {
       margin-bottom: 0;
     }
