@@ -1,80 +1,81 @@
 <template>
-  <view class="value-list" style="width: 100%">
-    <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
-      <view class="component-label">
-        <view class="field-desc">
-          <text class="field-label">{{ props.formItem.label }}</text>
-          <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        </view>
-        <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
-      </view>
-      <view class="component-value" @click="handlerOpenPanel">
-        <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
-        <view v-else>
-          <picker
-            class="component-style"
-            v-if="config.single"
-            :range="options"
-            range-key="name"
-            mode="selector"
-            :value="index"
-            @change="bindValueChange"
-          >
-            <view
-              class="action-result"
-              :style="{
-                color: options[index]?.name ? '#31373d' : '#adb5bd'
-              }"
-            >
-              {{ options[index]?.name ?? config.placeholder }}
-            </view>
-          </picker>
-          <input
-            :value="selectedValue"
-            v-else
-            placeholder-style="color: #adb5bd; font-size: 28rpx;"
-            class="component-style event"
-            disabled
-            :placeholder="config.placeholder"
-          />
-          <input hidden :name="`COMP_VALUE_LIST___${props.formItem.sequence}`" :value="selectedValue" />
-        </view>
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
+    <view class="component-label">
+      <view class="field-desc">
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
     </view>
-    <uni-popup
-      ref="popup"
-      type="bottom"
-      style="z-index: 9999"
-      background-color="#fff"
-      border-radius="10px 10px 0 0"
-      :mask-closable="true"
-    >
-      <view class="popup-content">
-        <scroll-view
-          scroll-top="0"
-          scroll-y
-          scroll-with-animation
-          :show-scrollbar="false"
-          class="overlay-content"
-          @click.stop
-          :style="{ maxHeight: scrollHeight + 'px' }"
+    <view class="component-value" @click="handlerOpenPanel">
+      <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
+      <view v-else style="width: 100%">
+        <picker
+          class="component-style"
+          v-if="config.single"
+          :range="options"
+          range-key="name"
+          style="height: 80rpx"
+          mode="selector"
+          :value="index"
+          @change="bindValueChange"
         >
-          <view class="opt-list" v-for="option in newOpts" :key="option.code" @click="handleClick(option)">
-            <text class="check-icon" v-if="option.checked">√</text>
-            <text class="text">{{ option.name }}</text>
+          <view :class="['action-result', options[index]?.name ? 'fill' : 'empty']">
+            {{ options[index]?.name ?? config.placeholder }}
           </view>
-        </scroll-view>
+        </picker>
+        <input
+          :value="selectedValue"
+          v-else
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          class="component-style"
+          style="height: 80rpx; pointer-events: none"
+          disabled
+          :placeholder="config.placeholder"
+        />
+        <image
+          class="suffix-icon"
+          :src="`${selectedValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          mode="aspectFit"
+          @click.stop="handleClear"
+        />
+        <input hidden :name="`COMP_VALUE_LIST___${props.formItem.sequence}`" :value="selectedValue" />
       </view>
-    </uni-popup>
+    </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
+  <uni-popup
+    ref="popup"
+    type="bottom"
+    style="z-index: 9999"
+    background-color="#fff"
+    border-radius="10px 10px 0 0"
+    :mask-closable="true"
+  >
+    <view class="popup-content">
+      <scroll-view
+        scroll-top="0"
+        scroll-y
+        scroll-with-animation
+        :show-scrollbar="false"
+        class="overlay-content"
+        @click.stop
+        :style="{ maxHeight: scrollHeight + 'px' }"
+      >
+        <view class="opt-list" v-for="option in newOpts" :key="option.code" @click="handleClick(option)">
+          <text class="check-icon" v-if="option.checked">√</text>
+          <text class="text">{{ option.name }}</text>
+        </view>
+      </scroll-view>
+    </view>
+  </uni-popup>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
-import { onLoad } from '@dcloudio/uni-app'
 import { queryConditionNodeValueList } from '@/apis/modules/form'
 import type { ConditionNodeValueListItem } from '@/apis/typings/form'
+import { formRulesUtil } from '@/pages/form/utils/rules'
 
 interface OptionItem extends ConditionNodeValueListItem {
   checked: boolean
@@ -126,6 +127,13 @@ const bindValueChange = (event: Event) => {
   selectedValue.value = selectedOption.name
 }
 
+const handleClear = () => {
+  if (selectedValue.value) {
+    selectedValue.value = ''
+    index.value = -1
+  }
+}
+
 const newOpts = computed(() => {
   return options.value.map((opt) => {
     return {
@@ -144,11 +152,21 @@ const config = computed(() => {
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const single = selectionMode === '单项' // 是否单选
+  formRulesUtil.depRules({
+    name: `COMP_VALUE_LIST___${props.formItem.sequence}`,
+    rules: [
+      {
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `${props.formItem.label}不能为空`
+      }
+    ]
+  })
   return {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     single,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     required: required,
     value: single
       ? ((titleItem?.form_value as string) ?? '')
@@ -198,104 +216,20 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.value-list {
-  .uni-form-component {
-    .component-label {
-      margin-left: 32rpx;
-      .field-desc {
-        color: #374151;
-        font-size: 32rpx;
-        .required {
-          color: #e53e3e;
-          font-size: 28rpx;
-          position: relative;
-          left: 5rpx;
-          top: -6rpx;
-        }
+@import '../../styles/common_select.scss';
+.popup-content {
+  position: relative;
+  z-index: 9999;
+  height: 50vh;
+  .overlay-content {
+    padding: 32rpx;
+    .opt-list {
+      height: 60rpx;
+      .check-icon {
+        margin-right: 16rpx;
       }
-      .field-sub-desc {
-        color: #868e96;
-        font-size: 28rpx;
-      }
-    }
-    .component-value {
-      display: flex;
-      align-items: center;
-      margin-right: 32rpx;
-      .component-style {
-        width: 300rpx;
-        border: 1px solid #d4d6d9;
-        border-radius: 4px;
-        padding: 12rpx 20rpx;
-        height: 64rpx;
-        font-size: 28rpx;
-        box-sizing: border-box;
-        .action-result {
-          display: flex;
-          align-items: center;
-          font-size: 28rpx;
-          box-sizing: border-box;
-          color: #31373d;
-        }
-        &.event {
-          pointer-events: none;
-        }
-      }
-    }
-    &.readable {
-      .component-label {
-        margin-left: 0;
-        margin-bottom: 10rpx;
-        .field-desc {
-          .field-label {
-            color: #727c88;
-            font-size: 26rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #727c88;
-        }
-      }
-      .component-value {
-        .render-text {
-          color: #1b1f26;
-          font-size: 28rpx;
-        }
-      }
-    }
-    &.editable {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      .component-label {
-        .field-desc {
-          .field-label {
-            color: #374151;
-            font-size: 32rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #9ca3af;
-        }
-      }
-    }
-  }
-  .popup-content {
-    position: relative;
-    z-index: 9999;
-    height: 50vh;
-    .overlay-content {
-      padding: 32rpx;
-      .opt-list {
-        height: 60rpx;
-        .check-icon {
-          margin-right: 16rpx;
-        }
-        .split {
-          margin: 0 8rpx;
-        }
+      .split {
+        margin: 0 8rpx;
       }
     }
   }

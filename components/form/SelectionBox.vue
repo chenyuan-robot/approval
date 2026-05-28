@@ -3,40 +3,42 @@
     <view class="component-label">
       <view class="field-desc">
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        <text class="field-label">{{ props.formItem.label }}</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
     </view>
-    <view class="component-value" v-if="props.renderOnly">
-      <text class="render-text">{{ config.value }}</text>
-    </view>
-    <view class="component-value" @click="handleOpenPanel" v-else>
-      <picker
-        class="component-picker"
-        @change="bindValueChange"
-        v-if="config.single"
-        range-key="name"
-        :value="index"
-        :range="config.options"
-      >
-        <view
-          class="action-result"
-          :style="{
-            color: config.options[index]?.name ? 'rgba(16, 20, 28, 1)' : '#86909C'
-          }"
+    <view class="component-value" @click="handleOpenPanel">
+      <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
+      <view v-else style="width: 100%">
+        <picker
+          class="component-style"
+          @change="bindValueChange"
+          v-if="config.single"
+          style="height: 80rpx"
+          range-key="name"
+          :value="index"
+          :range="config.options"
         >
-          {{ config.options[index]?.name ?? config.placeholder }}
-        </view>
-      </picker>
-      <input
-        placeholder-style="color: #86909C; font-size: 28rpx;"
-        :value="selectedValue"
-        v-else
-        class="component-style"
-        disabled
-        :placeholder="config.placeholder"
-      />
-      <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
-      <input hidden :name="`COMP_SELECTION_BOX___${props.formItem.sequence}`" :value="selectedValue" />
+          <view :class="['action-result', config.options[index]?.name ? 'fill' : 'empty']">
+            {{ config.options[index]?.name ?? config.placeholder }}
+          </view>
+        </picker>
+        <input
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          :value="selectedValue"
+          v-else
+          style="height: 80rpx; pointer-events: none"
+          class="component-style"
+          disabled
+          :placeholder="config.placeholder"
+        />
+        <image
+          class="suffix-icon"
+          :src="`${selectedValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          mode="aspectFit"
+          @click.stop="handleClear"
+        />
+        <input hidden :name="`COMP_SELECTION_BOX___${props.formItem.sequence}`" :value="selectedValue" />
+      </view>
     </view>
     <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
@@ -104,8 +106,11 @@ const handleClick = (opt: OptionItem) => {
 }
 
 const handleClear = () => {
-  selectedValue.value = ''
-  index.value = -1
+  if (selectedValue.value) {
+    selectedValue.value = ''
+    index.value = -1
+    selectedLists.value = []
+  }
 }
 
 const handleOpenPanel = () => {
@@ -150,7 +155,7 @@ const config = computed(() => {
     rules: [
       {
         ruleType: required ? '^.+$' : '.*',
-        errorMessage: `请选择${props.formItem.label}`
+        errorMessage: `${props.formItem.label}不能为空`
       }
     ]
   })
@@ -168,6 +173,7 @@ const config = computed(() => {
     }),
     defaultValue: defaultSelcetion?.specific_value ?? [],
     required: required,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     value: single
       ? ((titleItem?.form_value as string) ?? '')
       : Array.isArray(titleItem?.form_values)
@@ -178,95 +184,7 @@ const config = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  width: calc(100% - 64rpx);
-  .component-label {
-    margin-bottom: 10rpx;
-    .field-desc {
-      font-size: 26rpx;
-      .required {
-        color: #fb2c36;
-        font-size: 28rpx;
-        margin-right: 6rpx;
-        vertical-align: middle;
-        font-weight: bold;
-      }
-    }
-  }
-  .field-sub-desc {
-    color: #4e5969;
-    font-size: 22rpx;
-    margin-top: 10rpx;
-    margin-left: 16rpx;
-  }
-  .component-value {
-    display: flex;
-    align-items: center;
-    position: relative;
-    .component-picker {
-      width: 100%;
-      border: 1px solid rgba(229, 230, 235, 0.6);
-      background-color: rgba(249, 250, 251, 1);
-      border-radius: 8px;
-      padding-left: 20rpx;
-      padding-right: 50rpx;
-      font-size: 28rpx;
-      box-sizing: border-box;
-      height: 64rpx;
-      display: flex;
-      align-items: center;
-      .action-result {
-        font-size: 28rpx;
-        box-sizing: border-box;
-      }
-    }
-    .component-style {
-      pointer-events: none;
-      width: 100%;
-      border: 1px solid rgba(229, 230, 235, 0.6);
-      background-color: rgba(249, 250, 251, 1);
-      border-radius: 8px;
-      padding-left: 20rpx;
-      padding-right: 50rpx;
-      font-size: 28rpx;
-      box-sizing: border-box;
-      color: rgba(16, 20, 28, 1);
-    }
-    .clear-icon {
-      width: 18rpx;
-      height: 18rpx;
-      position: absolute;
-      right: 32rpx;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-  &.readable {
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #727c88;
-        }
-      }
-    }
-    .component-value {
-      .render-text {
-        color: #1b1f26;
-        font-size: 28rpx;
-      }
-    }
-  }
-  &.editable {
-    margin-left: 32rpx;
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #10141c;
-        }
-      }
-    }
-  }
-}
+@import '../../styles/common_select.scss';
 .popup-content {
   position: relative;
   z-index: 9999;

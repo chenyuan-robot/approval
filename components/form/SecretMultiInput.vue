@@ -3,7 +3,7 @@
     <view class="component-label">
       <view class="field-desc">
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        <text class="field-label">{{ props.formItem.label }}</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
     </view>
     <view class="component-value">
@@ -63,6 +63,7 @@ const config = computed(() => {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
     maxlength: Number(maxlength) || 1000,
     required: required,

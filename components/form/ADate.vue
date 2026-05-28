@@ -1,19 +1,18 @@
 <template>
-  <!-- ["年", "年-月", "年-月-日"] -->
-  <view class="uni-form-component">
-    <view :class="['form-row', props.renderOnly ? 'readable' : 'editable']">
-      <view class="component-label">
-        <view class="field-desc">
-          <text class="field-label">{{ props.formItem.label }}</text>
-          <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        </view>
-        <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
+    <view class="component-label">
+      <view class="field-desc">
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
+    </view>
+    <view class="component-value">
       <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
       <picker
         v-else
         class="component-style"
         :name="`COMP_DATE___${props.formItem.sequence}`"
+        style="height: 80rpx"
         mode="date"
         :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
         :value="selectedDate"
@@ -21,17 +20,18 @@
         :end="getDate('end')"
         @change="bindDateChange($event)"
       >
-        <view
-          class="action-result"
-          :style="{
-            color: selectedDate ? '#31373d' : '#adb5bd'
-          }"
-        >
+        <view :class="['action-result', selectedDate ? 'fill' : 'empty']">
           {{ selectedDate || config.placeholder }}
         </view>
-        <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
       </picker>
+      <image
+        class="suffix-icon"
+        :src="`${selectedDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+        mode="aspectFit"
+        @click.stop="handleClear"
+      />
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
 </template>
 
@@ -67,13 +67,14 @@ const config = computed(() => {
     rules: [
       {
         ruleType: required ? '^.+$' : '.*',
-        errorMessage: `请选择${props.formItem.label}`
+        errorMessage: `${props.formItem.label}不能为空`
       }
     ]
   })
   return {
-    placeholder: placeholder || '请选择日期范围',
+    placeholder: placeholder || '请选择日期',
     dateType: dateType,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
@@ -82,7 +83,9 @@ const config = computed(() => {
 })
 
 const handleClear = () => {
-  selectedDate.value = ''
+  if (selectedDate.value) {
+    selectedDate.value = ''
+  }
 }
 
 const getDate = (type: 'start' | 'end'): string => {
@@ -111,99 +114,5 @@ const bindDateChange = (event: Event) => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  .form-row {
-    padding-right: 32rpx;
-    .component-label {
-      margin-left: 32rpx;
-      .field-desc {
-        color: #374151;
-        font-size: 32rpx;
-        .required {
-          color: #e53e3e;
-          font-size: 28rpx;
-          position: relative;
-          left: 5rpx;
-          top: -6rpx;
-        }
-      }
-      .field-sub-desc {
-        color: #868e96;
-        font-size: 28rpx;
-      }
-    }
-    .component-style {
-      width: 300rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 0 20rpx;
-      height: 64rpx;
-      display: flex;
-      align-items: center;
-      font-size: 28rpx;
-      box-sizing: border-box;
-      .action-result {
-        position: relative;
-        display: flex;
-        align-items: center;
-        font-size: 28rpx;
-        box-sizing: border-box;
-        color: #31373d;
-      }
-      .clear-icon {
-        width: 18rpx;
-        height: 18rpx;
-        position: absolute;
-        right: 15rpx;
-        top: 50%;
-        transform: translateY(-50%);
-      }
-    }
-    &.readable {
-      .component-label {
-        margin-left: 0;
-        margin-bottom: 10rpx;
-        .field-desc {
-          .field-label {
-            color: #727c88;
-            font-size: 26rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #727c88;
-        }
-      }
-      .component-value {
-        .render-text {
-          color: #1b1f26;
-          font-size: 28rpx;
-        }
-      }
-    }
-    &.editable {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      .component-label {
-        .field-desc {
-          .field-label {
-            color: #374151;
-            font-size: 32rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #9ca3af;
-        }
-      }
-    }
-  }
-  .splite-border {
-    width: 100%;
-    height: 1px;
-    background-color: #f3f4f6;
-    margin: 26rpx 0;
-  }
-}
+@import '../../styles/common_select.scss';
 </style>

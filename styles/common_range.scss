@@ -20,9 +20,6 @@
     margin-left: 16rpx;
   }
   .component-value {
-    display: flex;
-    align-items: center;
-    position: relative;
     .component-style {
       display: flex;
       align-items: center;
@@ -46,22 +43,6 @@
         }
       }
     }
-    .suffix-icon {
-      width: 20rpx;
-      height: 20rpx;
-      position: absolute;
-      right: 32rpx;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-    .suffix-text {
-      color:#4E5969;
-      font-size: 27rpx;
-      position: absolute;
-      right: 32rpx;
-      top: 50%;
-      transform: translateY(-50%);
-    }
   }
   &.readable {
     .component-label {
@@ -72,9 +53,17 @@
       }
     }
     .component-value {
-      .render-text {
-        color: #10141c;
-        font-size: 28rpx;
+      .detail-container {
+        display: flex;
+        justify-content: space-between;
+        .render-text {
+          color: #10141c;
+          font-size: 28rpx;
+        }
+        .render-splite {
+          color: #727C88;
+          font-size: 26rpx;
+        }
       }
     }
   }
@@ -84,6 +73,33 @@
       .field-desc {
         .field-label {
           color: #10141c;
+        }
+      }
+    }
+    .component-value {
+      .form-container {
+        .start-date {
+          margin-bottom: 32rpx;
+          position: relative;
+          .suffix-icon {
+            width: 20rpx;
+            height: 20rpx;
+            position: absolute;
+            right: 32rpx;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+        }
+        .end-date {
+          position: relative;
+          .suffix-icon {
+            width: 20rpx;
+            height: 20rpx;
+            position: absolute;
+            right: 32rpx;
+            top: 50%;
+            transform: translateY(-50%);
+          }
         }
       }
     }

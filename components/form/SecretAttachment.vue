@@ -1,22 +1,15 @@
 <template>
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
-    <view class="header">
-      <view class="component-label">
-        <view class="field-desc">
-          <text class="field-label">{{ props.formItem.label }}</text>
-          <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        </view>
-        <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
-      </view>
-      <view class="upload-btn" @click="handlerFile" v-if="!props.renderOnly">
-        <view class="upload-icon">+</view>
-        <text class="upload-text">添加附件</text>
+    <view class="component-label">
+      <view class="field-desc">
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
     </view>
-    <view class="content">
-      <view v-if="props.renderOnly">
+    <view class="component-value">
+      <view class="detail-container" v-if="props.renderOnly">
         <view
-          class="tips-text"
+          class="detail-lists"
           style="padding: 8rpx 12rpx"
           v-for="(item, index) in config.value"
           :key="index"
@@ -26,14 +19,25 @@
           <text>{{ item.name }}</text>
         </view>
       </view>
-      <view v-else>
-        <text class="tips-text">附件限制：最多{{ config.maxCount }}个，单个不超过10M</text>
-        <view class="tips-text" v-for="(name, index) in uploadedNames" :key="index" @click="handlerPreview(index)">
-          <image src="/static/attachment.svg" alt="附件" class="attachment-svg" />
-          <text>{{ name }}</text>
+      <view class="form-container" v-else>
+        <view class="upload-btn" @click="handlerFile" v-if="!props.renderOnly">
+          <image class="upload-icon" src="/static/upload_icon.svg" mode="aspectFit" />
+          <text class="upload-text">上传附件文件</text>
+        </view>
+        <view class="limit-text">附件限制：最多{{ config.maxCount }}个，单个不超过10M</view>
+        <view class="form-lists" v-for="(name, index) in uploadedNames" :key="index">
+          <view class="list-start">
+            <image src="/static/attachment.svg" alt="附件" class="attachment-svg" />
+            <text class="file-name">{{ name }}</text>
+          </view>
+          <view class="list-end">
+            <image src="/static/eye.svg" alt="查看" @click="handlerPreview(index)" class="suffix-eye" />
+            <image src="/static/download.svg" alt="附件" @click="handlerDownload(index)" class="suffix-download" />
+          </view>
         </view>
       </view>
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     <input hidden :name="`COMP_SECRET_ATTACHMENT___${props.formItem.sequence}`" :value="uploadedValues" />
   </view>
 </template>
@@ -43,6 +47,7 @@ import { computed, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { BASE_URL } from '@/constants/common'
 import store from '@/store'
+import { makeToast } from '@/utils/toast'
 import type { StoreState } from '@/store/types'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
@@ -56,6 +61,7 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const toast = makeToast()
 const uploadedNames = ref<string[]>([])
 const uploadedValues = ref<string>('')
 
@@ -76,6 +82,29 @@ const handlerPreview = (index: number): void => {
       uni.previewImage({
         urls: [blobUrl]
       })
+    }
+  })
+}
+
+const handlerDownload = (index: number): void => {
+  let attachmentId: string = props.renderOnly ? config.value.value[index].url : uploadedValues.value.split(',')[index]
+  uni.request({
+    url: `${BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
+    method: 'GET',
+    responseType: 'arraybuffer',
+    header: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+    },
+    success: (res) => {
+      console.log('download_buffer', res)
+      toast.info('下载文件开发中')
+      // const base64 = uni.arrayBufferToBase64(res.data as ArrayBuffer)
+      // const blobUrl = 'data:image/png;base64,' + base64
+      // if (!blobUrl) return
+      // uni.previewImage({
+      //   urls: [blobUrl]
+      // })
     }
   })
 }
@@ -156,6 +185,7 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     desc: fieldDesc?.value as string,
     maxCount: parseInt(maxCount),
     required: required,
@@ -165,105 +195,5 @@ const config = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  width: calc(100% - 64rpx);
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  .header {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    .component-label {
-      .field-desc {
-        color: #374151;
-        font-size: 32rpx;
-        .required {
-          color: #e53e3e;
-          font-size: 28rpx;
-          position: relative;
-          left: 5rpx;
-          top: -6rpx;
-        }
-      }
-      .field-sub-desc {
-        color: #868e96;
-        font-size: 28rpx;
-      }
-    }
-    .upload-btn {
-      display: flex;
-      align-items: center;
-      .upload-icon {
-        width: 32rpx;
-        height: 32rpx;
-        line-height: 1;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #165dff;
-        font-size: 24rpx;
-        color: #ffffff;
-        margin-right: 8rpx;
-      }
-      .upload-text {
-        font-size: 32rpx;
-        color: #165dff;
-      }
-    }
-  }
-  .content {
-    .tips-text {
-      width: 100%;
-      font-size: 24rpx;
-      color: #606266;
-      background-color: #f5f6f8cc;
-      border-radius: 4px;
-      .attachment-svg {
-        width: 24rpx;
-        height: 24rpx;
-        margin-right: 8rpx;
-        vertical-align: middle;
-      }
-    }
-  }
-  &.readable {
-    width: 100%;
-    .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
-      .field-desc {
-        .field-label {
-          color: #727c88;
-          font-size: 26rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
-      }
-    }
-    .component-value {
-      .render-text {
-        color: #1b1f26;
-        font-size: 28rpx;
-      }
-    }
-  }
-  &.editable {
-    margin-left: 32rpx;
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #374151;
-          font-size: 32rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #9ca3af;
-      }
-    }
-  }
-}
+@import '../../styles/common_attachment.scss';
 </style>

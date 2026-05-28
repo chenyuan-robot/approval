@@ -253,7 +253,6 @@ onLoad(() => {
   }
 }
 
-
 .scroll-content {
   padding: 0 32rpx 32rpx 32rpx;
   box-sizing: border-box;

@@ -1,74 +1,68 @@
 <template>
-  <!-- ["年", "年-月", "年-月-日"] -->
-  <view class="uni-form-component">
-    <view v-if="props.renderOnly" class="readable">
-      <view class="component-label">
-        <view class="field-desc">
-          <text class="field-label">{{ props.formItem.label }}</text>
-        </view>
-        <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
+    <view class="component-label">
+      <view class="field-desc">
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
-      <view class="component-value">
-        <text class="render-text">{{ config.value?.[0] ?? '' }}</text>
+    </view>
+
+    <view class="component-value">
+      <view v-if="props.renderOnly" class="detail-container">
+        <text class="render-text">{{ config.value?.[0] ?? '-' }}</text>
         <text class="render-splite">至</text>
-        <text class="render-text">{{ config.value?.[1] ?? '' }}</text>
+        <text class="render-text">{{ config.value?.[1] ?? '-' }}</text>
+      </view>
+      <view v-else class="form-container">
+        <view class="start-date">
+          <picker
+            class="component-style"
+            style="height: 80rpx"
+            :name="`COMP_START_END_DATE___${props.formItem.sequence}_start`"
+            mode="date"
+            :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
+            :value="startDate"
+            :start="getDate('start')"
+            :end="getDate('end')"
+            @change="bindDateChange($event, 'start')"
+          >
+            <view :class="['action-result', startDate ? 'fill' : 'empty']">
+              {{ startDate || '请选择开始时间' }}
+            </view>
+          </picker>
+          <image
+            class="suffix-icon"
+            :src="`${startDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+            mode="aspectFit"
+            @click.stop="handleClearStartDate"
+          />
+        </view>
+        <view class="end-date">
+          <picker
+            class="component-style"
+            style="height: 80rpx"
+            :name="`COMP_START_END_DATE___${props.formItem.sequence}_end`"
+            mode="date"
+            :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
+            :value="endDate"
+            :start="getDate('start')"
+            :end="getDate('end')"
+            @change="bindDateChange($event, 'end')"
+          >
+            <view :class="['action-result', endDate ? 'fill' : 'empty']">
+              {{ endDate || '请选择结束时间' }}
+            </view>
+          </picker>
+          <image
+            class="suffix-icon"
+            :src="`${endDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+            mode="aspectFit"
+            @click.stop="handleClearEndDate"
+          />
+        </view>
       </view>
     </view>
-    <view v-else>
-      <view class="form-row editable">
-        <view class="component-label">
-          <view class="field-desc">
-            <text>{{ props.formItem.label }}</text>
-            <text class="required" v-if="config.required">*</text>
-          </view>
-          <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
-        </view>
-        <picker
-          class="component-style"
-          :name="`COMP_START_END_DATE___${props.formItem.sequence}_start`"
-          mode="date"
-          :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
-          :value="startDate"
-          :start="getDate('start')"
-          :end="getDate('end')"
-          @change="bindDateChange($event, 'start')"
-        >
-          <view 
-            class="action-result" 
-            :style="{
-              color: startDate ? '#31373d' : '#adb5bd',
-            }"
-          >
-            {{ startDate || '请选择开始时间' }}
-          </view>
-        </picker>
-      </view>
-      <view class="splite-border"></view>
-      <view class="form-row">
-        <view class="component-label">
-          <view class="field-desc"></view>
-        </view>
-        <picker
-          class="component-style"
-          :name="`COMP_START_END_DATE___${props.formItem.sequence}_end`"
-          mode="date"
-          :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
-          :value="endDate"
-          :start="getDate('start')"
-          :end="getDate('end')"
-          @change="bindDateChange($event, 'end')"
-        >
-          <view
-            class="action-result" 
-            :style="{
-              color: startDate ? '#31373d' : '#adb5bd',
-            }"
-          >
-            {{ endDate || '请选择结束时间' }}
-          </view>
-        </picker>
-      </view>
-    </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
 </template>
 
@@ -124,6 +118,7 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请选择日期范围',
     dateType: dateType,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
@@ -139,7 +134,7 @@ watch(
       const endTimeStamp = dayjs(endDate.value).unix()
       if (startTimeStamp > endTimeStamp) {
         endDate.value = ''
-        toast.info('开始时间不能大于结束时间', 2000)
+        toast.error('开始时间不能大于结束时间', 2000)
       }
     }
   }
@@ -153,7 +148,7 @@ watch(
       const endTimeStamp = dayjs(endDate.value).unix()
       if (startTimeStamp > endTimeStamp) {
         startDate.value = ''
-        toast.info('结束时间不能小于开始时间', 2000)
+        toast.error('结束时间不能小于开始时间', 2000)
       }
     }
   }
@@ -186,99 +181,20 @@ const bindDateChange = (event: Event, type: 'start' | 'end') => {
     endDate.value = e.detail.value
   }
 }
+
+const handleClearStartDate = () => {
+  if (startDate.value) {
+    startDate.value = ''
+  }
+}
+
+const handleClearEndDate = () => {
+  if (endDate.value) {
+    endDate.value = ''
+  }
+}
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  .form-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-right: 32rpx;
-    .component-label {
-      margin-left: 32rpx;
-      .field-desc {
-        color: #374151;
-        font-size: 32rpx;
-        .required {
-          color: #e53e3e;
-          font-size: 28rpx;
-          position: relative;
-          left: 5rpx;
-          top: -6rpx;
-        }
-      }
-      .field-sub-desc {
-        color: #868e96;
-        font-size: 28rpx;
-      }
-    }
-    .component-style {
-      width: 300rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 0 20rpx;
-      height: 64rpx;
-      display: flex;
-      align-items: center;
-      font-size: 28rpx;
-      box-sizing: border-box;
-      .action-result {
-        display: flex;
-        align-items: center;
-        font-size: 28rpx;
-        box-sizing: border-box;
-      }
-    }
-    &.editable {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      .component-label {
-        .field-desc {
-          .field-label {
-            color: #374151;
-            font-size: 32rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #9ca3af;
-        }
-      }
-    }
-  }
-  .splite-border {
-    margin: 26rpx 0;
-  }
-  .readable {
-    .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
-      .field-desc {
-        .field-label {
-          color: #727c88;
-          font-size: 26rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
-      }
-    }
-    .component-value {
-      display: flex;
-      align-items: center;
-      .render-splite {
-        margin: 0 20rpx;
-        color: #727c88;
-        font-size: 26rpx;
-      }
-      .render-text {
-        color: #1b1f26;
-        font-size: 28rpx;
-      }
-    }
-  }
-}
+@import '../../styles/common_range.scss';
 </style>

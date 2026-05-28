@@ -2,32 +2,31 @@
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
-      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value" @click="handleOpenPanel">
       <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
-      <!-- 城市单选 -->
-      <input
-        v-else
-        placeholder-style="color: #adb5bd; font-size: 28rpx;"
-        :name="`COMP_CITY___${props.formItem.sequence}`"
-        class="component-style"
-        disabled="true"
-        :placeholder="config.placeholder"
-        :value="selectedValue"
-      />
-      <view class="clear-icon" @click.stop="handleClear">
-        <image class="clear-icon-svg" src="/static/clear.svg" mode="aspectFit" />
+      <view v-else style="width: 100%">
+        <input
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          :name="`COMP_CITY___${props.formItem.sequence}`"
+          class="component-style"
+          style="height: 80rpx; pointer-events: none"
+          disabled="true"
+          :placeholder="config.placeholder"
+          :value="selectedValue"
+        />
+        <image
+          class="suffix-icon"
+          :src="`${selectedValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          mode="aspectFit"
+          @click.stop="handleClear"
+        />
       </view>
-      <!-- <picker class="component-style" v-if="config.single" mode="region">
-        <view class="select-result">1234</view>
-      </picker> -->
-      <!-- 城市多选 -->
-      <!-- <view v-else class="component-style"> 多选 </view> -->
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
   <uni-popup
     ref="popupRef"
@@ -121,7 +120,10 @@ const selectedLists = ref<string[]>([])
 const scrollHeight = uni.getSystemInfoSync().windowHeight - 200
 
 const handleClear = () => {
-  selectedValue.value = ''
+  if (selectedValue.value) {
+    selectedLists.value = []
+    selectedValue.value = ''
+  }
 }
 const handleOpenPanel = () => {
   console.log(config.value.single)
@@ -220,7 +222,7 @@ const config = computed(() => {
     rules: [
       {
         ruleType: required ? '^.+$' : '.*',
-        errorMessage: `请选择${props.formItem.label}`
+        errorMessage: `${props.formItem.label}不能为空`
       }
     ]
   })
@@ -305,107 +307,7 @@ onMounted(async () => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  .component-label {
-    margin-left: 32rpx;
-    .field-desc {
-      color: #374151;
-      font-size: 32rpx;
-      .required {
-        color: #e53e3e;
-        font-size: 28rpx;
-        position: relative;
-        left: 5rpx;
-        top: -6rpx;
-      }
-    }
-    .field-sub-desc {
-      color: #868e96;
-      font-size: 28rpx;
-    }
-  }
-  .component-value {
-    display: flex;
-    align-items: center;
-    margin-right: 32rpx;
-    position: relative;
-    .clear-icon {
-      background-color: white;
-      position: absolute;
-      top: 50%;
-      right: 15rpx;
-      transform: translateY(-50%);
-      width: 25rpx;
-      display: flex;
-      align-items: center;
-      height: calc(100% - 6rpx);
-      .clear-icon-svg {
-        width: 18rpx;
-        height: 18rpx;
-        position: absolute;
-        right: 0;
-      }
-    }
-
-    .component-style {
-      pointer-events: none;
-      width: 380rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 12rpx 20rpx;
-      height: 64rpx;
-      font-size: 32rpx;
-      box-sizing: border-box;
-      .select-result {
-        display: flex;
-        align-items: center;
-        font-size: 32rpx;
-        box-sizing: border-box;
-        color: #606266;
-      }
-    }
-  }
-  &.readable {
-    .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
-      .field-desc {
-        .field-label {
-          color: #727c88;
-          font-size: 26rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
-      }
-    }
-    .component-value {
-      .render-text {
-        color: #1b1f26;
-        font-size: 28rpx;
-      }
-    }
-  }
-  &.editable {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #374151;
-          font-size: 32rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #9ca3af;
-      }
-    }
-  }
-}
-
+@import './../../styles/common_select.scss';
 .popup-content {
   position: relative;
   background-color: #fff;

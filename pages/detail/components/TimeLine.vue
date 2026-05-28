@@ -15,7 +15,7 @@
           :style="{
             background: `linear-gradient(${history.back_ground})`
           }"
-          >{{ getPersonInfo(history.operate_user) }}
+          >{{ getPersonInfo(history.operate_user, true) }}
         </view>
         <view class="person-info">
           <view class="p-top">
@@ -66,14 +66,12 @@ const props = defineProps<{
 
 const blobURL = ref<string>('')
 
-const getPersonInfo = (userName: string) => {
-  // history.operate_user ? history.operate_user.slice(-1) : ''
-  const r = personUtil.lookup(userName)
-  console.log('user', r)
+const getPersonInfo = (user_name: string, slice?: boolean) => {
+  const r = personUtil.lookup(user_name)
   if (r.account === 'unknown') {
     return 'unknown'
   }
-  return r.name.slice(-1)
+  return slice ? r.name.slice(-1) : r.name
 }
 
 const handlerPreview = () => {

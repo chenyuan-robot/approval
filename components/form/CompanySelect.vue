@@ -1,22 +1,57 @@
 <template>
-  <view class="uni-form-component">
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text>{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
     </view>
     <view class="component-value">
-      <picker range-key="label">
-        <view class="input-result">{{ '请选择' }}</view>
-      </picker>
+      <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
+      <view v-else style="width: 100%">
+        <picker
+          class="component-style"
+          @change="bindValueChange"
+          v-if="config.single"
+          style="height: 80rpx"
+          range-key="name"
+          :value="index"
+          :range="config.options"
+        >
+          <view :class="['action-result', config.options[index]?.name ? 'fill' : 'empty']">
+            {{ config.options[index]?.name ?? config.placeholder }}
+          </view>
+        </picker>
+        <input
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          :value="selectedValue"
+          v-else
+          style="height: 80rpx; pointer-events: none"
+          class="component-style"
+          disabled
+          :placeholder="config.placeholder"
+        />
+        <image
+          class="suffix-icon"
+          :src="`${selectedValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          mode="aspectFit"
+          @click.stop="handleClear"
+        />
+        <input hidden :name="`COMP_COMPANY_SELECT___${props.formItem.sequence}`" :value="selectedValue" />
+      </view>
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
+
+interface OptionItem {
+  name: string
+  checked: boolean
+}
 
 defineOptions({
   name: 'CompanySelect',
@@ -28,62 +63,49 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const index = ref<number>(-1)
+const selectedValue = ref<string>('')
+const selectedLists = ref<string[]>([])
+
 const config = computed(() => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
+  const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
+  const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
+  const single = selectionMode === '单项' // 是否单选
   return {
-    placeholder: placeholder || '请输入内容',
+    placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    required: required
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    required: required,
+    single,
+    options: [] as OptionItem[],
+    value: ''
   }
 })
+
+const bindValueChange = (event: Event) => {
+  const e = event as unknown as {
+    detail: {
+      value: number
+    }
+  }
+  console.log(e.detail.value)
+}
+
+const handleClear = () => {
+  if (selectedValue.value) {
+    selectedValue.value = ''
+    index.value = -1
+    selectedLists.value = []
+  }
+}
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  .component-label {
-    margin-left: 32rpx;
-    .field-desc {
-      color: #374151;
-      font-size: 32rpx;
-      .required {
-        color: #e53e3e;
-        font-size: 28rpx;
-        position: relative;
-        left: 5rpx;
-        top: -6rpx;
-      }
-    }
-    .field-sub-desc {
-      color: #868e96;
-      font-size: 28rpx;
-    }
-  }
-  .component-value {
-    display: flex;
-    align-items: center;
-    margin-right: 32rpx;
-    .component-style {
-      width: 300rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 12rpx 20rpx;
-      height: 64rpx;
-      font-size: 32rpx;
-      box-sizing: border-box;
-    }
-    .input-result {
-      font-size: 28rpx;
-      box-sizing: border-box;
-      color: #31373d;
-    }
-  }
-}
+@import '../../styles/common_select.scss';
 </style>

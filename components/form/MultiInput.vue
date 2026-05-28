@@ -13,7 +13,7 @@
         placeholder-style="color: #86909C; font-size: 28rpx;"
         :name="`COMP_MULTI_INPUT___${props.formItem.sequence}`"
         class="component-style"
-        style="height: 192rpx"
+        style="height: 192rpx; padding-top: 20rpx"
         :value="config.defaultValue"
         :placeholder="config.placeholder"
         :maxlength="config.maxlength"

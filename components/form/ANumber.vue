@@ -1,25 +1,24 @@
 <template>
-  <view class="uni-form-component">
-    <view :class="['uni-row', props.renderOnly ? 'readable' : 'editable']">
-      <view class="component-label">
-        <view class="field-desc">
-          <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
-          <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        </view>
+  <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
+    <view class="component-label">
+      <view class="field-desc">
+        <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
-      <view class="component-value">
-        <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
-        <input
-          v-else
-          placeholder-style="color: #adb5bd; font-size: 28rpx;"
-          class="component-style"
-          :value="displayValue"
-          :placeholder="config.placeholder"
-          @input="bindInputValue"
-        />
-        <input hidden :name="`COMP_NUMBER___${props.formItem.sequence}`" :value="concernValue" />
-        <text class="unit-text" v-if="config.unit">{{ config.unit }}</text>
-      </view>
+    </view>
+    <view class="component-value">
+      <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
+      <input
+        v-else
+        placeholder-style="color: #86909C; font-size: 28rpx;"
+        style="height: 80rpx"
+        class="component-style"
+        :value="displayValue"
+        :placeholder="config.placeholder"
+        @input="bindInputValue"
+      />
+      <input hidden :name="`COMP_NUMBER___${props.formItem.sequence}`" :value="concernValue" />
+      <text class="suffix-text" v-if="config.unit">{{ config.unit }}</text>
     </view>
   </view>
 </template>
@@ -110,88 +109,5 @@ const bindInputValue = (event: Event) => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  .uni-row {
-    // display: flex;
-    // align-items: center;
-    // justify-content: space-between;
-    .component-label {
-      margin-left: 32rpx;
-      .field-desc {
-        color: #374151;
-        font-size: 32rpx;
-        .required {
-          color: #e53e3e;
-          font-size: 28rpx;
-          position: relative;
-          left: 5rpx;
-          top: -6rpx;
-        }
-      }
-      .field-sub-desc {
-        color: #868e96;
-        font-size: 28rpx;
-      }
-    }
-    .component-value {
-      display: flex;
-      align-items: center;
-      margin-right: 32rpx;
-      .component-style {
-        width: 300rpx;
-        border: 1px solid #d4d6d9;
-        border-radius: 4px;
-        padding: 12rpx 20rpx;
-        height: 64rpx;
-        font-size: 32rpx;
-        box-sizing: border-box;
-        margin-right: 10rpx;
-      }
-    }
-    &.readable {
-      .component-label {
-        margin-left: 0;
-        margin-bottom: 10rpx;
-        .field-desc {
-          .field-label {
-            color: #727c88;
-            font-size: 26rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #727c88;
-        }
-      }
-      .component-value {
-        .render-text {
-          color: #1b1f26;
-          font-size: 28rpx;
-        }
-        .unit-text {
-          color: #1b1f26;
-          font-size: 28rpx;
-          margin-left: 5rpx;
-        }
-      }
-    }
-    &.editable {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      .component-label {
-        .field-desc {
-          .field-label {
-            color: #374151;
-            font-size: 32rpx;
-          }
-        }
-        .field-sub-desc {
-          font-size: 24rpx;
-          color: #9ca3af;
-        }
-      }
-    }
-  }
-}
+@import '../../styles/common_select.scss';
 </style>

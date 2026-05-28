@@ -26,6 +26,7 @@ class Person {
       const userList = store.state.userList
       const find = userList.find((person) => person.name === name)
       if (!find) {
+        this.result.set(name, this._defaultPerson)
         return this._defaultPerson
       }
       const result: IPerson = {

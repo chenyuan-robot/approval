@@ -6,7 +6,13 @@ import type { FormDetailResponse, OperateHistoryResponse, ReturnNodeResponse } f
  * @param params
  * @returns
  */
-export const queryInstanceDetail = (id: string) => {
+export const queryInstanceDetail = (id: string, type: string) => {
+  if (type === 'pending') {
+    return http.get<FormDetailResponse>(`/api/v1/dl_approval/instance/${id}?pending_approval=true`)
+  }
+  if (type === 'approved') {
+    return http.get<FormDetailResponse>(`/api/v1/dl_approval/instance/${id}?pending_approval=false`)
+  }
   return http.get<FormDetailResponse>(`/api/v1/dl_approval/instance/${id}`)
 }
 

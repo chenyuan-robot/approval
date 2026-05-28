@@ -2,24 +2,31 @@
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text class="field-label">{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
-      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value" @click="openPanel">
       <text v-if="props.renderOnly" class="render-text">{{ config.value }}</text>
-      <input
-        placeholder-style="color: #adb5bd; font-size: 28rpx;"
-        :value="selectedValue"
-        v-else
-        class="component-style"
-        disabled
-        :placeholder="config.placeholder"
-      />
-      <image class="clear-icon" @click.stop="handleClear" src="/static/clear.svg" mode="aspectFit" />
-      <input hidden :name="`COMP_USER_SELECT___${props.formItem.sequence}`" :value="submitValue" />
+      <view v-else style="width: 100%">
+        <input
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          style="height: 80rpx; pointer-events: none"
+          :value="selectedValue"
+          class="component-style"
+          disabled
+          :placeholder="config.placeholder"
+        />
+        <image
+          class="suffix-icon"
+          :src="`${submitValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          mode="aspectFit"
+          @click.stop="handleClear"
+        />
+        <input hidden :name="`COMP_USER_SELECT___${props.formItem.sequence}`" :value="submitValue" />
+      </view>
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
   <UserPopup
     ref="userPopupRef"
@@ -77,7 +84,7 @@ const config = computed(() => {
     rules: [
       {
         ruleType: required ? '^.+$' : '.*',
-        errorMessage: `请选择${props.formItem.label}`
+        errorMessage: `${props.formItem.label}不能为空`
       }
     ]
   })
@@ -85,6 +92,7 @@ const config = computed(() => {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : [],
     maxlength: Number(maxlength) || 1000,
     showAll: selectionRange?.value === '全部' || selectionRange?.value === null,
@@ -96,8 +104,10 @@ const config = computed(() => {
 })
 
 const handleClear = () => {
-  submitValue.value = ''
-  selectedValue.value = ''
+  if (submitValue.value) {
+    submitValue.value = ''
+    selectedValue.value = ''
+  }
 }
 
 const openPanel = (): void => {
@@ -122,87 +132,5 @@ const handleUserSelect = (selectedUser: IPerson) => {
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  .component-label {
-    margin-left: 32rpx;
-    .field-desc {
-      color: #374151;
-      font-size: 32rpx;
-      .required {
-        color: #e53e3e;
-        font-size: 28rpx;
-        position: relative;
-        left: 5rpx;
-        top: -6rpx;
-      }
-    }
-    .field-sub-desc {
-      color: #868e96;
-      font-size: 28rpx;
-    }
-  }
-  .component-value {
-    display: flex;
-    align-items: center;
-    margin-right: 32rpx;
-    position: relative;
-    .component-style {
-      pointer-events: none;
-      width: 300rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 12rpx 20rpx;
-      height: 64rpx;
-      font-size: 32rpx;
-      box-sizing: border-box;
-    }
-    .clear-icon {
-      width: 18rpx;
-      height: 18rpx;
-      position: absolute;
-      right: 15rpx;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-  &.readable {
-    .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
-      .field-desc {
-        .field-label {
-          color: #727c88;
-          font-size: 26rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
-      }
-    }
-    .component-value {
-      .render-text {
-        color: #1b1f26;
-        font-size: 28rpx;
-      }
-    }
-  }
-  &.editable {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #374151;
-          font-size: 32rpx;
-        }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #9ca3af;
-      }
-    }
-  }
-}
+@import '../../styles/common_select.scss';
 </style>

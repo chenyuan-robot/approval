@@ -19,7 +19,8 @@ export function http<T>(options: UniNamespace.RequestOptions) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
       },
-      timeout: 10000 * 6, // 60秒
+      // timeout: 10000 * 6, // 60秒
+      timeout: 1000 * 10, // 10秒
       dataType: 'json',
       responseType: 'json',
       success(res) {

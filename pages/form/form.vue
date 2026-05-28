@@ -137,7 +137,9 @@ const formSubmit = (event: Event) => {
         find.form_value = value
       } else if (comp === 'COMP_DATE_RANGE') {
         // 处理自定义控件日期范围选择组件的值
+        console.log('value_date_range', value)
         if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
+          console.log('value_date_range_clear')
           find.form_values = []
         }
         ;(find.form_values as string[]).push(value)
@@ -237,6 +239,9 @@ const formSubmit = (event: Event) => {
         icon: 'error'
       })
     })
+    .finally(() => {
+      isUploading.value = false
+    })
 }
 
 const queryFormCfg = (id: string) => {
@@ -293,6 +298,7 @@ onLoad((options?: PageOptions) => {
   .form-container {
     background-color: #fff;
     border-radius: 16rpx;
+    padding-top: 16rpx;
     .uni-form-item {
       display: flex;
       align-items: center;

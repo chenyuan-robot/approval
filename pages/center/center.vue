@@ -60,8 +60,8 @@
               v-else
               class="list-item"
               :class="{ 'is-checked': item.checked }"
-              v-for="(item, itemIdx) in getVisibleList(tabItem, tabIndex)"
-              :key="itemIdx"
+              v-for="item in getVisibleList(tabItem, tabIndex)"
+              :key="item.instance_id"
               @click="gotoDetail(item)"
             >
               <view class="item-main" v-if="currentTab === 0">
@@ -70,7 +70,7 @@
                     <text class="title">{{ item.form_name }}</text>
                     <status-tag :status="item.status" />
                     <view class="checkbox" :class="{ checked: item.checked }" @click.stop="toggleCheck(item)">
-                      <image src="/static/checked.svg" style="width: 18rpx; height: 14rpx" v-if="item.checked" />
+                      <image src="/static/checked.svg" style="width: 18rpx; height: 14rpx" v-show="item.checked" />
                     </view>
                   </view>
 
@@ -230,9 +230,15 @@ const switchTab = (index: number) => {
   currentTab.value = index
 }
 
+let timer: ReturnType<typeof setTimeout> | null = null
 const onSwiperChange = (e: SwiperChangeEvent) => {
   currentTab.value = e.detail.current
-  getData()
+
+  if (timer) clearTimeout(timer)
+
+  timer = setTimeout(() => {
+    getData()
+  }, 300)
 }
 
 function getData(showLoading = true) {
@@ -246,7 +252,7 @@ function getData(showLoading = true) {
     case 0:
     case 1:
       let approved = tabIndex === 0 ? false : true
-      approvedList({ page_num: 1, page_size: 10000, approved: approved })
+      approvedList({ page_num: 1, page_size: 1000, approved: approved })
         .then((res) => {
           const datas = res.message as ApprovedListResponse
           const result = datas.approval_instances
@@ -288,7 +294,7 @@ function getData(showLoading = true) {
       break
     case 2:
       let read = currentReadTab.value === 0 ? false : true
-      ccList({ page_num: 1, page_size: 10000, read: read })
+      ccList({ page_num: 1, page_size: 1000, read: read })
         .then((res) => {
           const datas = res.message as CCListResponse
           const result = datas.cc_instances
@@ -335,7 +341,7 @@ function getData(showLoading = true) {
 const gotoDetail = (item: ApprovedItem) => {
   const applicaitonItem = {
     instance_id: item.instance_id,
-    instance_type: ''
+    instance_type: currentTab.value === 0 ? 'pending' : currentTab.value === 1 ? 'approved' : 'cc'
   }
   uni.navigateTo({
     url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`
@@ -653,8 +659,6 @@ onUnmounted(() => {
     background-color: #fff;
     font-size: 24rpx;
     cursor: pointer;
-    transition: all 0.3s ease;
-    // box-shadow: 0 2rpx 4rpx #00000033;
     box-shadow: 0px 1px 2px 0px #0000000d;
   }
 
@@ -662,7 +666,6 @@ onUnmounted(() => {
     color: #1262ee;
     background-color: #f6faff;
     border: 1rpx solid #1262ee;
-    box-shadow: 0px 1px 2px 0px #1262ee0d;
   }
 }
 
@@ -700,7 +703,9 @@ onUnmounted(() => {
   border-radius: 16rpx;
   margin-bottom: 20rpx;
   border: 2rpx solid transparent;
-  transition: all 0.3s;
+  //transition: all 0.3s;
+  transform: translateZ(0);
+  will-change: transform;
 
   &.is-checked {
     border-color: #2979ff;

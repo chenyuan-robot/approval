@@ -2,25 +2,28 @@
   <view :class="['uni-form-component', props.renderOnly ? 'readable' : 'editable']">
     <view class="component-label">
       <view class="field-desc">
-        <text class="field-label">{{ props.formItem.label }}</text>
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
     </view>
-    <view class="component-value" v-if="props.renderOnly">
-      <text class="render-text">{{ formatThousand(config.value) }}</text>
-    </view>
-    <view class="component-value" v-else>
-      <picker :range="AMountOpts" :value="index" range-key="label" @change="bindValueChange">
-        <view class="input-result">{{ AMountOpts[index]?.label || '请选择' }}</view>
-      </picker>
-      <input
-        placeholder-style="color: #adb5bd; font-size: 28rpx;"
-        class="component-style"
-        :placeholder="config.placeholder"
-        :value="displayValue"
-        @input="bindInputValue"
-      />
-      <input hidden :name="`COMP_AMOUNT___${props.formItem.sequence}_picker`" :value="concernValue" />
+    <view class="component-value">
+      <text class="render-text" v-if="props.renderOnly">{{ formatThousand(config.value) }}</text>
+      <view v-else style="width: 100%">
+        <picker class="component-style" :range="AMountOpts" :value="index" range-key="label" @change="bindValueChange">
+          <view :class="['action-result', AMountOpts[index]?.label ? 'fill' : 'empty']">
+            {{ AMountOpts[index]?.label || '请选择' }}
+          </view>
+          <image class="suffix-icon" src="/static/arrow_down.svg" mode="aspectFit" />
+        </picker>
+        <input
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          class="component-style"
+          :placeholder="config.placeholder"
+          :value="displayValue"
+          @input="bindInputValue"
+        />
+        <input hidden :name="`COMP_AMOUNT___${props.formItem.sequence}_picker`" :value="concernValue" />
+      </view>
     </view>
   </view>
 </template>
@@ -64,6 +67,7 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请输入金额',
     required: required,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     showThousand,
     value: Array.isArray(titleItem?.form_values) ? titleItem?.form_values?.join(', ') : ''
   }
@@ -131,59 +135,74 @@ watch(
 
 <style lang="scss" scoped>
 .uni-form-component {
+  width: calc(100% - 64rpx);
   .component-label {
-    margin-left: 32rpx;
-    color: #374151;
+    margin-bottom: 10rpx;
     .field-desc {
-      font-size: 32rpx;
+      font-size: 26rpx;
       .required {
-        color: #e53e3e;
+        color: #fb2c36;
         font-size: 28rpx;
-        position: relative;
-        left: 5rpx;
-        top: -6rpx;
+        margin-right: 6rpx;
+        vertical-align: middle;
+        font-weight: bold;
       }
     }
   }
   .component-value {
     display: flex;
     align-items: center;
-    margin-right: 32rpx;
-    .input-result {
+    overflow: hidden;
+    .component-style {
       display: flex;
       align-items: center;
-      margin-right: 8px;
-      color: #31373d;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 0rpx 20rpx;
-      height: 64rpx;
+      width: 100%;
+      float: left;
+      position: relative;
+      height: 80rpx;
+      border: 1px solid rgba(229, 230, 235, 0.6);
+      background-color: rgba(249, 250, 251, 1);
+      border-radius: 8px;
+      padding-left: 20rpx;
+      padding-top: 10rpx;
+      padding-bottom: 12rpx;
+      padding-right: 50rpx;
       font-size: 28rpx;
       box-sizing: border-box;
-    }
-    .component-style {
-      width: 240rpx;
-      border: 1px solid #d4d6d9;
-      border-radius: 4px;
-      padding: 12rpx 20rpx;
-      height: 64rpx;
-      font-size: 28rpx;
-      box-sizing: border-box;
+      .action-result {
+        box-sizing: border-box;
+        &.fill {
+          color: #10141c;
+        }
+        &.empty {
+          color: #86909c;
+        }
+      }
+      .suffix-icon {
+        width: 18rpx;
+        height: 18rpx;
+        position: absolute;
+        right: 32rpx;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      &:first-child {
+        box-sizing: border-box;
+        width: calc(50% - 30rpx);
+        margin-right: 30rpx;
+      }
+      &:nth-child(2) {
+        box-sizing: border-box;
+        width: 50%;
+      }
     }
   }
   &.readable {
     .component-label {
-      margin-left: 0;
-      margin-bottom: 10rpx;
       .field-desc {
         .field-label {
           color: #727c88;
-          font-size: 26rpx;
         }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #727c88;
       }
     }
     .component-value {
@@ -194,19 +213,12 @@ watch(
     }
   }
   &.editable {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    margin-left: 32rpx;
     .component-label {
       .field-desc {
         .field-label {
-          color: #374151;
-          font-size: 32rpx;
+          color: #10141c;
         }
-      }
-      .field-sub-desc {
-        font-size: 24rpx;
-        color: #9ca3af;
       }
     }
   }

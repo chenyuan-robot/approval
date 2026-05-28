@@ -3,30 +3,30 @@
     <view class="component-label">
       <view class="field-desc">
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
-        <text class="field-label">{{ props.formItem.label }}</text>
+        <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
+      </view>
+      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
+    </view>
+    <view class="component-value" @click="openPanel">
+      <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
+      <view v-else style="width: 100%">
+        <input
+          :value="selectedValue"
+          placeholder-style="color: #86909C; font-size: 28rpx;"
+          style="height: 80rpx; pointer-events: none"
+          class="component-style"
+          disabled
+          :placeholder="config.placeholder"
+        />
+        <image
+          class="suffix-icon"
+          :src="`${submitValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          mode="aspectFit"
+          @click.stop="handleClear"
+        />
+        <input hidden :name="`COMP_DEPARTMENT_SELECT___${props.formItem.sequence}`" :value="submitValue" />
       </view>
     </view>
-    <view class="component-value" v-if="props.renderOnly">
-      <text class="render-text">{{ config.value }}</text>
-    </view>
-    <view class="component-value" v-else @click="openPanel">
-      <input
-        :value="selectedValue"
-        placeholder-style="color: #86909C; font-size: 28rpx;"
-        class="component-style"
-        disabled
-        :placeholder="config.placeholder"
-      />
-      <image
-        class="clear-icon"
-        v-if="!props.renderOnly"
-        @click.stop="handleClear"
-        src="/static/clear.svg"
-        mode="aspectFit"
-      />
-      <input hidden :name="`COMP_DEPARTMENT_SELECT___${props.formItem.sequence}`" :value="submitValue" />
-    </view>
-    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
   <DepartmentPopup ref="departmentPopupRef" @update:modelValue="handleDepartmentSelect" :single="config.single" />
 </template>
@@ -57,7 +57,7 @@ const selectedValue = ref<string>('')
 const submitValue = ref<string>('')
 
 const config = computed(() => {
-  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
+  const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
@@ -82,13 +82,14 @@ const config = computed(() => {
     rules: [
       {
         ruleType: required ? '^.+$' : '.*',
-        errorMessage: `请选择${props.formItem.label}`
+        errorMessage: `${props.formItem.label}不能为空`
       }
     ]
   })
   return {
-    placeholder: placeholder || '请输入内容',
+    placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
+    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     desc: fieldDesc?.value as string,
     defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : [],
     maxlength: Number(maxlength) || 1000,
@@ -101,7 +102,9 @@ const config = computed(() => {
 })
 
 const openPanel = (): void => {
-  departmentPopupRef?.value?.open()
+  if (!props.renderOnly) {
+    departmentPopupRef?.value?.open()
+  }
 }
 
 const handleDepartmentSelect = (selectedDepartment: DepartmentsResponse) => {
@@ -121,83 +124,13 @@ const handleDepartmentSelect = (selectedDepartment: DepartmentsResponse) => {
 }
 
 const handleClear = () => {
-  submitValue.value = ''
-  selectedValue.value = ''
+  if (submitValue.value) {
+    submitValue.value = ''
+    selectedValue.value = ''
+  }
 }
 </script>
 
 <style lang="scss" scoped>
-.uni-form-component {
-  width: calc(100% - 64rpx);
-  .component-label {
-    margin-bottom: 10rpx;
-    position: relative;
-    .field-desc {
-      font-size: 26rpx;
-      .required {
-        color: #fb2c36;
-        font-size: 28rpx;
-        margin-right: 6rpx;
-        vertical-align: middle;
-        font-weight: bold;
-      }
-    }
-  }
-  .field-sub-desc {
-    color: #4e5969;
-    font-size: 22rpx;
-    margin-top: 10rpx;
-    margin-left: 16rpx;
-  }
-  .component-value {
-    display: flex;
-    align-items: center;
-    position: relative;
-    .component-style {
-      pointer-events: none;
-      width: 100%;
-      border: 1px solid rgba(229, 230, 235, 0.6);
-      background-color: rgba(249, 250, 251, 1);
-      border-radius: 8px;
-      padding: 12rpx 50rpx 12rpx 20rpx;
-      height: 80rpx;
-      font-size: 28rpx;
-      box-sizing: border-box;
-      color: rgba(16, 20, 28, 1);
-    }
-    .clear-icon {
-      width: 18rpx;
-      height: 18rpx;
-      position: absolute;
-      right: 32rpx;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-  &.readable {
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #727c88;
-        }
-      }
-    }
-    .component-value {
-      .render-text {
-        color: #10141c;
-        font-size: 28rpx;
-      }
-    }
-  }
-  &.editable {
-    margin-left: 32rpx;
-    .component-label {
-      .field-desc {
-        .field-label {
-          color: #10141c;
-        }
-      }
-    }
-  }
-}
+@import './../../styles/common_select.scss';
 </style>
