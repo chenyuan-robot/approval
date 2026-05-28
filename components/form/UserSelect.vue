@@ -91,6 +91,8 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
+    disabled: !(defaultItem?.extra_option_config?.default_value ?? false),
+    required: required,
     desc: fieldDesc?.value as string,
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : [],
@@ -98,7 +100,6 @@ const config = computed(() => {
     showAll: selectionRange?.value === '全部' || selectionRange?.value === null,
     departUserList: (selectionRange?.specific_value as string[]) ?? [],
     single: selectionMode === '单项',
-    required: required,
     value: nameStr.slice(0, -1)
   }
 })
@@ -107,11 +108,15 @@ const handleClear = () => {
   if (submitValue.value) {
     submitValue.value = ''
     selectedValue.value = ''
+    selectedUsers.value = []
+    userPopupRef?.value?.reset()
   }
 }
 
 const openPanel = (): void => {
-  userPopupRef?.value?.open()
+  if (!config.value.disabled && !props.renderOnly) {
+    userPopupRef?.value?.open()
+  }
 }
 
 const handleUserSelect = (selectedUser: IPerson) => {

@@ -86,6 +86,11 @@ const close = () => {
   popup.value?.close()
 }
 
+const reset = () => {
+  selectedAccounts.value = []
+  searchQuery.value = ''
+}
+
 const handleClick = (userList: IPerson): void => {
   if (props.single) {
     selectedAccounts.value = [userList.account]
@@ -104,7 +109,8 @@ const handleClick = (userList: IPerson): void => {
 
 defineExpose({
   open,
-  close
+  close,
+  reset
 })
 </script>
 

@@ -11,6 +11,7 @@
       <switch
         class="a-switch"
         v-else
+        :disabled="config.disabled"
         :name="`COMP_SWITCH___${props.formItem.sequence}`"
         :checked="config.defaultSelection"
       />
@@ -38,14 +39,15 @@ const config = computed(() => {
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
-  const defaultSelection = props.formItem.values.find((item) => item.name === '默认选择')?.value as string
+  const defaultSelection = props.formItem.values.find((item) => item.name === '默认选择')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   return {
     showFieldDesc: showFieldDesc,
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     desc: fieldDesc?.value as string,
-    defaultSelection: defaultSelection === '开启',
+    defaultSelection: defaultSelection.value === '开启',
+    disabled: !(defaultSelection?.extra_option_config?.default_value ?? false),
     required: required,
     value: titleItem?.form_value === 'true'
   }

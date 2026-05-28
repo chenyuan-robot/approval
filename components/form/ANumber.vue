@@ -27,6 +27,7 @@
 import { computed, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+import { makeToast } from '@/utils/toast'
 
 defineOptions({
   name: 'ANumber',
@@ -38,6 +39,7 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const toast = makeToast()
 const displayValue = ref<string>('')
 const concernValue = ref<string>('')
 
@@ -75,6 +77,8 @@ const config = computed(() => {
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     required: required,
     showThousand,
+    integerLimit,
+    decimalLimit,
     unit: unit,
     value: titleItem?.form_value ?? '-'
   }
@@ -98,11 +102,12 @@ const unFormatThousand = (str: string) => {
 const bindInputValue = (event: Event) => {
   const e = event as unknown as { detail: { value: string } }
   let val = unFormatThousand(e.detail.value)
-  // if (!val) {
-  //   displayValue.value = ''
-  //   concernValue.value = `${selectedValue.value}_`
-  //   return
-  // }
+  const integerLimit = config.value.integerLimit
+  const decimalLimit = config.value.decimalLimit
+  const reg = new RegExp(`^\\d{0,${Number(integerLimit) || 5}}(\\.\\d{0,${Number(decimalLimit) || 3}})?$`)
+  if (!reg.test(val)) {
+    toast.error(`${props.formItem.label}格式不正确，整数部分最多${integerLimit}位，小数部分最多${decimalLimit}位`)
+  }
   concernValue.value = val
   displayValue.value = formatThousand(val)
 }

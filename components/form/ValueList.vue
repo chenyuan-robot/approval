@@ -16,6 +16,7 @@
           range-key="name"
           style="height: 80rpx"
           mode="selector"
+          :disabled="config.disabled"
           :value="index"
           @change="bindValueChange"
         >
@@ -110,7 +111,7 @@ const handleClick = (opt: OptionItem) => {
 
 const handlerOpenPanel = () => {
   console.log(!props.renderOnly)
-  if (!props.renderOnly && !config.value.single) {
+  if (!props.renderOnly && !config.value.single && !config.value.disabled) {
     console.log('打开选择面板')
     popup?.value?.open()
   }
@@ -131,6 +132,7 @@ const handleClear = () => {
   if (selectedValue.value) {
     selectedValue.value = ''
     index.value = -1
+    selectedLists.value = []
   }
 }
 
@@ -147,6 +149,7 @@ const config = computed(() => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
@@ -165,6 +168,7 @@ const config = computed(() => {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
+    disabled: !(defaultItem?.extra_option_config?.default_value ?? false),
     single,
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     required: required,

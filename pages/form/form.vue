@@ -183,7 +183,7 @@ const formSubmit = (event: Event) => {
       }
     }
     console.log('提交表单数据：', formInfo)
-    // return
+    return
   }
 
   isUploading.value = true
