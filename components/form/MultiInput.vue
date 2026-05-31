@@ -14,7 +14,7 @@
         :name="`COMP_MULTI_INPUT___${props.formItem.sequence}`"
         class="component-style"
         style="height: 192rpx; padding-top: 20rpx"
-        :value="config.defaultValue"
+        :value="inputValue"
         :placeholder="config.placeholder"
         :maxlength="config.maxlength"
       />
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
@@ -38,7 +38,11 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const config = computed(() => {
+const type = inject('type')
+const inputValue = ref<string>('')
+let config = ref<Record<string, unknown>>({})
+
+const getConfig = () => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
@@ -47,6 +51,7 @@ const config = computed(() => {
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
+  inputValue.value = defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : ''
   // 该表单项校验规则
   formRulesUtil.depRules({
     name: `COMP_MULTI_INPUT___${props.formItem.sequence}`,
@@ -62,12 +67,22 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请输入内容',
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    titleItem,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
     maxlength: Number(maxlength) || 1000,
     required: required,
     value: (titleItem?.form_value as string) ?? ''
+  }
+}
+
+onMounted(() => {
+  config.value = getConfig()
+  if (type.value === 'edit') {
+    console.log('edit', props.formItem)
+    console.log('edit', config.value)
+    const formValue = config.value.value
+    inputValue.value = formValue
   }
 })
 </script>

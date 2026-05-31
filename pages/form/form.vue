@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, provide } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { createForm, queryFormDetail, submitApplicationInstance } from '@/apis/modules/form'
 import type { FormInfo, FormItem, PageOptions } from './typings'
@@ -33,6 +33,7 @@ import Renderer from './Renderer.vue'
 import type { WorkflowCfg } from '@/apis/typings/form'
 import { formRulesUtil } from './utils/rules'
 import { makeToast } from '@/utils/toast'
+import { queryInstanceDetail } from '@/apis/modules/detail'
 
 interface FormValues {
   [key: string]: string
@@ -49,6 +50,9 @@ const formInfo = reactive<FormInfo>({
   workflow_cfg: {} as WorkflowCfg
 })
 const formItems = ref<FormItem[]>([])
+const type = ref<'create' | 'edit' | 'view'>('create')
+
+provide('type', type)
 
 const formSubmit = (event: Event) => {
   const e = event as unknown as {
@@ -109,11 +113,24 @@ const formSubmit = (event: Event) => {
         }
       } else if (comp === 'COMP_AMOUNT') {
         console.log(`金额输入组件 ${sequence} 的值为：`, value)
-        if (value.endsWith('_')) {
-          return
+        const required =
+          formInfo.form_instance[sequence - 1].values
+            .find((item) => item.name === '字段属性')
+            ?.value?.includes('必填') ?? false
+        if (required) {
+          if (value.endsWith('_')) {
+            return
+          }
+          // 处理自定义控件金额输入组件的值
+          find.form_values = value.split('_')
+        } else {
+          if (value.endsWith('_')) {
+            find.form_values = null
+          } else {
+            find.form_values = value.split('_')
+          }
+          // 处理自定义控件金额输入组件的值
         }
-        // 处理自定义控件金额输入组件的值
-        find.form_values = value.split('_')
       } else if (comp === 'COMP_SELECTION_BOX') {
         // 处理自定义控件选择框组件的值
         const multiple =
@@ -183,7 +200,7 @@ const formSubmit = (event: Event) => {
       }
     }
     console.log('提交表单数据：', formInfo)
-    return
+    // return
   }
 
   isUploading.value = true
@@ -244,40 +261,70 @@ const formSubmit = (event: Event) => {
     })
 }
 
-const queryFormCfg = (id: string) => {
-  queryFormDetail(id)
-    .then((res) => {
-      if (res.code === 200) {
-        const message = res.message || {}
-        formInfo.form_code = id
-        formInfo.form_group = message.group || ''
-        formInfo.form_name = message.name || ''
-        formInfo.workflow_cfg = message.workflow_cfg || {}
-        formInfo.form_instance = message.form_config || []
-        let depItems: FormItem[] = []
-        const formConfigs = message.form_config || []
-        formConfigs.forEach((formConfig) => {
-          depItems.push({
-            label: formConfig.values.find((item) => item.name === '标题')?.value as string,
-            sequence: formConfig.sequence,
-            component_code: formConfig.component_code,
-            values: formConfig.values
+const queryFormCfg = (id: string, type: 'create' | 'edit' | 'view') => {
+  if (type === 'create') {
+    queryFormDetail(id)
+      .then((res) => {
+        if (res.code === 200) {
+          const message = res.message || {}
+          formInfo.form_code = id
+          formInfo.form_group = message.group || ''
+          formInfo.form_name = message.name || ''
+          formInfo.workflow_cfg = message.workflow_cfg || {}
+          formInfo.form_instance = message.form_config || []
+          let depItems: FormItem[] = []
+          const formConfigs = message.form_config || []
+          formConfigs.forEach((formConfig) => {
+            depItems.push({
+              label: formConfig.values.find((item) => item.name === '标题')?.value as string,
+              sequence: formConfig.sequence,
+              component_code: formConfig.component_code,
+              values: formConfig.values
+            })
           })
-        })
-        formItems.value = depItems
-      } else {
-        console.error('查询表单详情失败：', res.message)
-      }
-    })
-    .catch((err) => {
-      console.error('查询表单详情失败：', err)
-    })
+          formItems.value = depItems
+        } else {
+          console.error('查询表单详情失败：', res.message)
+        }
+      })
+      .catch((err) => {
+        console.error('查询表单详情失败：', err)
+      })
+  } else {
+    queryInstanceDetail(id)
+      .then((res) => {
+        if (res.code === 200) {
+          console.log('获取单据详情成功：', res.message)
+          const message = res.message || {}
+          formInfo.form_code = id
+          formInfo.form_name = message.form_name || ''
+          formInfo.form_instance = message.form_instance || []
+          let depItems: FormItem[] = []
+          const formConfigs = message.form_instance || []
+          formConfigs.forEach((formConfig) => {
+            depItems.push({
+              label: formConfig.values.find((item) => item.name === '标题')?.value as string,
+              sequence: formConfig.sequence,
+              component_code: formConfig.component_code,
+              values: formConfig.values
+            })
+          })
+          formItems.value = depItems
+        } else {
+          console.error('查询表单编辑详情失败：', res.message)
+        }
+      })
+      .catch((err) => {
+        console.error('查询表单编辑详情失败：', err)
+      })
+  }
 }
 
 onLoad((options?: PageOptions) => {
   formRulesUtil.clearRules()
   if (options?.id) {
-    queryFormCfg(options.id)
+    type.value = options.type as string
+    queryFormCfg(options.id, options.type!)
   }
 })
 </script>

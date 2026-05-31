@@ -69,7 +69,7 @@ const toast = makeToast()
 // 跳转到创建页
 const goToForm = (id: string) => {
   uni.navigateTo({
-    url: `/pages/form/form?id=${id}`
+    url: `/pages/form/form?id=${id}&type=create`
   })
 }
 

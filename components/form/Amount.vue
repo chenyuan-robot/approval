@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { inject, onMounted, ref, watch } from 'vue'
 import { AMountOpts } from '../../pages/form/data'
 import type { FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
@@ -44,7 +44,14 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const config = computed(() => {
+const type = inject('type')
+const config = ref<Record<string, unknown>>({})
+const index = ref<number>(0)
+const selectedValue = ref<string>('')
+const concernValue = ref<string>('')
+const displayValue = ref<string>('')
+
+const getConfig = () => {
   console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
@@ -59,7 +66,7 @@ const config = computed(() => {
         errorMessage: `${props.formItem.label}不能为空`
       },
       {
-        ruleType: '^[^_]+_\\d+(\\.\\d{0,2})?$',
+        ruleType: required ? '^[^_]+_\\d+(\\.\\d{0,2})?$' : '.*',
         errorMessage: `${props.formItem.label}最多可输入两位小数`
       }
     ]
@@ -71,16 +78,12 @@ const config = computed(() => {
     showThousand,
     value: Array.isArray(titleItem?.form_values) ? titleItem?.form_values?.join(', ') : ''
   }
-})
-
-const index = ref<number>(0)
-const selectedValue = ref<string>('')
-const concernValue = ref<string>('')
-const displayValue = ref<string>('')
+}
 
 // 千分位格式化（支持两位小数）
 const formatThousand = (num: string | number) => {
-  if (!config.value.showThousand) {
+  console.log('formatThousand', config.value.value)
+  if (!config.value.value?.showThousand) {
     return typeof num === 'number' ? num.toString() : num
   }
   if (!num) return ''
@@ -119,14 +122,27 @@ const bindInputValue = (event: Event) => {
 }
 
 onMounted(() => {
+  config.value = getConfig()
   selectedValue.value = AMountOpts[0]?.value || ''
   concernValue.value = `${selectedValue.value}_` // 数值部分置空
   displayValue.value = '' // 输入框默认空
+  if (type.value === 'edit') {
+    if (config.value.value) {
+      const value = config.value.value?.split(', ')
+      const currency = value?.[0]
+      const number = value?.[1]
+      const idx = AMountOpts.findIndex((item) => item.value === currency)
+      index.value = idx
+      selectedValue.value = AMountOpts[idx]?.value || ''
+      concernValue.value = `${selectedValue.value}_${number}`
+      displayValue.value = formatThousand(number)
+    }
+  }
 })
 
 watch(
   () => concernValue.value,
-  (val) => {
+  (val: string) => {
     const num = val.split('_')[1] || ''
     displayValue.value = formatThousand(num)
   }

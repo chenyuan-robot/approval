@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { onMounted, ref, inject } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import { makeToast } from '@/utils/toast'
@@ -39,11 +39,13 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const type = inject('type')
+const config = ref<Record<string, unknown>>({})
 const toast = makeToast()
 const displayValue = ref<string>('')
 const concernValue = ref<string>('')
 
-const config = computed(() => {
+const getConfig = () => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const unit = props.formItem.values.find((item) => item.name === '单位')?.value as string
@@ -80,12 +82,12 @@ const config = computed(() => {
     integerLimit,
     decimalLimit,
     unit: unit,
-    value: titleItem?.form_value ?? '-'
+    value: titleItem?.form_value ?? ''
   }
-})
+}
 
 const formatThousand = (num: string | number) => {
-  if (!config.value.showThousand) {
+  if (!config.value?.showThousand) {
     return typeof num === 'number' ? num.toString() : num
   }
   if (!num) return ''
@@ -111,6 +113,17 @@ const bindInputValue = (event: Event) => {
   concernValue.value = val
   displayValue.value = formatThousand(val)
 }
+
+onMounted(() => {
+  config.value = getConfig()
+  console.log('mounted', config.value)
+  if (type.value === 'edit') {
+    if (config.value.value) {
+      concernValue.value = config.value.value
+      displayValue.value = formatThousand(config.value.value)
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>

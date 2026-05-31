@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { onMounted, ref, inject } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import type { ConditionNodeValueListItem } from '@/apis/typings/form'
 
@@ -63,13 +63,15 @@ const props = defineProps<{
 }>()
 
 const index = ref<number>(0)
+const type = inject('type')
+const config = ref<Record<string, unknown>>({})
 const options = ref<OptionItem[]>([])
 const selectedValue = ref<string>('')
 const selectedLists = ref<string[]>([])
 
 const handlerOpenPanel = () => {
   console.log(!props.renderOnly)
-  if (!props.renderOnly && !config.value.single) {
+  if (!props.renderOnly && !config.value.value.single) {
     console.log('打开选择面板')
   }
 }
@@ -83,7 +85,7 @@ const handleClear = () => {
   }
 }
 
-const config = computed(() => {
+const getConfig = () => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
@@ -98,6 +100,16 @@ const config = computed(() => {
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     single: true,
     value: ''
+  }
+}
+
+onMounted(() => {
+  config.value = getConfig()
+  if (type.value === 'edit') {
+    console.log('edit', props.formItem)
+    console.log('edit', config.value.value)
+    const formValue = config.value.value
+    // inputValue.value = formValue
   }
 })
 </script>

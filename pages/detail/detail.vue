@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, toRefs, watch, provide } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { InstanceHistoryItem, PageOptions } from './typings'
 import {
@@ -142,6 +142,7 @@ const permission = reactive({
   comment: false,
   sign: false
 })
+provide('type', 'view')
 
 const userInfo = computed(() => (store.state as StoreState).user)
 const { user_name } = toRefs(userInfo.value)

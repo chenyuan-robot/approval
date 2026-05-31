@@ -20,20 +20,14 @@
         <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
         <text>暂无数据</text>
       </view>
-      <scroll-view
-        v-else
-        scroll-y
-        class="scroll-area"
-        @scrolltolower="getData"
-        :lower-threshold="50"
-      >
+      <scroll-view v-else scroll-y class="scroll-area" @scrolltolower="getData" :lower-threshold="50">
         <!-- 
 	  有bug，去掉下拉刷新
 	  @refresherrefresh="onRefresh"
         style="height: 100vh"
         refresher-enabled="true"
         :refresher-triggered="loading" -->
-        <view class="apply-card" v-for="(item, index) in filteredDataSource" :key="index" @click="goToDetail(item)">
+        <view class="apply-card" v-for="(item, index) in filteredDataSource" :key="index">
           <view class="card-header">
             <text class="title">{{ item.form_name }}</text>
             <status-tag :status="item.status" />
@@ -46,7 +40,28 @@
 
           <view class="card-footer">
             <text class="time">提交时间：{{ item.application_time }}</text>
-            <text class="detail-link">查看详情</text>
+            <view class="operation-btns">
+              <text class="detail-link" v-if="getStatusType(item.status) !== 'draft'" @click="goToDetail(item)"
+                >详情</text
+              >
+              <text
+                class="detail-link"
+                v-if="getStatusType(item.status) === 'reject' || getStatusType(item.status) === 'withdraw'"
+                >再次提交</text
+              >
+              <text class="detail-link" v-if="getStatusType(item.status) === 'draft'" @click="goToEdit(item)"
+                >编辑</text
+              >
+              <text
+                class="detail-link delete"
+                v-if="
+                  getStatusType(item.status) === 'reject' ||
+                  getStatusType(item.status) === 'withdraw' ||
+                  getStatusType(item.status) === 'draft'
+                "
+                >删除</text
+              >
+            </view>
           </view>
         </view>
       </scroll-view>
@@ -60,6 +75,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { submittedList } from '@/apis/modules/apply'
 import type { SubmittedItem, SubmittedListResponse } from '@/apis/typings/apply'
 import { makeToast } from '@/utils/toast'
+import { getStatusType } from '@/hooks/base/status'
 
 const loading = ref(false)
 const dataSource = ref<SubmittedItem[]>([])
@@ -145,6 +161,13 @@ const goToDetail = (item: SubmittedItem) => {
   })
 }
 
+// 跳转到表单页
+const goToEdit = (item: SubmittedItem) => {
+  uni.navigateTo({
+    url: `/pages/form/form?id=${item.instance_id}&type=edit`
+  })
+}
+
 onShow(() => {
   pageNum = 1
   isEnd = false
@@ -199,7 +222,7 @@ function onRefresh() {
 
 .list-wrapper {
   flex: 1;
-  overflow: hidden; 
+  overflow: hidden;
   padding: 20rpx 30rpx;
   // box-sizing: border-box;
 }
@@ -265,9 +288,16 @@ function onRefresh() {
       color: #999;
     }
 
-    .detail-link {
-      font-size: 26rpx;
-      color: #2979ff;
+    .operation-btns {
+      display: flex;
+      gap: 20rpx;
+      .detail-link {
+        font-size: 24rpx;
+        color: #2979ff;
+        &.delete {
+          color: #f53f3f;
+        }
+      }
     }
   }
 }

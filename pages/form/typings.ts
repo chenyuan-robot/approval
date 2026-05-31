@@ -17,6 +17,7 @@ export interface FormItem {
 
 export interface PageOptions {
   id?: string
+  type?: 'create' | 'edit' | 'view'
 }
 
 export interface FormValue {

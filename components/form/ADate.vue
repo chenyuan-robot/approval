@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
@@ -50,9 +50,11 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const type = inject('type')
 const selectedDate = ref<string>('')
+const config = ref<Record<string, unknown>>({})
 
-const config = computed(() => {
+const getConfig = () => {
   console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
@@ -78,9 +80,9 @@ const config = computed(() => {
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
-    value: titleItem?.form_value ?? '-'
+    value: titleItem?.form_value ?? ''
   }
-})
+}
 
 const handleClear = () => {
   if (selectedDate.value) {
@@ -111,6 +113,17 @@ const bindDateChange = (event: Event) => {
   }
   selectedDate.value = e.detail.value
 }
+
+onMounted(() => {
+  config.value = getConfig()
+  if (type.value === 'edit') {
+    console.log('edit', props.formItem)
+    console.log('edit', config.value.value)
+    const formValue = config.value.value
+    // inputValue.value = formValue
+    selectedDate.value = formValue
+  }
+})
 </script>
 
 <style lang="scss" scoped>
