@@ -49,7 +49,6 @@ export default {
     }
   }) {
     const toast = makeToast()
-    toast.info('info', 3000)
     // 获取热启动参数
     // #ifdef MP-LARK
     const path = options?.query?.path ?? ''

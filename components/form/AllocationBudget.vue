@@ -65,7 +65,7 @@ interface FormConfig {
 }
 
 defineOptions({
-  name: 'AllocationBudget',
+  name: 'AllocationBudget', // 预算归口
   inheritAttrs: false
 })
 
