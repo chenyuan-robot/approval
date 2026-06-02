@@ -30,6 +30,24 @@ export const submitApplicationInstance = (data: Record<string, unknown>, id: str
 }
 
 /**
+ * 更新申请单实例
+ * @param data
+ * @returns
+ */
+export const updateApplicationInstance = (data: Record<string, unknown>, id: string) => {
+  return http.put<string>(`/api/v1/dl_approval/instance/${id}`, data)
+}
+
+/**
+ * 再次发起表单实例
+ * @param data
+ * @returns
+ */
+export const getResubmitForm = (data: Record<string, string>) => {
+  return http.post<FormDetailResponse>(`/api/v1/dl_approval/instance/relaunch`, data)
+}
+
+/**
  * 条件节点获取值列表列值详情
  * @returns
  */
@@ -47,4 +65,22 @@ export const queryConditionNodeValueList = (code: string, col: string) => {
  */
 export const getProvinceCityAreaList = (data: Record<string, string | number>) => {
   return http.post<ProvinceCityAreaListResponse>(`${NEW_BASE_URL}/api/v1/basis/location/city-level/query`, data)
+}
+
+/**
+ * 作废单据
+ * @param data
+ * @returns
+ */
+export const invalidateApplicationInstance = (data: Record<string, string>) => {
+  return http.post<string>('/api/v1/dl_approval/instance/invalid', data)
+}
+
+/**
+ * 变更单据
+ * @param data
+ * @returns
+ */
+export const modifyApplicationInstance = (data: Record<string, string | unknown>) => {
+  return http.post<string>('/api/v1/dl_approval/instance/modify', data)
 }

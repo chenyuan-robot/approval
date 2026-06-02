@@ -5,7 +5,6 @@
         <text class="required" v-if="!props.renderOnly && config.required">*</text>
         <text class="field-label" v-if="!config.showTitle">{{ props.formItem.label }}</text>
       </view>
-      <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
     </view>
     <view class="component-value" @click="openPanel">
       <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
@@ -14,11 +13,15 @@
           :value="selectedValue"
           placeholder-style="color: #86909C; font-size: 28rpx;"
           style="height: 80rpx; pointer-events: none"
-          class="component-style"
+          :class="{
+            'component-style': true,
+            'disable': config.disabled
+          }"
           disabled
           :placeholder="config.placeholder"
         />
         <image
+          v-if="!config.disabled"
           class="suffix-icon"
           :src="`${submitValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
           mode="aspectFit"
@@ -27,14 +30,30 @@
         <input hidden :name="`COMP_DEPARTMENT_SELECT___${props.formItem.sequence}`" :value="submitValue" />
       </view>
     </view>
+    <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
-  <DepartmentPopup ref="departmentPopupRef" @update:modelValue="handleDepartmentSelect" :single="config.single" />
+  <DepartmentPopup 
+    v-if="config.showAll"
+    ref="departmentPopupRef" 
+    @update:modelValues="handleDepartmentSelects" 
+    :single="config.single"
+    :selectedList="config.defaultValue"
+  />
+  <DepartmentSpecificPopup 
+    v-else
+   ref="departmentSpecificPopupRef"
+   @update:modelValues="handleDepartmentSelects"
+    :single="config.single"
+    :specificList="config.specificValueList"
+    :selectedList="config.defaultValue"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
-import DepartmentPopup from '@/components/DepartmentPopup.vue'
+import DepartmentPopup from '@/components/DepartmentPopup'
+import DepartmentSpecificPopup from '@/components/DepartmentSpecificPopup'
 import type { DepartmentsResponse } from '@/apis/typings/global'
 import { useStore } from 'vuex'
 import { formRulesUtil } from '@/pages/form/utils/rules'
@@ -52,7 +71,7 @@ const props = defineProps<{
 }>()
 
 const departmentPopupRef = ref()
-const selectedDepartments = ref<DepartmentsResponse[]>([])
+const departmentSpecificPopupRef = ref()
 const selectedValue = ref<string>('')
 const submitValue = ref<string>('')
 
@@ -60,7 +79,7 @@ const config = computed(() => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const selectionRange = props.formItem.values.find((item) => item.name === '选择范围')
@@ -89,12 +108,13 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
+    disabled: !(defaultItem?.extra_option_config?.default_value ?? false),
     showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
     desc: fieldDesc?.value as string,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : [],
+    defaultValue: formValues.length > 0 ? formValues : (defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : []),
     maxlength: Number(maxlength) || 1000,
-    showAll: selectionRange?.value === '全部',
-    departUserList: (selectionRange?.specific_value as string[]) ?? [],
+    showAll: selectionRange?.value === '全部' || selectionRange?.value === null,
+    specificValueList: (selectionRange?.specific_value as string[]) ?? [],
     single: selectionMode === '单项',
     required: required,
     value: nameStr
@@ -102,31 +122,36 @@ const config = computed(() => {
 })
 
 const openPanel = (): void => {
-  if (!props.renderOnly) {
-    departmentPopupRef?.value?.open()
+  if (!config.value.disabled && !props.renderOnly) {
+    if (config.value.showAll) {
+      departmentPopupRef?.value?.open()
+    } else {
+      departmentSpecificPopupRef?.value?.open()
+    }
   }
 }
 
-const handleDepartmentSelect = (selectedDepartment: DepartmentsResponse) => {
+const handleDepartmentSelects = (selectedDepartments: [DepartmentsResponse]) => {
   if (config.value.single) {
-    selectedValue.value = selectedDepartment.name
-    submitValue.value = selectedDepartment.key
+    if (selectedDepartments.length > 0) {
+      selectedValue.value = selectedDepartments[0].name
+      submitValue.value = selectedDepartments[0].key
+    } else {
+      selectedValue.value = ''
+      submitValue.value = ''
+    }
     return
   }
-  const index = selectedDepartments.value.findIndex((item) => item.key === selectedDepartment.key)
-  if (index > -1) {
-    selectedDepartments.value.splice(index, 1)
-  } else {
-    selectedDepartments.value.push(selectedDepartment)
-  }
-  selectedValue.value = selectedDepartments.value.map((item) => item.name).join(', ')
-  submitValue.value = selectedDepartments.value.map((item) => item.key).join(', ')
+  selectedValue.value = selectedDepartments.map((item) => item.name).join(', ')
+  submitValue.value = selectedDepartments.map((item) => item.key).join(', ')
 }
 
 const handleClear = () => {
   if (submitValue.value) {
     submitValue.value = ''
     selectedValue.value = ''
+    departmentPopupRef?.value?.reset()
+    departmentSpecificPopupRef?.value?.reset()
   }
 }
 </script>

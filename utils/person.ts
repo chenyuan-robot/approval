@@ -24,7 +24,7 @@ class Person {
         return cached
       }
       const userList = store.state.userList
-      const find = userList.find((person) => person.name === name)
+      const find = userList.find((person: IPerson) => person.name === name)
       if (!find) {
         this.result.set(name, this._defaultPerson)
         return this._defaultPerson
@@ -54,10 +54,12 @@ class Person {
     try {
       const cached = this.result.get(key)
       if (cached) {
-        return cached
+        console.log('find___find_cache', this.result)
+        // return cached
       }
       const userList = store.state.userList
-      const find = userList.find((person) => person.account === key)
+      const find = userList.find((person: IPerson) => person.account === key)
+      console.log('find___find', find)
       if (!find) {
         return this._defaultPerson
       }

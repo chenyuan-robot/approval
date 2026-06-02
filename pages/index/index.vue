@@ -87,9 +87,9 @@ function getData() {
       for (var index = 0; index < documents.length; index++) {
         var element = documents[index]
         // ------ 临时代码，后面会删除
-        if (element.name !== '开发组') {
-          continue
-        }
+        // if (element.name !== '开发组') {
+        //   continue
+        // }
         // -------临时代码，后面会删除
 
         var item: FormGroupItem = {
@@ -151,6 +151,7 @@ const getUserList = () => {
           account: user.account,
           job_title: user.job_title || '未知',
           departments: _head(user.departments ?? ['未知部门']),
+          phone: user.phone || '',
           back_ground: user.back_ground || '162.55deg, #368D36 7.86%, #B1D814 91.46%'
         }))
         store.commit('SET_USER_LIST', lists)

@@ -9,7 +9,14 @@
     <view class="component-value">
       <text class="render-text" v-if="props.renderOnly">{{ formatThousand(config.value) }}</text>
       <view v-else style="width: 100%">
-        <picker class="component-style" :range="AMountOpts" :value="index" range-key="label" @change="bindValueChange">
+        <picker
+          class="component-style"
+          :range="AMountOpts"
+          :disabled="isInvalidModify"
+          :value="index"
+          range-key="label"
+          @change="bindValueChange"
+        >
           <view :class="['action-result', AMountOpts[index]?.label ? 'fill' : 'empty']">
             {{ AMountOpts[index]?.label || '请选择' }}
           </view>
@@ -18,7 +25,8 @@
         <input
           placeholder-style="color: #86909C; font-size: 28rpx;"
           class="component-style"
-          :placeholder="config.placeholder"
+          :disabled="isInvalidModify"
+          :placeholder="config.placeholder as string"
           :value="displayValue"
           @input="bindInputValue"
         />
@@ -30,8 +38,9 @@
 
 <script setup lang="ts">
 import { inject, onMounted, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 import { AMountOpts } from '../../pages/form/data'
-import type { FormItem } from '../../pages/form/typings'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
 defineOptions({
@@ -44,8 +53,8 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const type = inject('type')
-const config = ref<Record<string, unknown>>({})
+const isInvalidModify = ref<boolean>(false)
+const config = ref<Record<string, string | number | boolean>>({})
 const index = ref<number>(0)
 const selectedValue = ref<string>('')
 const concernValue = ref<string>('')
@@ -62,7 +71,7 @@ const getConfig = () => {
     name: `COMP_AMOUNT___${props.formItem.sequence}_picker`,
     rules: [
       {
-        ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^.+_.+$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       },
       {
@@ -82,8 +91,7 @@ const getConfig = () => {
 
 // 千分位格式化（支持两位小数）
 const formatThousand = (num: string | number) => {
-  console.log('formatThousand', config.value.value)
-  if (!config.value.value?.showThousand) {
+  if (!config.value.showThousand) {
     return typeof num === 'number' ? num.toString() : num
   }
   if (!num) return ''
@@ -121,14 +129,24 @@ const bindInputValue = (event: Event) => {
   displayValue.value = formatThousand(val)
 }
 
+watch(
+  () => concernValue.value,
+  (val: string) => {
+    const num = val.split('_')[1] || ''
+    displayValue.value = formatThousand(num)
+  }
+)
+
 onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   selectedValue.value = AMountOpts[0]?.value || ''
   concernValue.value = `${selectedValue.value}_` // 数值部分置空
   displayValue.value = '' // 输入框默认空
-  if (type.value === 'edit') {
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     if (config.value.value) {
-      const value = config.value.value?.split(', ')
+      const value = (config.value.value as string)?.split(', ')
       const currency = value?.[0]
       const number = value?.[1]
       const idx = AMountOpts.findIndex((item) => item.value === currency)
@@ -139,14 +157,6 @@ onMounted(() => {
     }
   }
 })
-
-watch(
-  () => concernValue.value,
-  (val: string) => {
-    const num = val.split('_')[1] || ''
-    displayValue.value = formatThousand(num)
-  }
-)
 </script>
 
 <style lang="scss" scoped>

@@ -12,9 +12,10 @@
         v-else
         placeholder-style="color: #86909C; font-size: 28rpx;"
         style="height: 80rpx"
+        :disabled="isInvalidModify"
         class="component-style"
         :value="displayValue"
-        :placeholder="config.placeholder"
+        :placeholder="config.placeholder as string"
         @input="bindInputValue"
       />
       <input hidden :name="`COMP_NUMBER___${props.formItem.sequence}`" :value="concernValue" />
@@ -25,9 +26,21 @@
 
 <script setup lang="ts">
 import { onMounted, ref, inject } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import { makeToast } from '@/utils/toast'
+
+interface FormConfig {
+  placeholder: string
+  showTitle: boolean
+  required: boolean
+  showThousand: boolean
+  integerLimit: string
+  decimalLimit: string
+  unit: string
+  value: string
+}
 
 defineOptions({
   name: 'ANumber',
@@ -39,13 +52,22 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const type = inject('type')
-const config = ref<Record<string, unknown>>({})
+const isInvalidModify = ref<boolean>(false)
+const config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  required: false,
+  showThousand: false,
+  integerLimit: '5',
+  decimalLimit: '3',
+  unit: '',
+  value: ''
+})
 const toast = makeToast()
 const displayValue = ref<string>('')
 const concernValue = ref<string>('')
 
-const getConfig = () => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const unit = props.formItem.values.find((item) => item.name === '单位')?.value as string
@@ -76,13 +98,13 @@ const getConfig = () => {
   })
   return {
     placeholder: placeholder || '请输入内容',
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     required: required,
     showThousand,
     integerLimit,
     decimalLimit,
     unit: unit,
-    value: titleItem?.form_value ?? ''
+    value: (titleItem?.form_value as string) ?? ''
   }
 }
 
@@ -115,12 +137,14 @@ const bindInputValue = (event: Event) => {
 }
 
 onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
-  console.log('mounted', config.value)
-  if (type.value === 'edit') {
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     if (config.value.value) {
-      concernValue.value = config.value.value
-      displayValue.value = formatThousand(config.value.value)
+      concernValue.value = config.value.value as string
+      displayValue.value = formatThousand(config.value.value as string | number)
     }
   }
 })

@@ -1,5 +1,3 @@
-import type internal from "stream"
-
 export interface UserListResponse {
   persons: Array<IPerson>
 }
@@ -8,6 +6,7 @@ export interface IPerson {
   account: string
   name: string
   job_title: string
+  phone: string
   departments: string
   checked?: boolean
   back_ground: string
@@ -20,6 +19,6 @@ export interface UploadAttachmentItem {
 
 export interface DepartmentsResponse {
   children: Array<DepartmentsResponse>
-  key: string,
+  key: string
   name: string
 }

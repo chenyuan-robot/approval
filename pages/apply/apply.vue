@@ -1,19 +1,14 @@
 <template>
   <view class="container">
     <view class="filter-header">
-      <uni-data-select
-        v-model="selectedType"
-        :localdata="typeList"
-        :clear="false"
-        class="filter-item"
-      ></uni-data-select>
+      <ui-data-select v-model="selectedType" :localdata="typeList" :clear="false" class="filter-item"></ui-data-select>
 
-      <uni-data-select
+      <ui-data-select
         v-model="selectedStatus"
         :localdata="statusList"
         :clear="false"
         class="filter-item"
-      ></uni-data-select>
+      ></ui-data-select>
     </view>
     <view class="list-wrapper">
       <view v-if="filteredDataSource.length == 0" class="empty-box">
@@ -44,9 +39,20 @@
               <text class="detail-link" v-if="getStatusType(item.status) !== 'draft'" @click="goToDetail(item)"
                 >详情</text
               >
+              <view v-if="getStatusType(item.status) === 'pass'" class="operation-flags">
+                <text class="detail-link" v-if="item.operation_flags.can_invalid" @click="handleInvalid(item)"
+                  >作废</text
+                >
+                <text class="detail-link" v-if="item.operation_flags.can_modify" @click="handleModify(item)">变更</text>
+              </view>
               <text
                 class="detail-link"
-                v-if="getStatusType(item.status) === 'reject' || getStatusType(item.status) === 'withdraw'"
+                v-if="
+                  getStatusType(item.status) === 'reject' ||
+                  getStatusType(item.status) === 'withdraw' ||
+                  getStatusType(item.status) === 'terminate'
+                "
+                @click="reSubmit(item)"
                 >再次提交</text
               >
               <text class="detail-link" v-if="getStatusType(item.status) === 'draft'" @click="goToEdit(item)"
@@ -54,10 +60,12 @@
               >
               <text
                 class="detail-link delete"
+                @click="handlerDelete(item)"
                 v-if="
                   getStatusType(item.status) === 'reject' ||
                   getStatusType(item.status) === 'withdraw' ||
-                  getStatusType(item.status) === 'draft'
+                  getStatusType(item.status) === 'draft' ||
+                  getStatusType(item.status) === 'terminate'
                 "
                 >删除</text
               >
@@ -70,12 +78,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { submittedList } from '@/apis/modules/apply'
 import type { SubmittedItem, SubmittedListResponse } from '@/apis/typings/apply'
 import { makeToast } from '@/utils/toast'
 import { getStatusType } from '@/hooks/base/status'
+import { deleteApproval } from '@/apis/modules/detail'
 
 const loading = ref(false)
 const dataSource = ref<SubmittedItem[]>([])
@@ -92,7 +101,6 @@ var isEnd = false
 
 function getData() {
   if (loading.value || isEnd) return
-
   loading.value = true
 
   submittedList({ page_num: pageNum, page_size: pageSize })
@@ -163,8 +171,63 @@ const goToDetail = (item: SubmittedItem) => {
 
 // 跳转到表单页
 const goToEdit = (item: SubmittedItem) => {
+  console.log('goToEdit', item)
   uni.navigateTo({
-    url: `/pages/form/form?id=${item.instance_id}&type=edit`
+    url: `/pages/form/form?id=${item.instance_id}&type=edit&workflow_code=${item.workflow_cfg.workflow_code}&workflow_version=${item.workflow_cfg.workflow_version}`
+  })
+}
+
+// 再次提交
+const reSubmit = (item: SubmittedItem) => {
+  console.log('reSubmit', item)
+  uni.navigateTo({
+    url: `/pages/form/form?id=${item.instance_id}&type=resubmit`
+  })
+}
+
+// 作废
+const handleInvalid = (item: SubmittedItem) => {
+  console.log('handleInvalid', item)
+  uni.navigateTo({
+    url: `/pages/form/form?id=${item.instance_id}&type=invalid`
+  })
+}
+
+// 变更
+const handleModify = (item: SubmittedItem) => {
+  console.log('handleModify', item)
+  uni.navigateTo({
+    url: `/pages/form/form?id=${item.instance_id}&type=modify`
+  })
+}
+
+// 删除单据
+const handlerDelete = (item: SubmittedItem) => {
+  console.log('delete', item)
+  uni.showModal({
+    title: '提示',
+    content: '确认删除当前单据吗？',
+    success: function (res) {
+      if (res.confirm) {
+        deleteApproval(item.instance_id)
+          .then((res) => {
+            if (res.code === 200) {
+              pageNum = 1
+              loading.value = false
+              isEnd = false
+              onRefresh()
+              toast.success('删除成功')
+            } else {
+              toast.info((res.message as string) ?? '删除失败')
+            }
+          })
+          .catch((error) => {
+            console.error('删除失败：', error)
+          })
+      } else if (res.cancel) {
+        console.log('用户点击取消')
+      }
+    }
   })
 }
 
@@ -291,6 +354,11 @@ function onRefresh() {
     .operation-btns {
       display: flex;
       gap: 20rpx;
+      .operation-flags {
+        display: flex;
+        gap: 20rpx;
+        position: relative;
+      }
       .detail-link {
         font-size: 24rpx;
         color: #2979ff;

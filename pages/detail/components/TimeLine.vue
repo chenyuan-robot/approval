@@ -1,5 +1,5 @@
 <template>
-  <view class="timeline-item">
+  <view class="timeline-item" v-if="history.operate_type !== '保存'">
     <view class="tail" v-if="nodeIndex < nodeCount - 1"></view>
     <view class="node node-blue"></view>
     <view class="content">
@@ -25,14 +25,13 @@
             }}</text></view
           >
           <view class="p-content">
-            <view v-if="history.node_name === '开始'" class="submited">已提交</view>
-            <view v-else-if="history.comment">
-              <view class="comment">{{ history.comment }}</view>
+            <view class="approving">{{ history.operate_type }}</view>
+            <view class="comment-box">
+              <view class="comment" v-if="history.comment">{{ history.comment }}</view>
               <view class="comment-attachment" v-if="Array.isArray(history.attachment)" @click="handlerPreview">
                 <image :src="`${blobURL}`" alt="附件" class="attachment" />
               </view>
             </view>
-            <view v-else class="approving">{{ history.operate_type }}</view>
           </view>
         </view>
         <view class="p-time">
@@ -42,16 +41,17 @@
       </view>
     </view>
   </view>
+  <ImagePreview ref="imagePreview" :blobData="blobURL" />
 </template>
 
 <script lang="ts" setup>
 import type { InstanceHistoryItem } from '../typings'
-import { onLoad } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import store from '@/store'
 import type { StoreState } from '@/store/types'
 import { BASE_URL } from '@/constants/common'
 import personUtil from '@/utils/person'
+import ImagePreview from '@/components/ImagePreview.vue'
 
 defineOptions({
   name: 'TimeLine',
@@ -64,6 +64,7 @@ const props = defineProps<{
   nodeIndex: number
 }>()
 
+const imagePreview = ref<InstanceType<typeof ImagePreview>>()
 const blobURL = ref<string>('')
 
 const getPersonInfo = (user_name: string, slice?: boolean) => {
@@ -76,16 +77,14 @@ const getPersonInfo = (user_name: string, slice?: boolean) => {
 
 const handlerPreview = () => {
   if (!blobURL.value) return
-  uni.previewImage({
-    urls: [blobURL.value]
-  })
+  imagePreview.value?.open()
 }
 
-onLoad(() => {
+onMounted(() => {
   if (props.history.attachment) {
     const attachmentId = props.history.attachment[0]
     uni.request({
-      url: `${BASE_URL}/api/v1/dl_approval/file/proxy/${attachmentId}`,
+      url: `${BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -93,8 +92,14 @@ onLoad(() => {
         Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
       },
       success: (res) => {
-        const base64 = uni.arrayBufferToBase64(res.data as ArrayBuffer)
-        blobURL.value = 'data:image/png;base64,' + base64
+        console.log('rt_res', res)
+        const contentType = res.header['content-type']
+        if (contentType.includes('image/png') || contentType.includes('image/jpeg')) {
+          const base64 = uni.arrayBufferToBase64(res.data as ArrayBuffer)
+          blobURL.value = 'data:image/png;base64,' + base64
+        } else {
+          //
+        }
       }
     })
   }

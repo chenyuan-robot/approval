@@ -72,6 +72,9 @@
     <view v-else-if="props.formItem.component_code === 'COMP_DATE_RANGE'">
       <DateRange :formItem="props.formItem" :renderOnly="true" />
     </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_DESC'">
+      <DescInput :formItem="props.formItem" :renderOnly="true" />
+    </view>
     <view v-else>
        <Unknown :formItem="props.formItem" :renderOnly="true" />
     </view>
@@ -103,6 +106,7 @@ import Invoice from '@/components/form/Invoice.vue'
 import Reason from '@/components/form/Reason.vue'
 import AllocationBudget from '@/components/form/AllocationBudget.vue'
 import CompanySelect from '@/components/form/CompanySelect.vue'
+import DescInput from '@/components/form/DescInput.vue'
 import Unknown from '@/components/form/Unknown.vue'
 
 defineOptions({

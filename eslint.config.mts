@@ -15,7 +15,8 @@ export default defineConfig([
       '**/harmony-configs/**',
       '**/node_modules/**',
       '**/.nuxt/**',
-      '**/.output/**'
+      '**/.output/**',
+      '**/components/ui/**'
     ]
   },
 

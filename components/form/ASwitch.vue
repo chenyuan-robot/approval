@@ -7,13 +7,16 @@
       </view>
     </view>
     <view class="component-value">
-      <text v-if="props.renderOnly" class="render-text">{{ config.value ? '是' : '否' }}</text>
+      <!-- <view v-if="props.renderOnly" class="render-text">{{ config.value ? '是' : '否' }}</view> -->
+      <view v-if="props.renderOnly" class="render-text">
+        <switch class="a-switch" :disabled="true" :checked="config.value" />
+      </view>
       <switch
         class="a-switch"
         v-else
-        :disabled="config.disabled"
+        :disabled="config.disabled || isInvalidModify"
         :name="`COMP_SWITCH___${props.formItem.sequence}`"
-        :checked="config.defaultSelection"
+        :checked="isChecked"
       />
     </view>
     <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
@@ -21,8 +24,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { inject, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
+
+export interface FormConfig {
+  showFieldDesc: boolean
+  showTitle: boolean
+  desc: string
+  disabled: boolean
+  required: boolean
+  value: boolean
+}
 
 defineOptions({
   name: 'ASwitch',
@@ -34,22 +47,43 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const config = computed(() => {
+const isInvalidModify = ref<boolean>(false)
+const isChecked = ref(false)
+const config = ref<FormConfig>({
+  showFieldDesc: false,
+  showTitle: false,
+  desc: '',
+  disabled: false,
+  required: false,
+  value: false
+})
+
+const getConfig = (): FormConfig => {
   console.log('ASwitch组件接收到的formItem数据：', props.formItem)
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const defaultSelection = props.formItem.values.find((item) => item.name === '默认选择')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
+  isChecked.value = defaultSelection?.value === '开启'
   return {
     showFieldDesc: showFieldDesc,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     desc: fieldDesc?.value as string,
-    defaultSelection: defaultSelection.value === '开启',
-    disabled: !(defaultSelection?.extra_option_config?.default_value ?? false),
+    disabled: !((defaultSelection?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     required: required,
-    value: titleItem?.form_value === 'true'
+    value: titleItem?.form_value === '是' ? true : false
+  }
+}
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
+    console.log('ASwitch组件接收到的formValue数据：', config.value.value)
+    isChecked.value = config.value.value
   }
 })
 </script>

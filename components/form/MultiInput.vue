@@ -25,8 +25,19 @@
 
 <script setup lang="ts">
 import { inject, onMounted, ref } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+
+interface FormConfig {
+  placeholder: string
+  showTitle: boolean
+  desc: string
+  showFieldDesc: boolean
+  maxlength: number
+  required: boolean
+  value: string
+}
 
 defineOptions({
   name: 'MultiInput',
@@ -38,15 +49,22 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const type = inject('type')
 const inputValue = ref<string>('')
-let config = ref<Record<string, unknown>>({})
+let config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  desc: '',
+  showFieldDesc: false,
+  maxlength: 0,
+  required: false,
+  value: ''
+})
 
-const getConfig = () => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
@@ -57,8 +75,6 @@ const getConfig = () => {
     name: `COMP_MULTI_INPUT___${props.formItem.sequence}`,
     rules: [
       {
-        // ^.+$: 至少一个字符（必填）
-        // .*: 任意字符（非必填）
         ruleType: required ? '^.+$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
@@ -66,8 +82,7 @@ const getConfig = () => {
   })
   return {
     placeholder: placeholder || '请输入内容',
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
-    titleItem,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     maxlength: Number(maxlength) || 1000,
@@ -77,8 +92,9 @@ const getConfig = () => {
 }
 
 onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig()
-  if (type.value === 'edit') {
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     console.log('edit', props.formItem)
     console.log('edit', config.value)
     const formValue = config.value.value

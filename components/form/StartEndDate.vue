@@ -67,11 +67,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { ref, watch, onMounted, inject } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import dayjs from 'dayjs'
 import { makeToast } from '@/utils/toast'
+
+interface FormConfig {
+  placeholder: string
+  dateType: string
+  showTitle: boolean
+  disabled: boolean
+  showFieldDesc: boolean
+  desc: string
+  required: boolean
+  value: string[]
+}
 
 defineOptions({
   name: 'StartEndDate',
@@ -83,17 +95,28 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const config = ref<FormConfig>({
+  placeholder: '',
+  dateType: '年',
+  showTitle: false,
+  showFieldDesc: false,
+  disabled: false,
+  desc: '',
+  required: false,
+  value: ['', '']
+})
 const toast = makeToast()
 const startDate = ref<string>('')
 const endDate = ref<string>('')
 
-const config = computed(() => {
+const getConfig = (): FormConfig => {
   console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.placeholder as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const fieldStyle = props.formItem.values.find((item) => item.name === '字段样式')
   const dateType = fieldStyle?.value ?? '年'
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
@@ -117,14 +140,15 @@ const config = computed(() => {
   })
   return {
     placeholder: placeholder || '请选择日期范围',
-    dateType: dateType,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    dateType: dateType as string,
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
     value: (titleItem?.form_values as string[]) ?? ['', '']
   }
-})
+}
 
 watch(
   () => startDate.value,
@@ -193,6 +217,17 @@ const handleClearEndDate = () => {
     endDate.value = ''
   }
 }
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify' || type?.value === 'invalid') {
+    if (config.value.value?.[0]) {
+      startDate.value = config.value.value[0]
+      endDate.value = config.value.value[1]
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>

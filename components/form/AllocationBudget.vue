@@ -12,6 +12,7 @@
         <picker
           class="component-style"
           :range="options"
+          :disabled="isInvalidModify"
           v-if="config.single"
           style="height: 80rpx"
           range-key="label"
@@ -45,11 +46,22 @@
 
 <script setup lang="ts">
 import { onMounted, ref, inject } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import type { ConditionNodeValueListItem } from '@/apis/typings/form'
 
 interface OptionItem extends ConditionNodeValueListItem {
   checked: boolean
+}
+
+interface FormConfig {
+  placeholder: string
+  showFieldDesc: boolean
+  desc: string
+  required: boolean
+  showTitle: boolean
+  single: boolean
+  value: ''
 }
 
 defineOptions({
@@ -62,16 +74,23 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const isInvalidModify = ref<boolean>(false)
 const index = ref<number>(0)
-const type = inject('type')
-const config = ref<Record<string, unknown>>({})
+const config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  required: false,
+  showFieldDesc: false,
+  desc: '',
+  single: true,
+  value: ''
+})
 const options = ref<OptionItem[]>([])
 const selectedValue = ref<string>('')
-const selectedLists = ref<string[]>([])
 
 const handlerOpenPanel = () => {
   console.log(!props.renderOnly)
-  if (!props.renderOnly && !config.value.value.single) {
+  if (!props.renderOnly && !config.value.single) {
     console.log('打开选择面板')
   }
 }
@@ -85,11 +104,11 @@ const handleClear = () => {
   }
 }
 
-const getConfig = () => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   return {
@@ -97,15 +116,17 @@ const getConfig = () => {
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     single: true,
     value: ''
   }
 }
 
 onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
-  if (type.value === 'edit') {
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     console.log('edit', props.formItem)
     console.log('edit', config.value.value)
     const formValue = config.value.value

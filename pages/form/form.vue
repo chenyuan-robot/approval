@@ -6,13 +6,46 @@
           <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
             <Renderer style="width: 100%" :formItem="formItem" />
           </view>
+          <view v-if="type === 'invalid' || type === 'modify'" class="uni-form-comment">
+            <view class="component-label">
+              <view class="field-desc">
+                <text class="required">*</text>
+                <text class="field-label">{{ type === 'invalid' ? '作废理由' : '修改理由' }}</text>
+              </view>
+            </view>
+            <view class="component-value">
+              <input
+                class="component-style"
+                style="height: 80rpx"
+                placeholder-style="color: #86909C; font-size: 28rpx;"
+                v-model="comment"
+                placeholder="请输入，最多输入200个字符"
+              />
+            </view>
+          </view>
           <view class="bottom-submit-bar">
             <button
               :class="['submit-btn', isUploading ? 'disabled' : 'activite']"
               :disabled="isUploading"
+              :style="{
+                width: `${type === 'resubmit' ? '48%' : '100%'}`,
+                marginRight: type === 'resubmit' ? '4%' : '0'
+              }"
               form-type="submit"
+              @click="submitType = 'submit'"
             >
               {{ isUploading ? '提交中...' : '提交申请' }}
+            </button>
+            <button
+              :style="{
+                width: `${type === 'resubmit' ? '48%' : '0'}`
+              }"
+              v-if="type === 'resubmit'"
+              @click="submitType = 'save'"
+              class="save-btn"
+              form-type="submit"
+            >
+              保存申请
             </button>
           </view>
         </form>
@@ -27,13 +60,22 @@
 <script setup lang="ts">
 import { reactive, ref, provide } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { createForm, queryFormDetail, submitApplicationInstance } from '@/apis/modules/form'
-import type { FormInfo, FormItem, PageOptions } from './typings'
+import {
+  createForm,
+  getResubmitForm,
+  invalidateApplicationInstance,
+  modifyApplicationInstance,
+  queryFormDetail,
+  submitApplicationInstance,
+  updateApplicationInstance
+} from '@/apis/modules/form'
+import type { FormActionType, FormInfo, FormItem, PageOptions } from './typings'
 import Renderer from './Renderer.vue'
 import type { WorkflowCfg } from '@/apis/typings/form'
 import { formRulesUtil } from './utils/rules'
 import { makeToast } from '@/utils/toast'
 import { queryInstanceDetail } from '@/apis/modules/detail'
+import { debounce } from 'lodash'
 
 interface FormValues {
   [key: string]: string
@@ -44,21 +86,66 @@ const toast = makeToast()
 const isUploading = ref<boolean>(false)
 const formInfo = reactive<FormInfo>({
   form_code: '',
+  form_instance_code: '',
+  reform_id: '',
   form_group: '',
   form_name: '',
   form_instance: [],
   workflow_cfg: {} as WorkflowCfg
 })
 const formItems = ref<FormItem[]>([])
-const type = ref<'create' | 'edit' | 'view'>('create')
+const type = ref<FormActionType>('create')
+const comment = ref<string>('')
+let submitType = 'submit' // submit 或 save
 
 provide('type', type)
 
-const formSubmit = (event: Event) => {
+const formSubmit = debounce((event: Event) => {
   const e = event as unknown as {
     detail: {
       value: FormValues
     }
+  }
+  if (type.value === 'invalid' || type.value === 'modify') {
+    if (!comment.value) {
+      toast.error(type.value === 'invalid' ? '请输入作废理由' : '请输入修改理由', 2000)
+      return
+    }
+    if (type.value === 'invalid') {
+      invalidateApplicationInstance({ comment: comment.value, instance_id: formInfo.form_code })
+        .then((res) => {
+          if (res.code === 200) {
+            toast.success('操作成功', 2000)
+            uni.navigateBack()
+          } else {
+            toast.error(res.message.toString() || '操作失败', 2000)
+          }
+        })
+        .catch((err) => {
+          console.error('作废单据失败：', err)
+          toast.error('操作异常', 2000)
+        })
+    } else {
+      modifyApplicationInstance({
+        comment: comment.value,
+        form_name: formInfo.form_name,
+        instance_id: formInfo.form_code,
+        form_instance: formInfo.form_instance
+      })
+        .then((res) => {
+          if (res.code === 200) {
+            toast.success('操作成功', 2000)
+            uni.navigateBack()
+          } else {
+            toast.error(res.message.toString() || '操作失败', 2000)
+          }
+        })
+        .catch((err) => {
+          console.error('修改单据失败：', err)
+          toast.error('操作异常', 2000)
+        })
+    }
+    return
   }
   console.log('提交的表单数据：', e.detail.value)
   const formKeys = Object.keys(e.detail.value)
@@ -91,7 +178,7 @@ const formSubmit = (event: Event) => {
       }
       if (comp === 'COMP_SWITCH') {
         // 处理自定义控件开关组件的值
-        find.form_value = value.toString()
+        find.form_value = value ? '是' : '否'
       } else if (comp === 'COMP_SINGLE_INPUT') {
         // 处理自定义控件单行输入组件的值
         find.form_value = value
@@ -112,11 +199,11 @@ const formSubmit = (event: Event) => {
           find.form_value = value
         }
       } else if (comp === 'COMP_AMOUNT') {
-        console.log(`金额输入组件 ${sequence} 的值为：`, value)
+        // 处理自定义控件金额输入组件的值
         const required =
-          formInfo.form_instance[sequence - 1].values
-            .find((item) => item.name === '字段属性')
-            ?.value?.includes('必填') ?? false
+          (
+            formInfo.form_instance[sequence - 1].values.find((item) => item.name === '字段属性')?.value as string
+          )?.includes('必填') ?? false
         if (required) {
           if (value.endsWith('_')) {
             return
@@ -129,7 +216,6 @@ const formSubmit = (event: Event) => {
           } else {
             find.form_values = value.split('_')
           }
-          // 处理自定义控件金额输入组件的值
         }
       } else if (comp === 'COMP_SELECTION_BOX') {
         // 处理自定义控件选择框组件的值
@@ -204,65 +290,115 @@ const formSubmit = (event: Event) => {
   }
 
   isUploading.value = true
-  // console.log('form keys', formInfo)
-  createForm(formInfo)
+  if (type.value === 'edit') {
+    updateApplicationInstance(formInfo, formInfo.form_code)
+      .then((res) => {
+        console.log('提交表单成功：', res)
+        if (res.code === 200) {
+          const instanceId = res.message
+          submittion(
+            {
+              workflow_cfg: formInfo.workflow_cfg,
+              form_instance: formInfo.form_instance,
+              form_instance_code: formInfo.form_instance_code,
+              form_name: formInfo.form_name
+            },
+            instanceId
+          )
+        } else {
+          toast.error(res.message.toString() || '创建申请单实例失败', 2000)
+        }
+      })
+      .catch((err) => {
+        console.error('提交表单失败：', err)
+        toast.error('创建申请单实例出现异常', 2000)
+      })
+      .finally(() => {
+        isUploading.value = false
+      })
+  } else if (type.value === 'create') {
+    createForm(formInfo)
+      .then((res) => {
+        if (res.code === 200) {
+          const instanceId = res.message
+          submittion(
+            {
+              workflow_cfg: formInfo.workflow_cfg,
+              form_instance: formInfo.form_instance
+            },
+            instanceId
+          )
+        } else {
+          toast.error(res.message.toString() || '创建申请单实例失败', 2000)
+        }
+      })
+      .catch((err) => {
+        console.error('提交表单失败：', err)
+        toast.error('创建申请单实例出现异常', 2000)
+      })
+      .finally(() => {
+        isUploading.value = false
+        submitType = 'submit'
+      })
+  } else if (type.value === 'resubmit') {
+    createForm({
+      form_code: formInfo.form_code,
+      form_group: formInfo.form_group,
+      form_name: formInfo.form_name,
+      workflow_cfg: formInfo.workflow_cfg,
+      form_instance: formInfo.form_instance,
+      reform_id: formInfo.reform_id
+    })
+      .then((res) => {
+        console.log('提交表单成功：', res)
+        if (res.code === 200) {
+          const instanceId = res.message
+          if (submitType === 'save') {
+            toast.success('保存成功', 2000)
+            uni.navigateBack()
+            return
+          }
+          submittion(
+            {
+              workflow_cfg: formInfo.workflow_cfg,
+              form_instance: formInfo.form_instance
+            },
+            instanceId
+          )
+        } else {
+          toast.error(res.message.toString() || '创建申请单实例失败', 2000)
+        }
+      })
+      .catch((err) => {
+        console.error('提交表单失败：', err)
+        toast.error('创建申请单实例出现异常', 2000)
+      })
+      .finally(() => {
+        isUploading.value = false
+      })
+  }
+}, 10)
+
+const submittion = (data: Record<string, unknown>, id: string) => {
+  submitApplicationInstance(data, id)
     .then((res) => {
-      console.log('提交表单成功：', res)
       if (res.code === 200) {
-        const instanceId = res.message
-        submitApplicationInstance(
-          {
-            workflow_cfg: formInfo.workflow_cfg,
-            form_instance: formInfo.form_instance
-          },
-          instanceId
-        )
-          .then((res) => {
-            console.log('提交申请单实例成功：', res)
-            if (res.code === 200) {
-              uni.showToast({
-                title: '提交成功',
-                icon: 'success'
-              })
-              uni.navigateBack()
-            } else {
-              uni.showToast({
-                title: res.message.toString() || '提交申请单实例失败',
-                icon: 'error'
-              })
-            }
-          })
-          .catch((err) => {
-            console.error('提交申请单实例失败：', err)
-            uni.showToast({
-              title: err.toString() || '提交申请单实例出现异常',
-              icon: 'error'
-            })
-          })
-          .finally(() => {
-            isUploading.value = false
-          })
+        toast.success('提交成功', 2000)
+        uni.navigateBack()
       } else {
-        uni.showToast({
-          title: res.message || '创建申请单实例失败',
-          icon: 'error'
-        })
+        toast.error(res.message.toString(), 2000)
       }
     })
     .catch((err) => {
-      console.error('提交表单失败：', err)
-      uni.showToast({
-        title: '创建申请单实例出现异常',
-        icon: 'error'
-      })
+      toast.error(err.toString() || '提交申请单实例出现异常', 2000)
     })
     .finally(() => {
       isUploading.value = false
     })
 }
 
-const queryFormCfg = (id: string, type: 'create' | 'edit' | 'view') => {
-  if (type === 'create') {
+const queryFormCfg = (id: string) => {
+  if (type.value === 'create') {
     queryFormDetail(id)
       .then((res) => {
         if (res.code === 200) {
@@ -290,13 +426,14 @@ const queryFormCfg = (id: string, type: 'create' | 'edit' | 'view') => {
       .catch((err) => {
         console.error('查询表单详情失败：', err)
       })
-  } else {
+  } else if (type.value === 'edit' || type.value === 'invalid' || type.value === 'modify') {
     queryInstanceDetail(id)
       .then((res) => {
         if (res.code === 200) {
           console.log('获取单据详情成功：', res.message)
           const message = res.message || {}
-          formInfo.form_code = id
+          formInfo.form_code = id || ''
+          formInfo.form_instance_code = message.form_instance_code || ''
           formInfo.form_name = message.form_name || ''
           formInfo.form_instance = message.form_instance || []
           let depItems: FormItem[] = []
@@ -317,14 +454,53 @@ const queryFormCfg = (id: string, type: 'create' | 'edit' | 'view') => {
       .catch((err) => {
         console.error('查询表单编辑详情失败：', err)
       })
+  } else if (type.value === 'resubmit') {
+    getResubmitForm({ instance_id: id })
+      .then(async (res) => {
+        if (res.code === 200) {
+          const message = res.message || {}
+          formInfo.form_code = message.form_code || ''
+          formInfo.form_name = message.form_name || ''
+          formInfo.workflow_cfg = message.workflow_cfg || {}
+          formInfo.form_instance = message.form_config || []
+          formInfo.reform_id = id
+          let depItems: FormItem[] = []
+          const formConfigs = message.form_config || []
+          formConfigs.forEach((formConfig) => {
+            depItems.push({
+              label: formConfig.values.find((item) => item.name === '标题')?.value as string,
+              sequence: formConfig.sequence,
+              component_code: formConfig.component_code,
+              values: formConfig.values
+            })
+          })
+          formItems.value = depItems
+          const result = await queryFormDetail(formInfo.form_code)
+          if (result.code === 200) {
+            console.log('查询表单详情成功：', result)
+            formInfo.form_group = result.message.group || ''
+          }
+        } else {
+          console.error('查询表单详情失败：', res.message)
+        }
+      })
+      .catch((err) => {
+        console.error('查询表单详情失败：', err)
+      })
   }
 }
 
 onLoad((options?: PageOptions) => {
   formRulesUtil.clearRules()
   if (options?.id) {
-    type.value = options.type as string
-    queryFormCfg(options.id, options.type!)
+    type.value = options.type as FormActionType
+    if (type.value === 'edit') {
+      formInfo.workflow_cfg = {
+        workflow_code: options.workflow_code!,
+        workflow_version: options.workflow_version!
+      }
+    }
+    queryFormCfg(options.id)
   }
 })
 </script>
@@ -352,6 +528,42 @@ onLoad((options?: PageOptions) => {
       justify-content: space-between;
       padding: 16rpx 0;
     }
+    .uni-form-comment {
+      width: calc(100% - 64rpx);
+      margin-left: 32rpx;
+      padding-bottom: 32rpx;
+      .component-label {
+        margin-bottom: 10rpx;
+        .field-desc {
+          font-size: 26rpx;
+          .required {
+            color: #fb2c36;
+            font-size: 28rpx;
+            margin-right: 6rpx;
+            vertical-align: middle;
+            font-weight: bold;
+          }
+        }
+      }
+      .component-value {
+        display: flex;
+        align-items: center;
+        position: relative;
+        .component-style {
+          width: 100%;
+          border: 1px solid rgba(229, 230, 235, 0.6);
+          background-color: rgba(249, 250, 251, 1);
+          border-radius: 8px;
+          padding-left: 20rpx;
+          padding-top: 10rpx;
+          padding-bottom: 12rpx;
+          padding-right: 50rpx;
+          font-size: 28rpx;
+          box-sizing: border-box;
+          color: rgba(16, 20, 28, 1);
+        }
+      }
+    }
   }
 }
 
@@ -363,12 +575,34 @@ onLoad((options?: PageOptions) => {
   right: 0;
   background-color: #fff;
   padding: 20rpx 30rpx;
+  display: flex;
   /* 兼容 iPhone 底部安全区，也就是你要求的“最下面” */
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.03);
   z-index: 99;
 
   .submit-btn {
+    font-size: 32rpx;
+    height: 88rpx;
+    line-height: 88rpx;
+    border-radius: 16rpx;
+    &::after {
+      border: none;
+    }
+    &.disabled {
+      background-color: rgba(0, 0, 0, 0.1);
+      color: rgba(109, 115, 123, 1);
+    }
+    &.activite {
+      background-color: #2979ff;
+      color: #fff;
+      &:active {
+        opacity: 0.8;
+      }
+    }
+  }
+
+  .save-btn {
     font-size: 32rpx;
     height: 88rpx;
     line-height: 88rpx;

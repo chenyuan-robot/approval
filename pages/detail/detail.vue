@@ -64,7 +64,7 @@
     </view>
 
     <view class="bottom-action-bar">
-      <view class="action-group" v-if="permission.reject">
+      <view class="action-group" v-if="operateConfig.reject">
         <view class="action-more">
           <view class="action-item" @click="openPanel">
             <image class="search-icon" src="/static/detail/more.svg" mode="aspectFit" />
@@ -83,14 +83,10 @@
           </view>
         </view>
       </view>
-      <view style="width: calc(100% - 80rpx)" v-if="isMyInitiation && !permission.reject">
+      <view style="width: calc(100% - 80rpx)" v-if="isMyInitiation && !operateConfig.reject">
         <view class="withdraw" v-if="statusEn === 'in_progress'" @click="handlerWithdraw">
           <image class="search-icon" src="/static/detail/withdraw.svg" mode="aspectFit" />
           <text class="action-text">撤回</text>
-        </view>
-        <view class="delete" v-if="statusEn === 'draft' || statusEn === 'reject'" @click="handlerDelete">
-          <image class="search-icon" src="/static/detail/delete.svg" mode="aspectFit" />
-          <text class="action-text">删除</text>
         </view>
       </view>
     </view>
@@ -101,13 +97,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, toRefs, watch, provide } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { InstanceHistoryItem, PageOptions } from './typings'
-import {
-  deleteApproval,
-  queryInstanceDetail,
-  queryInstanceHistory,
-  withdrawApproval,
-  ccReadReport
-} from '@/apis/modules/detail'
+import { queryInstanceDetail, queryInstanceHistory, withdrawApproval, ccReadReport } from '@/apis/modules/detail'
 import type { InstanceDetail } from './typings'
 import personUtil from '@/utils/person'
 import Renderer from './Renderer.vue'
@@ -133,6 +123,16 @@ const instanceDetail = ref<InstanceDetail>({} as InstanceDetail)
 const formItems = ref<FormItem[]>([])
 const histories = ref<InstanceHistoryItem[]>([])
 const isMyInitiation = ref<boolean>(false) // 本人提交
+const operateConfig = reactive({
+  agree: false,
+  post_add_sign: false,
+  pre_add_sign: false,
+  reject: false,
+  return_no_reapprove: false,
+  return_reapprove: false,
+  terminate: false,
+  transfer: false
+})
 const permission = reactive({
   pass: false,
   reject: false,
@@ -142,6 +142,7 @@ const permission = reactive({
   comment: false,
   sign: false
 })
+
 provide('type', 'view')
 
 const userInfo = computed(() => (store.state as StoreState).user)
@@ -169,7 +170,6 @@ const getApprovalHistory = (id: string) => {
           }
         })
         histories.value = mapHistory
-        console.log('获取审批历史成功：', mapHistory)
       } else {
         toast.info((res.message as string) ?? '获取审批历史失败')
       }
@@ -184,21 +184,19 @@ const getInstance = (instance_id: string, type: InstanceType) => {
     .then((res) => {
       if (res.code === 200) {
         const message = res.message || {}
-        const operateConfig = message.operation_config
+        console.log('获取单据详情成功：', message)
+        const operate_config = message.operation_config
         const key = message.applicant || ''
         const find = personUtil.lookupV2(key)
         isMyInitiation.value = find.name === user_name.value
-        console.log('find___find', isMyInitiation.value)
-
         instanceDetail.value = {
           ...message,
           applicant: find.name,
           application_time: message.application_time,
-          task_node_instance_id: '',
+          task_node_instance_id: message.task_node_instance_id,
           department: find.departments,
           back_ground: find.back_ground
         }
-        console.log('获取单据详情成功：', instanceDetail.value)
         let depItems: FormItem[] = []
         const formInstance = message.form_instance || []
         formInstance.forEach((instance) => {
@@ -211,6 +209,14 @@ const getInstance = (instance_id: string, type: InstanceType) => {
         })
         formItems.value = depItems
         getApprovalHistory(message.form_instance_code)
+        operateConfig.agree = operate_config.agree
+        operateConfig.post_add_sign = operate_config.post_add_sign
+        operateConfig.pre_add_sign = operate_config.pre_add_sign
+        operateConfig.reject = operate_config.reject
+        operateConfig.return_no_reapprove = operate_config.return_no_reapprove
+        operateConfig.return_reapprove = operate_config.return_reapprove
+        operateConfig.transfer = operate_config.transfer
+        operateConfig.terminate = operate_config.terminate
         if (isMyInitiation.value && type === 'myInitiation') {
           console.log('【我的申请】 | 飞书本人提交的单子消息 进入')
           permission.pass = false
@@ -219,7 +225,7 @@ const getInstance = (instance_id: string, type: InstanceType) => {
           permission.return = false
           permission.withdraw = true
           permission.comment = false
-          permission.sign = operateConfig.post_add_sign && operateConfig.pre_add_sign
+          permission.sign = operate_config.post_add_sign && operate_config.pre_add_sign
         } else {
           console.log('【审批中心】点击进入 | 飞书审批中心的单子消息 进入')
           if (type !== 'cc') {
@@ -230,7 +236,7 @@ const getInstance = (instance_id: string, type: InstanceType) => {
             permission.return = allow
             permission.withdraw = false
             permission.comment = allow
-            permission.sign = operateConfig.post_add_sign && operateConfig.pre_add_sign
+            permission.sign = operate_config.post_add_sign && operate_config.pre_add_sign
           }
         }
         // 处理未读消息
@@ -243,16 +249,6 @@ const getInstance = (instance_id: string, type: InstanceType) => {
       console.error('获取单据详情失败：', error)
     })
 }
-
-// const handlerBack = () => {
-//   if (globalInstanceId.value) {
-//     uni.switchTab({
-//       url: '/pages/index/index'
-//     })
-//   } else {
-//     uni.navigateBack()
-//   }
-// }
 
 const ccRead = (id: string) => {
   ccReadReport(id)
@@ -311,7 +307,7 @@ const handlerAgree = (): void => {
  */
 const handlerReturn = (): void => {
   uni.navigateTo({
-    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=return`
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&task_node_instance_id=${instanceDetail.value.task_node_instance_id}&type=return`
   })
 }
 
@@ -320,7 +316,7 @@ const handlerReturn = (): void => {
  */
 const handlerSign = (): void => {
   uni.navigateTo({
-    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=sign`
+    url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=sign&pre=${operateConfig.pre_add_sign}&post=${operateConfig.post_add_sign}`
   })
 }
 
@@ -348,24 +344,12 @@ const handlerWithdraw = (): void => {
     })
 }
 
-const handlerDelete = (): void => {
-  deleteApproval(instanceDetail.value.instance_code)
-    .then((res) => {
-      if (res.code === 200) {
-        toast.success('删除成功')
-        uni.navigateBack()
-      } else {
-        toast.info((res.message as string) ?? '删除失败')
-      }
-    })
-    .catch((error) => {
-      console.error('删除失败：', error)
-    })
-}
-
 // 此处处理飞书消息跳转
 const globalInstanceId = computed(() => store.state.instance.instance_id)
 watch(globalInstanceId.value, (newVal: string) => {
+  setTimeout(() => {
+    toast.info(newVal, 2000)
+  }, 3000)
   if (newVal) {
     const globalInstanceType = store.state.instance.instance_type
     getInstance(globalInstanceId.value, globalInstanceType)

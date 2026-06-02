@@ -1,8 +1,9 @@
 <template>
-  <uni-popup
+  <!-- <uni-popup -->
+  <ui-popup
     ref="popup"
     type="bottom"
-    style="z-index: 9999"
+    style="z-index: 999999 !important; position: fixed !important;"
     background-color="#fff"
     border-radius="10px 10px 0 0"
     :mask-closable="true"
@@ -27,11 +28,11 @@
           <text class="check-icon" v-if="userList.checked">√</text>
           <text class="text" v-if="userList.job_title">{{ userList.job_title }}</text>
           <text class="text split" v-if="userList.job_title">-</text>
-          <text class="text">{{ userList.name }}</text>
+          <text class="text">{{ userList.name }} {{ userList.phone }}</text>
         </view>
       </scroll-view>
     </view>
-  </uni-popup>
+  </ui-popup>
 </template>
 
 <script setup lang="ts">
@@ -107,10 +108,15 @@ const handleClick = (userList: IPerson): void => {
   emit('update:modelValue', userList)
 }
 
+const setSelectedAccounts = (accounts: Array<string>) => {
+  selectedAccounts.value = accounts
+}
+
 defineExpose({
   open,
   close,
-  reset
+  reset,
+  setSelectedAccounts
 })
 </script>
 

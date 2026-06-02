@@ -37,9 +37,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { ref, inject, onMounted } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+
+interface FormConfig {
+  placeholder: string
+  dateType: string
+  showTitle: boolean
+  showFieldDesc: boolean
+  desc: string
+  required: boolean
+  value: string
+}
 
 defineOptions({
   name: 'HappenDate',
@@ -51,13 +62,22 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const config = ref<FormConfig>({
+  placeholder: '',
+  dateType: '年',
+  showTitle: false,
+  showFieldDesc: false,
+  desc: '',
+  required: false,
+  value: ''
+})
 const selectedDate = ref<string>('')
 
-const config = computed(() => {
+const getConfig = (): FormConfig => {
   console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const fieldStyle = props.formItem.values.find((item) => item.name === '字段样式')
   const dateType = fieldStyle?.value ?? '年'
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
@@ -74,14 +94,14 @@ const config = computed(() => {
   })
   return {
     placeholder: placeholder || '请选择日期',
-    dateType: dateType,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    dateType: dateType as string,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
-    value: titleItem?.form_value ?? '-'
+    value: (titleItem?.form_value as string) ?? ''
   }
-})
+}
 
 const getDate = (type: 'start' | 'end'): string => {
   const date = new Date()
@@ -112,6 +132,16 @@ const handleClear = () => {
     selectedDate.value = ''
   }
 }
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
+    if (config.value.value) {
+      selectedDate.value = config.value.value
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>

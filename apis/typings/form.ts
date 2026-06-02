@@ -10,6 +10,8 @@ export interface FormDetailResponse {
   group: string
   workflow_cfg: WorkflowCfg
   form_config: Array<FormConfigItem>
+  form_code?: string
+  form_name?: string
 }
 
 export interface WorkflowCfg {

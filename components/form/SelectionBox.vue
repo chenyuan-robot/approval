@@ -42,7 +42,7 @@
     </view>
     <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
-  <uni-popup
+  <ui-popup
     ref="popup"
     type="bottom"
     style="z-index: 9999"
@@ -66,12 +66,13 @@
         </view>
       </scroll-view>
     </view>
-  </uni-popup>
+  </ui-popup>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { computed, ref, onMounted, inject } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
 interface OptionItem {
@@ -79,8 +80,19 @@ interface OptionItem {
   checked: boolean
 }
 
+interface FormConfig {
+  placeholder: string
+  showFieldDesc: boolean
+  desc: string
+  showTitle: boolean
+  single: boolean
+  required: boolean
+  value: string
+  options: OptionItem[]
+}
+
 defineOptions({
-  name: 'SelectionBox',
+  name: 'SelectionBox', // 选择框
   inheritAttrs: false
 })
 
@@ -89,6 +101,16 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const config = ref<FormConfig>({
+  placeholder: '',
+  showFieldDesc: false,
+  desc: '',
+  showTitle: false,
+  single: true,
+  required: false,
+  value: '',
+  options: []
+})
 const index = ref<number>(-1)
 const popup = ref()
 const selectedValue = ref<string>('')
@@ -115,7 +137,7 @@ const handleClear = () => {
 
 const handleOpenPanel = () => {
   console.log(config.value.single)
-  if (!config.value.single) {
+  if (!config.value.single && !props.renderOnly) {
     popup?.value?.open()
   }
 }
@@ -140,14 +162,13 @@ const newOpts = computed(() => {
   })
 })
 
-const config = computed(() => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
-  const defaultSelcetion = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   formRulesUtil.depRules({
@@ -171,14 +192,30 @@ const config = computed(() => {
         checked: false
       }
     }),
-    defaultValue: defaultSelcetion?.specific_value ?? [],
     required: required,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     value: single
       ? ((titleItem?.form_value as string) ?? '')
       : Array.isArray(titleItem?.form_values)
         ? titleItem?.form_values?.join(', ')
         : ''
+  }
+}
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify' || type?.value === 'invalid') {
+    if (config.value.value) {
+      if (config.value.single) {
+        selectedValue.value = config.value.value
+        const selectedIndex = config.value.options.findIndex((opt) => opt.name === config.value.value)
+        index.value = selectedIndex
+      } else {
+        selectedLists.value = (config.value.value as string).split(', ').map((item) => item.trim())
+        selectedValue.value = config.value.value
+      }
+    }
   }
 })
 </script>

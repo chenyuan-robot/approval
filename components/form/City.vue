@@ -28,7 +28,7 @@
     </view>
     <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
-  <uni-popup
+  <ui-popup
     ref="popupRef"
     type="bottom"
     style="z-index: 9999"
@@ -81,12 +81,13 @@
         </view>
       </scroll-view>
     </view>
-  </uni-popup>
+  </ui-popup>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { inject, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import type { ProvinceCityAreaItem } from '@/apis/typings/form'
 import { getProvinceCityAreaList } from '@/apis/modules/form'
 import { formRulesUtil } from '@/pages/form/utils/rules'
@@ -94,6 +95,16 @@ import { uniq } from 'lodash'
 
 interface Item extends ProvinceCityAreaItem {
   checked: boolean
+}
+
+export interface FormConfig {
+  placeholder: string
+  showFieldDesc: boolean
+  showTitle: boolean
+  desc: string
+  single: boolean
+  required: boolean
+  value: string
 }
 
 defineOptions({
@@ -110,6 +121,7 @@ const page = {
   page: 1,
   page_size: 50
 }
+const isInvalidModify = ref<boolean>(false)
 const isLimited = ref(false)
 const limitedValue = ref<string[]>([])
 const popupRef = ref()
@@ -121,6 +133,15 @@ const citySelected = ref<Item | null>(null)
 const selectedValue = ref<string>('')
 const selectedLists = ref<string[]>([])
 const scrollHeight = uni.getSystemInfoSync().windowHeight - 200
+const config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  required: false,
+  showFieldDesc: false,
+  desc: '',
+  single: false,
+  value: ''
+})
 
 const handleClear = () => {
   if (selectedValue.value) {
@@ -136,7 +157,7 @@ const handleClear = () => {
 }
 const handleOpenPanel = () => {
   console.log(config.value.single)
-  if (props.renderOnly) return
+  if (props.renderOnly || isInvalidModify.value) return
   popupRef?.value?.open()
 }
 
@@ -147,7 +168,7 @@ const handleProvinceItem = async (item: Item) => {
 }
 
 const handleCityItem = async (item: Item) => {
-  console.log('选择的城市：', item)
+  console.log('选择的城市：', item.city)
   citySelected.value = item
   if (item.city === '暂不选择') {
     const value = provinceSelected.value?.province
@@ -216,11 +237,11 @@ const handleAreaItem = async (item: Item) => {
   }
 }
 
-const config = computed(() => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
@@ -238,13 +259,13 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请选择内容',
     showFieldDesc: showFieldDesc,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     desc: fieldDesc?.value as string,
     single,
     required,
     value: single ? formValues?.join('/') : formValues?.join(', ')
   }
-})
+}
 
 const getCityList = async (province: string) => {
   const res_city = await getProvinceCityAreaList({
@@ -252,70 +273,47 @@ const getCityList = async (province: string) => {
     level: 2,
     province
   })
+  let lists: Item[] = []
   if (isLimited.value) {
     const result = limitedValue.value.filter(
       (item: string) => item.split('/')?.[0] === province && !item.split('/')?.[1]
     )
     if (result.length === 1) {
-      const lists = res_city.data?.city_levels.map((item) => ({
+      lists = res_city.data?.city_levels.map((item) => ({
         ...item,
         checked: false
       })) as Item[]
-      cityList.value = [
-        {
-          id: 0,
-          province: '',
-          city: '暂不选择',
-          county: '',
-          checked: selectedLists.value.includes(province),
-          code: '',
-          country: '',
-          level: 0
-        }
-      ].concat(lists)
     } else {
       const cities = uniq(
         limitedValue.value
           .filter((item: string) => item.split('/')?.[0] === province)
           .map((item: string) => item.split('/')?.[1])
       )
-      const lists = res_city.data?.city_levels
+      lists = res_city.data?.city_levels
         ?.filter((item) => cities.includes(item.city))
         ?.map((item) => ({
           ...item,
           checked: false
         })) as Item[]
-      cityList.value = [
-        {
-          id: 0,
-          province: '',
-          city: '暂不选择',
-          county: '',
-          checked: selectedLists.value.includes(province),
-          code: '',
-          country: '',
-          level: 0
-        }
-      ].concat(lists)
     }
   } else {
-    const lists = res_city.data?.city_levels.map((item) => ({
+    lists = res_city.data?.city_levels.map((item) => ({
       ...item,
       checked: false
     })) as Item[]
-    cityList.value = [
-      {
-        id: 0,
-        province: '',
-        city: '暂不选择',
-        county: '',
-        checked: selectedLists.value.includes(province),
-        code: '',
-        country: '',
-        level: 0
-      }
-    ].concat(lists)
   }
+  cityList.value = [
+    {
+      id: 0,
+      province: '',
+      city: '暂不选择',
+      county: '',
+      checked: selectedLists.value.includes(province),
+      code: '',
+      country: '',
+      level: 0
+    }
+  ].concat(lists)
   citySelected.value = cityList.value[1]
   await getAreaList(province, cityList.value[1]?.city || '')
 }
@@ -327,6 +325,7 @@ const getAreaList = async (province: string, city: string) => {
     province,
     city
   })
+  let lists: Item[] = []
   if (isLimited.value) {
     const datas = limitedValue.value.filter(
       (item: string) => item.split('/')?.[0] === province && !item.split('/')?.[1]
@@ -335,72 +334,65 @@ const getAreaList = async (province: string, city: string) => {
       (item: string) => item.split('/')?.[0] === province && item.split('/')?.[1] === city && !item.split('/')?.[2]
     )
     if (result.length === 1 || datas.length === 1) {
-      const lists = res_area.data?.city_levels.map((item) => ({
+      lists = res_area.data?.city_levels.map((item) => ({
         ...item,
         checked: selectedLists.value.includes(province + '/' + city + '/' + item.county)
       })) as Item[]
-      areaList.value = [
-        {
-          id: 0,
-          province: '',
-          city: '',
-          county: '暂不选择',
-          checked: selectedLists.value.includes(province + '/' + city),
-          code: '',
-          country: '',
-          level: 0
-        }
-      ].concat(lists)
     } else {
       const areas = uniq(
         limitedValue.value
           .filter((item: string) => item.split('/')?.[0] === province && item.split('/')?.[1] === city)
           .map((item: string) => item.split('/')?.[2])
       )
-      const lists = res_area.data?.city_levels
+      lists = res_area.data?.city_levels
         ?.filter((item) => areas.includes(item.county))
         ?.map((item) => ({
           ...item,
           checked: selectedLists.value.includes(province + '/' + city + '/' + item.county)
         })) as Item[]
-      areaList.value = [
-        {
-          id: 0,
-          province: '',
-          city: '',
-          county: '暂不选择',
-          checked: selectedLists.value.includes(province + '/' + city),
-          code: '',
-          country: '',
-          level: 0
-        }
-      ].concat(lists)
     }
   } else {
-    const lists = res_area.data?.city_levels.map((item) => ({
+    lists = res_area.data?.city_levels.map((item) => ({
       ...item,
       checked: selectedLists.value.includes(province + '/' + city + '/' + item.county)
     })) as Item[]
-    areaList.value = [
-      {
-        id: 0,
-        province: '',
-        city: '',
-        county: '暂不选择',
-        checked: selectedLists.value.includes(province + '/' + city),
-        code: '',
-        country: '',
-        level: 0
-      }
-    ].concat(lists)
   }
+  areaList.value = [
+    {
+      id: 0,
+      province: '',
+      city: '',
+      county: '暂不选择',
+      checked: selectedLists.value.includes(province + '/' + city),
+      code: '',
+      country: '',
+      level: 0
+    }
+  ].concat(lists)
 }
 
 onMounted(async () => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
+    if (config.value.value) {
+      const lists = config.value.value.split(', ')
+      lists.forEach((item) => {
+        if (config.value.single) {
+          selectedValue.value = item
+          selectedLists.value.push(item)
+        } else {
+          selectedValue.value = config.value.value
+          selectedLists.value.push(item)
+        }
+      })
+    }
+  }
   const selectionRange = props.formItem.values.find((item) => item.name === '选择范围')
   const value = selectionRange?.value as string
   isLimited.value = value === '部分'
-  const specific_value = selectionRange?.specific_value ?? []
+  const specific_value = (selectionRange?.specific_value as string[]) ?? []
   limitedValue.value = specific_value
   const limitProvinces = uniq(specific_value.map((item: string) => item.split('/')?.[0]))
   // 获取省市区列表
@@ -424,7 +416,6 @@ onMounted(async () => {
   provinceSelected.value = provinceList.value[0]
   if (provinceSelected.value) {
     await getCityList(provinceList.value[0]?.province || '')
-    // console.log('省市区列表：', provinceList.value)
   }
 })
 </script>

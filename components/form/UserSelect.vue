@@ -38,12 +38,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { ref, inject, onMounted } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import UserPopup from '@/components/UserPopup.vue'
 import type { IPerson } from '@/apis/typings/global'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import { useStore } from 'vuex'
+
+interface FormConfig {
+  placeholder: string
+  showFieldDesc: boolean
+  disabled: boolean
+  required: boolean
+  desc: string
+  showTitle: boolean
+  maxlength: number
+  showAll: boolean
+  departUserList: string[]
+  single: boolean
+  formValuesPersons: IPerson[]
+  value: string
+}
 
 const store = useStore()
 
@@ -57,16 +73,30 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const config = ref<FormConfig>({
+  placeholder: '',
+  showFieldDesc: false,
+  disabled: false,
+  required: false,
+  desc: '',
+  showTitle: false,
+  maxlength: 0,
+  showAll: false,
+  departUserList: [],
+  single: false,
+  formValuesPersons: [],
+  value: ''
+})
 const userPopupRef = ref()
 const selectedUsers = ref<IPerson[]>([])
 const selectedValue = ref<string>('')
 const submitValue = ref<string>('')
 
-const config = computed(() => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const selectionRange = props.formItem.values.find((item) => item.name === '选择范围')
@@ -74,9 +104,12 @@ const config = computed(() => {
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const formValues = (titleItem?.form_values as string[]) ?? []
+  let formValuesPersons: IPerson[] = []
   let nameStr: string = ''
   for (const item of formValues) {
-    const name: string = store.state.userList.find((user: IPerson) => user.account === item)?.name ?? ''
+    const person = store.state.userList.find((user: IPerson) => user.account === item)
+    formValuesPersons.push(person)
+    const name: string = person?.name ?? ''
     nameStr += name ? `${name}、` : ''
   }
   formRulesUtil.depRules({
@@ -91,18 +124,18 @@ const config = computed(() => {
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
-    disabled: !(defaultItem?.extra_option_config?.default_value ?? false),
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     required: required,
     desc: fieldDesc?.value as string,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[]) ?? []) : [],
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     maxlength: Number(maxlength) || 1000,
     showAll: selectionRange?.value === '全部' || selectionRange?.value === null,
     departUserList: (selectionRange?.specific_value as string[]) ?? [],
     single: selectionMode === '单项',
+    formValuesPersons,
     value: nameStr.slice(0, -1)
   }
-})
+}
 
 const handleClear = () => {
   if (submitValue.value) {
@@ -134,6 +167,23 @@ const handleUserSelect = (selectedUser: IPerson) => {
   selectedValue.value = selectedUsers.value.map((item) => item.name).join(', ')
   submitValue.value = selectedUsers.value.map((item) => item.account).join(', ')
 }
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify' || type?.value === 'invalid') {
+    const accounts = config.value.formValuesPersons.map((person) => person.account)
+    if (config.value.single) {
+      selectedValue.value = config.value.value ?? ''
+      submitValue.value = config.value.formValuesPersons[0]?.account ?? ''
+    } else {
+      selectedValue.value = config.value.value.split('、').join(', ')
+      submitValue.value = accounts.join(', ')
+    }
+    selectedUsers.value = config.value.formValuesPersons
+    userPopupRef?.value?.setSelectedAccounts(accounts)
+  }
+})
 </script>
 
 <style lang="scss" scoped>

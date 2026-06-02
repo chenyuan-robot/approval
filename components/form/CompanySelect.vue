@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
+import { formRulesUtil } from '@/pages/form/utils/rules'
 
 interface OptionItem {
   name: string
@@ -76,6 +77,17 @@ const config = computed(() => {
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const single = selectionMode === '单项' // 是否单选
+  formRulesUtil.depRules({
+    name: `COMP_COMPANY_SELECT___${props.formItem.sequence}`,
+    rules: [
+      {
+        // ^.+$: 至少一个字符（必填）
+        // .*: 任意字符（非必填）
+        ruleType: required ? '^.+$' : '.*',
+        errorMessage: `${props.formItem.label}不能为空`
+      }
+    ]
+  })
   return {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,

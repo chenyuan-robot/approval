@@ -14,7 +14,7 @@
         class="component-style"
         placeholder-style="color: #86909C; font-size: 28rpx;"
         style="height: 192rpx"
-        :value="config.defaultValue"
+        :value="inputValue"
         :placeholder="config.placeholder"
         :maxlength="config.maxlength"
       />
@@ -24,9 +24,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { inject, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+
+interface FormConfig {
+  placeholder: string
+  showTitle: boolean
+  desc: string
+  showFieldDesc: boolean
+  maxlength: number
+  required: boolean
+  value: string
+}
 
 defineOptions({
   name: 'SecretMultiInput',
@@ -38,15 +49,27 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const config = computed(() => {
+const inputValue = ref<string>('')
+let config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  desc: '',
+  showFieldDesc: false,
+  maxlength: 0,
+  required: false,
+  value: ''
+})
+
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
+  inputValue.value = defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : ''
   // 该表单项校验规则
   formRulesUtil.depRules({
     name: `COMP_SECRET_MULTI_INPUT___${props.formItem.sequence}`,
@@ -63,11 +86,19 @@ const config = computed(() => {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
-    defaultValue: defaultItem?.value === '指定值' ? ((defaultItem?.specific_value as string[])?.[0] ?? '') : '',
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     maxlength: Number(maxlength) || 1000,
     required: required,
     value: (titleItem?.form_value as string) ?? ''
+  }
+}
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify') {
+    const formValue = config.value.value
+    inputValue.value = formValue
   }
 })
 </script>

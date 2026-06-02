@@ -6,6 +6,8 @@ export interface FormInfo {
   form_name: string
   form_instance: Array<FormConfigItem>
   workflow_cfg: WorkflowCfg
+  form_instance_code?: string
+  reform_id?: string
 }
 
 export interface FormItem {
@@ -17,7 +19,9 @@ export interface FormItem {
 
 export interface PageOptions {
   id?: string
-  type?: 'create' | 'edit' | 'view'
+  type?: FormActionType
+  workflow_code?: string
+  workflow_version?: string
 }
 
 export interface FormValue {
@@ -25,3 +29,5 @@ export interface FormValue {
   rules: Array<Record<string, string>>
   // [key: string]: string | number | boolean | Array<string> | Array<number> | Array<boolean>
 }
+
+export type FormActionType = 'create' | 'edit' | 'view' | 'resubmit' | 'invalid' | 'modify'

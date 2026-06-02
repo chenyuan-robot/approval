@@ -26,19 +26,19 @@
         </view>
 
         <view class="filter-row">
-          <uni-data-select
+          <ui-data-select
             v-model="selectedType[currentTab]"
             :localdata="typeList[currentTab]"
             :clear="false"
             class="filter-item"
-          ></uni-data-select>
+          ></ui-data-select>
 
-          <uni-data-select
+          <ui-data-select
             v-model="selectedStatus[currentTab]"
             :localdata="statusList[currentTab]"
             :clear="false"
             class="filter-item"
-          ></uni-data-select>
+          ></ui-data-select>
         </view>
       </view>
     </view>

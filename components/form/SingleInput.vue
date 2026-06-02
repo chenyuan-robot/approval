@@ -13,6 +13,7 @@
         :name="`COMP_SINGLE_INPUT___${props.formItem.sequence}`"
         class="component-style"
         style="height: 80rpx"
+        :disabled="isInvalidModify"
         placeholder-style="color: #86909C; font-size: 28rpx;"
         :value="inputValue"
         :placeholder="config.placeholder"
@@ -25,8 +26,20 @@
 
 <script setup lang="ts">
 import { inject, onMounted, ref } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+
+interface FormConfig {
+  placeholder: string
+  showTitle: boolean
+  showFieldDesc: boolean
+  disabled: boolean
+  maxlength: number
+  desc: string
+  required: boolean
+  value: string
+}
 
 defineOptions({
   name: 'SingleInput',
@@ -38,15 +51,24 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const type = inject('type')
+const isInvalidModify = ref<boolean>(false)
 const inputValue = ref<string>('')
-const config = ref<Record<string, unknown>>({})
+const config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  disabled: false,
+  showFieldDesc: false,
+  maxlength: 0,
+  desc: '',
+  required: false,
+  value: ''
+})
 
-const getConfig = () => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const maxlength = props.formItem.values.find((item) => item.name === '字符数限制')?.value as string
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
@@ -57,30 +79,28 @@ const getConfig = () => {
     name: `COMP_SINGLE_INPUT___${props.formItem.sequence}`,
     rules: [
       {
-        // ^.+$: 至少一个字符（必填）
-        // .*: 任意字符（非必填）
         ruleType: required ? '^.+$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
     ]
   })
-
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    disabled: false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     desc: fieldDesc?.value as string,
     maxlength: Number(maxlength) || 1000,
     required: required,
-    value: titleItem?.form_value ?? ''
+    value: (titleItem?.form_value as string) ?? ''
   }
 }
 
 onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
-  if (type.value === 'edit') {
-    console.log('edit', props.formItem)
-    console.log('edit', config.value)
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     const formValue = config.value.value
     inputValue.value = formValue
   }

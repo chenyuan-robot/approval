@@ -13,6 +13,7 @@
         class="component-style"
         :name="`COMP_DATE___${props.formItem.sequence}`"
         style="height: 80rpx"
+        :disabled="isInvalidModify"
         mode="date"
         :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
         :value="selectedDate"
@@ -37,8 +38,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted, inject } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+
+interface FormConfig {
+  placeholder: string
+  dateType: string
+  showTitle: boolean
+  showFieldDesc: boolean
+  desc: string
+  required: boolean
+  value: string
+}
 
 defineOptions({
   name: 'ADate',
@@ -50,15 +62,23 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const type = inject('type')
+const isInvalidModify = ref<boolean>(false)
 const selectedDate = ref<string>('')
-const config = ref<Record<string, unknown>>({})
+const config = ref<FormConfig>({
+  placeholder: '',
+  dateType: '',
+  showTitle: false,
+  showFieldDesc: false,
+  desc: '',
+  required: false,
+  value: ''
+})
 
-const getConfig = () => {
+const getConfig = (): FormConfig => {
   console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const fieldStyle = props.formItem.values.find((item) => item.name === '字段样式')
   const dateType = fieldStyle?.value ?? '年'
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
@@ -75,12 +95,12 @@ const getConfig = () => {
   })
   return {
     placeholder: placeholder || '请选择日期',
-    dateType: dateType,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    dateType: dateType as string,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
-    value: titleItem?.form_value ?? ''
+    value: (titleItem?.form_value as string) ?? ''
   }
 }
 
@@ -115,12 +135,11 @@ const bindDateChange = (event: Event) => {
 }
 
 onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
-  if (type.value === 'edit') {
-    console.log('edit', props.formItem)
-    console.log('edit', config.value.value)
-    const formValue = config.value.value
-    // inputValue.value = formValue
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
+    const formValue = config.value.value as string
     selectedDate.value = formValue
   }
 })

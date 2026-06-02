@@ -7,6 +7,7 @@ export interface FormDetailResponse {
   status: string
   reform: string | null // 关联申请单
   operation_comment: string | null
+  task_node_instance_id: string
   instance_code: string
   form_name: string
   form_instance_code: string
@@ -31,6 +32,11 @@ export interface FormConfigItem {
   location: Location
   sequence: number
   values: Array<Record<string, unknown>>
+}
+
+export interface Location {
+  col: number
+  row: number
 }
 
 export interface OperateHistoryResponse {

@@ -24,16 +24,47 @@
   .component-value {
     .detail-container {
       .detail-lists {
+         display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14rpx;
         width: 100%;
         font-size: 24rpx;
         color: #606266;
         background-color: #f5f6f8cc;
         border-radius: 4px;
-        .attachment-svg {
-          width: 24rpx;
-          height: 24rpx;
-          margin-right: 8rpx;
-          vertical-align: middle;
+        .list-start {
+          display: flex;
+          align-items: center;
+          .attachment-svg {
+            width: 24rpx;
+            height: 24rpx;
+            margin-right: 8rpx;
+            vertical-align: middle;
+            position: relative;
+            top: 2rpx;
+          }
+          .file-name {
+            font-size: 24rpx;
+            color: #4e5969;
+          }
+        }
+        .list-end {
+          display: flex;
+          align-items: center;
+          .suffix-eye {
+            width: 40rpx;
+            height: 40rpx;
+            display: block;
+            position: relative;
+            top: 2rpx;
+            margin-right: 28rpx;
+          }
+          .suffix-download {
+            width: 40rpx;
+            height: 40rpx;
+            display: block;
+          }
         }
       }
     }
@@ -95,23 +126,30 @@
           display: flex;
           align-items: center;
           .suffix-eye {
-            width: 28rpx;
-            height: 32rpx;
+            width: 40rpx;
+            height: 40rpx;
             display: block;
             position: relative;
             top: 2rpx;
             margin-right: 28rpx;
           }
           .suffix-download {
-            width: 32rpx;
-            height: 32rpx;
+            width: 40rpx;
+            height: 40rpx;
             display: block;
+          }
+          .suffix-delete {
+            width: 40rpx;
+            height: 40rpx;
+            display: block;
+            margin-left: 28rpx;
           }
         }
       }
     }
   }
   &.readable {
+    width: calc(100% - 32rpx);
     .component-label {
       .field-desc {
         .field-label {

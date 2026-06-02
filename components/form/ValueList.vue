@@ -44,7 +44,7 @@
     </view>
     <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
-  <uni-popup
+  <ui-popup
     ref="popup"
     type="bottom"
     style="z-index: 9999"
@@ -68,18 +68,30 @@
         </view>
       </scroll-view>
     </view>
-  </uni-popup>
+  </ui-popup>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { computed, onMounted, ref, inject } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { queryConditionNodeValueList } from '@/apis/modules/form'
 import type { ConditionNodeValueListItem } from '@/apis/typings/form'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
 interface OptionItem extends ConditionNodeValueListItem {
   checked: boolean
+}
+
+interface FormConfig {
+  placeholder: string
+  showTitle: boolean
+  showFieldDesc: boolean
+  desc: string
+  required: boolean
+  single: boolean
+  disabled: boolean
+  value: string
 }
 
 defineOptions({
@@ -92,6 +104,16 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const config = ref<FormConfig>({
+  placeholder: '',
+  showTitle: false,
+  showFieldDesc: false,
+  desc: '',
+  required: false,
+  single: false,
+  disabled: false,
+  value: ''
+})
 const index = ref<number>(0)
 const options = ref<OptionItem[]>([])
 const selectedValue = ref<string>('')
@@ -107,6 +129,7 @@ const handleClick = (opt: OptionItem) => {
     selectedLists.value.push(opt.name)
   }
   selectedValue.value = selectedLists.value.join(',')
+  console.log(selectedValue.value)
 }
 
 const handlerOpenPanel = () => {
@@ -145,12 +168,12 @@ const newOpts = computed(() => {
   })
 })
 
-const config = computed(() => {
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
@@ -168,24 +191,24 @@ const config = computed(() => {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
-    disabled: !(defaultItem?.extra_option_config?.default_value ?? false),
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     single,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     required: required,
     value: single
       ? ((titleItem?.form_value as string) ?? '')
       : Array.isArray(titleItem?.form_values)
-        ? titleItem?.form_values?.join(', ')
+        ? titleItem?.form_values?.join(',')
         : ''
   }
-})
+}
 
 onMounted(() => {
-  console.log('sectionOptions: ', props.renderOnly)
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
   if (props.renderOnly) return
   const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
   const value = sectionOptions?.value ?? ''
-  console.log('sectionOptions11: ', value)
   if (value) {
     const arr = (value as string).split(':')
     queryConditionNodeValueList(arr[0], arr[1])
@@ -201,6 +224,21 @@ onMounted(() => {
           selectedValue.value = options.value[0]?.name ?? ''
           if (selectedValue.value) {
             selectedLists.value = [selectedValue.value]
+          }
+          if (
+            type?.value === 'edit' ||
+            type?.value === 'resubmit' ||
+            type?.value === 'modify' ||
+            type?.value === 'invalid'
+          ) {
+            if (config.value.single) {
+              const selectedIndex = options.value.findIndex((opt) => opt.name === config.value.value)
+              index.value = selectedIndex
+              selectedValue.value = config.value.value
+            } else {
+              selectedValue.value = config.value.value as string
+              selectedLists.value = (config.value.value as string).split(',')
+            }
           }
         } else {
           uni.showToast({

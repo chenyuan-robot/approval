@@ -13,6 +13,7 @@
         :name="`COMP_SUBSTITUTE___${props.formItem.sequence}`"
         style="height: 80rpx"
         class="component-style"
+        :value="inputValue"
         placeholder-style="color: #86909C; font-size: 28rpx;"
         :placeholder="config.placeholder"
       />
@@ -22,12 +23,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { FormItem } from '../../pages/form/typings'
+import { inject, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
+interface FormConfig {
+  placeholder: string
+  showFieldDesc: boolean
+  desc: string
+  required: boolean
+  value: string
+}
+
 defineOptions({
-  name: 'Substitute',
+  name: 'Substitute', // 是否替票
   inheritAttrs: false
 })
 
@@ -36,11 +46,20 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const config = computed(() => {
+const inputValue = ref<string>('')
+const config = ref<FormConfig>({
+  placeholder: '',
+  showFieldDesc: false,
+  desc: '',
+  required: false,
+  value: ''
+})
+
+const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
-  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: string })?.default_value ?? false
+  const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   // 该表单项校验规则
@@ -48,8 +67,6 @@ const config = computed(() => {
     name: `COMP_SUBSTITUTE___${props.formItem.sequence}`,
     rules: [
       {
-        // ^.+$: 至少一个字符（必填）
-        // .*: 任意字符（非必填）
         ruleType: required ? '^.+$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
@@ -60,7 +77,17 @@ const config = computed(() => {
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
     required: required,
-    value: titleItem?.form_value ?? '-'
+    value: (titleItem?.form_value as string) ?? ''
+  }
+}
+
+onMounted(() => {
+  const type = inject<Ref<FormActionType>>('type')
+  config.value = getConfig()
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
+    if (config.value.value) {
+      inputValue.value = config.value.value
+    }
   }
 })
 </script>

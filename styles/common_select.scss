@@ -46,6 +46,9 @@
         }
       }
     }
+    .component-style.disable {
+      color: #86909C;
+    }
     .suffix-icon {
       width: 20rpx;
       height: 20rpx;
@@ -75,6 +78,15 @@
       .render-text {
         color: #10141c;
         font-size: 28rpx;
+      }
+      .suffix-text {
+        color:#4E5969;
+        font-size: 27rpx;
+        position: relative;
+        left: 0;
+        top: 0;
+        transform: none;
+        margin-left: 10rpx;
       }
     }
   }
