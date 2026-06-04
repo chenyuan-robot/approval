@@ -242,7 +242,6 @@ onMounted(() => {
           } else {
             lists = opts
           }
-          console.log('获取到的选项列表lists：', lists)
           options.value = lists.map((option) => {
             return {
               ...option,
@@ -253,6 +252,7 @@ onMounted(() => {
             selectedLists.value = config.value.value.split(',')
             return
           }
+          console.log('获取到的选项列表：', options.value)
           if (defaultItem?.value === '指定值') {
             const specific_value = (defaultItem?.specific_value as string[]) || []
             if (config.value.single) {
@@ -310,7 +310,7 @@ onMounted(() => {
     padding: 32rpx;
     .opt-list {
       height: 70rpx;
-      display: flex; 
+      display: flex;
       align-items: center;
       .split {
         margin: 0 8rpx;

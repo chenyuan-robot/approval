@@ -87,9 +87,9 @@ function getData() {
       for (var index = 0; index < documents.length; index++) {
         var element = documents[index]
         // ------ 临时代码，后面会删除
-        // if (element.name !== '开发组') {
-        //   continue
-        // }
+        if (element.name !== '开发组') {
+          continue
+        }
         // -------临时代码，后面会删除
 
         var item: FormGroupItem = {

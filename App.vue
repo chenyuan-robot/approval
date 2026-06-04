@@ -49,6 +49,7 @@ export default {
       task_node_instance_id?: string
     }
   }) {
+    const toast = makeToast()
     // 获取热启动参数
     // #ifdef MP-LARK
     setTimeout(() => {
