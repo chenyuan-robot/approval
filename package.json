@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "dev:h5": "uni",
+    "dev:mp-lark": "uni -p mp-lark",
     "test": "echo \"Error: no test specified\" && exit 1",
     "type-check": "vue-tsc --noEmit"
   },
@@ -10,6 +12,53 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "uni-app": {
+    "scripts": {
+      "lark-test": {
+        "title": "飞书-测试环境",
+        "env": {
+          "UNI_PLATFORM": "mp-lark",
+          "ENV_TYPE": "test",
+          "BASE_URL": "https://approval.softtest.cowarobot.com",
+          "DIGITAL_BASE_URL": "https://digital.softtest.cowarobot.com",
+          "NEW_BASE_URL": "https://newbasis.softtest.cowarobot.com",
+          "APP_ID": "cli_aa896edfa6b91cc4",
+          "APP_SECRET": "NTrZj7yEW9xlGFWspbavLe0w0L53hYNB",
+          "TENANT_ABBR": "coowa",
+          "REDIRECT_URI": "http://172.16.115.41:5174/"
+        }
+      },
+      "lark-prod": {
+        "title": "飞书-生产环境",
+        "env": {
+          "UNI_PLATFORM": "mp-lark",
+          "ENV_TYPE": "prod",
+          "BASE_URL": "https://approval.soft.cowarobot.com",
+          "DIGITAL_BASE_URL": "https://digital.soft.cowarobot.com",
+          "NEW_BASE_URL": "https://newbasis.soft.cowarobot.com",
+          "APP_ID": "cli_aa896edfa6b91cc4",
+          "APP_SECRET": "NTrZj7yEW9xlGFWspbavLe0w0L53hYNB",
+          "TENANT_ABBR": "coowa",
+          "REDIRECT_URI": "http://172.16.115.41:5174/"
+        }
+      },
+      "h5-dev": {
+        "title": "H5-本地开发",
+        "BROWSER": "chrome",
+        "env": {
+          "UNI_PLATFORM": "h5",
+          "ENV_TYPE": "dev",
+          "BASE_URL": "https://approval.softtest.cowarobot.com",
+          "DIGITAL_BASE_URL": "https://digital.softtest.cowarobot.com",
+          "NEW_BASE_URL": "https://newbasis.softtest.cowarobot.com",
+          "APP_ID": "cli_aa896edfa6b91cc4",
+          "APP_SECRET": "NTrZj7yEW9xlGFWspbavLe0w0L53hYNB",
+          "TENANT_ABBR": "coowa",
+          "REDIRECT_URI": "http://172.16.115.41:5174/"
+        }
+      }
+    }
+  },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5000720260410001",
     "@dcloudio/uni-app-harmony": "3.0.0-5000720260410001",
@@ -24,8 +73,10 @@
     "@dcloudio/uni-quickapp-webview": "3.0.0-5000720260410001",
     "@dcloudio/uni-ui": "^1.5.11",
     "dayjs": "^1.11.20",
+    "fs": "^0.0.1-security",
     "lodash": "^4.17.21",
     "mitt": "^3.0.1",
+    "path": "^0.12.7",
     "vuex": "^4.1.0",
     "vuex-persistedstate": "^4.1.0"
   },
@@ -33,6 +84,7 @@
     "@dcloudio/types": "^3.4.8",
     "@dcloudio/vite-plugin-uni": "3.0.0-4030620241128001",
     "@types/lodash": "^4.17.24",
+    "@types/node": "^25.9.1",
     "@vue/tsconfig": "^0.1.3",
     "eslint": "^9.33.0",
     "eslint-plugin-vue": "^10.4.0",

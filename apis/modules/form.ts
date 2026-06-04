@@ -1,4 +1,3 @@
-import { NEW_BASE_URL } from '@/constants/common'
 import { http } from '../request'
 import type {
   CompanyListResponse,
@@ -68,7 +67,7 @@ export const queryConditionNodeValueList = (code: string, col: string) => {
  * @returns
  */
 export const queryCompanyList = (page: number, page_size: number) => {
-  return http.post<CompanyListResponse>(`${NEW_BASE_URL}/api/v1/basis/finance/company/query`, {
+  return http.post<CompanyListResponse>(`${process.env.NEW_BASE_URL}/api/v1/basis/finance/company/query`, {
     page,
     page_size
   })
@@ -80,7 +79,10 @@ export const queryCompanyList = (page: number, page_size: number) => {
  * @returns
  */
 export const getProvinceCityAreaList = (data: Record<string, string | number>) => {
-  return http.post<ProvinceCityAreaListResponse>(`${NEW_BASE_URL}/api/v1/basis/location/city-level/query`, data)
+  return http.post<ProvinceCityAreaListResponse>(
+    `${process.env.NEW_BASE_URL}/api/v1/basis/location/city-level/query`,
+    data
+  )
 }
 
 /**

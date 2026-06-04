@@ -12,6 +12,7 @@
         v-else
         :name="`COMP_SINGLE_INPUT___${props.formItem.sequence}`"
         class="component-style"
+        :disabled="config.disabled"
         style="height: 80rpx"
         placeholder-style="color: #86909C; font-size: 28rpx;"
         v-model="inputValue"
@@ -85,7 +86,7 @@ const getConfig = (): FormConfig => {
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
-    disabled: false,
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     desc: fieldDesc?.value as string,
     maxlength: Number(maxlength) || 1000,

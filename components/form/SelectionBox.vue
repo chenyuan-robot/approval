@@ -33,6 +33,7 @@
           :placeholder="config.placeholder"
         />
         <image
+          v-if="!config.disabled"
           class="suffix-icon"
           :src="`${selectedValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
           mode="aspectFit"

@@ -1,12 +1,12 @@
 import store from '@/store'
 import type { IBaseResponse } from './typings/base'
-import { BASE_URL, HTTP_CODE } from '@/constants/common'
+import { HTTP_CODE } from '@/constants/common'
 import { stringify } from '@/utils/stringify'
 import type { StoreState } from '@/store/types'
 
 export function http<T>(options: UniNamespace.RequestOptions) {
   return new Promise<IBaseResponse<T>>((resolve, reject) => {
-    const publicUrl = options.url.includes('http') ? '' : BASE_URL
+    const publicUrl = options.url.includes('http') ? '' : process.env.BASE_URL
     let url = options.url
     if (options.method === 'GET') {
       const query = options.data ? stringify(options.data) : ''

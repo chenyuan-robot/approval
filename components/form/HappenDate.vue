@@ -14,6 +14,7 @@
           :name="`COMP_HAPPEN_DATE___${props.formItem.sequence}`"
           style="height: 80rpx"
           mode="date"
+          :disabled="config.disabled"
           :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
           :value="selectedDate"
           :start="getDate('start')"
@@ -25,6 +26,7 @@
           </view>
         </picker>
         <image
+          v-if="!config.disabled"
           class="suffix-icon"
           :src="`${selectedDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
           mode="aspectFit"
@@ -46,6 +48,7 @@ interface FormConfig {
   placeholder: string
   dateType: string
   showTitle: boolean
+  disabled: boolean
   showFieldDesc: boolean
   desc: string
   required: boolean
@@ -65,6 +68,7 @@ const props = defineProps<{
 const config = ref<FormConfig>({
   placeholder: '',
   dateType: '年',
+  disabled: false,
   showTitle: false,
   showFieldDesc: false,
   desc: '',
@@ -81,6 +85,7 @@ const getConfig = (): FormConfig => {
   const fieldStyle = props.formItem.values.find((item) => item.name === '字段样式')
   const dateType = fieldStyle?.value ?? '年'
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   formRulesUtil.depRules({
@@ -95,6 +100,7 @@ const getConfig = (): FormConfig => {
   return {
     placeholder: placeholder || '请选择日期',
     dateType: dateType as string,
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,

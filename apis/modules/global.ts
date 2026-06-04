@@ -1,4 +1,3 @@
-import { DIGITAL_BASE_URL } from '@/constants/common'
 import { http } from '../request'
 import type { UploadAttachmentItem, UserListResponse, DepartmentsResponse } from '../typings/global'
 
@@ -8,7 +7,7 @@ import type { UploadAttachmentItem, UserListResponse, DepartmentsResponse } from
  * @returns
  */
 export const queryUserList = () => {
-  return http.post<UserListResponse>(`${DIGITAL_BASE_URL}/api/v1/appmsg/user/query_all_person`, {
+  return http.post<UserListResponse>(`${process.env.DIGITAL_BASE_URL}/api/v1/appmsg/user/query_all_person`, {
     tenant: 'cowarobot'
   })
 }
@@ -28,5 +27,7 @@ export const uploadAttachment = () => {
  * @returns
  */
 export const getDepartments = () => {
-  return http.get<Array<DepartmentsResponse>>(`${DIGITAL_BASE_URL}/api/v1/appmsg/public/department/tree/coowa`)
+  return http.get<Array<DepartmentsResponse>>(
+    `${process.env.DIGITAL_BASE_URL}/api/v1/appmsg/public/department/tree/coowa`
+  )
 }

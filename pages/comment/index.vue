@@ -107,7 +107,6 @@ import { makeToast } from '@/utils/toast'
 import type { FileItem, PageOptions } from './typings'
 import { onLoad } from '@dcloudio/uni-app'
 import bus from '@/utils/bus'
-import { BASE_URL } from '@/constants/common'
 import type { StoreState } from '@/store/types'
 import type { IPerson } from '@/apis/typings/global'
 import { queryReturnNodes } from '@/apis/modules/detail'
@@ -175,7 +174,7 @@ const handlerChoose = (): void => {
       const tempFilePath = tempFilePaths[0]
       toast.loading('上传中...')
       uni.uploadFile({
-        url: `${BASE_URL}/api/v1/dl_approval/file/upload`,
+        url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
         filePath: tempFilePath,
         name: 'file',
         header: {
@@ -209,7 +208,7 @@ const handlerPreview = (data: FileItem): void => {
   const suffix = attachmentId.split('.').pop()
   if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
     uni.request({
-      url: `${BASE_URL}/api/v1/dl_approval/file/preview/proxy/${data.oss_key}`,
+      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${data.oss_key}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -236,7 +235,7 @@ const handlerPreview = (data: FileItem): void => {
 const handlerDownload = (data: FileItem): void => {
   toast.loading('正在下载...')
   uni.downloadFile({
-    url: `${BASE_URL}/api/v1/dl_approval/file/download/proxy/${data.oss_key}`,
+    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${data.oss_key}`,
     method: 'GET',
     responseType: 'arraybuffer',
     header: {

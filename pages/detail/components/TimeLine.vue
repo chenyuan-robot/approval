@@ -49,7 +49,6 @@ import type { InstanceHistoryItem } from '../typings'
 import { onMounted, ref } from 'vue'
 import store from '@/store'
 import type { StoreState } from '@/store/types'
-import { BASE_URL } from '@/constants/common'
 import personUtil from '@/utils/person'
 import ImagePreview from '@/components/ImagePreview.vue'
 
@@ -84,7 +83,7 @@ onMounted(() => {
   if (props.history.attachment) {
     const attachmentId = props.history.attachment[0]
     uni.request({
-      url: `${BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
+      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {

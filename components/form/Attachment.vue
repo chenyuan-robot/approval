@@ -54,7 +54,6 @@
 import { ref, inject, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import type { FormActionType, FormItem } from '../../pages/form/typings'
-import { BASE_URL } from '@/constants/common'
 import store from '@/store'
 import { makeToast } from '@/utils/toast'
 import type { StoreState } from '@/store/types'
@@ -103,7 +102,7 @@ const handlerPreview = (index: number): void => {
   console.log('attachmentId', attachmentId)
   if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
     uni.request({
-      url: `${BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
+      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -126,7 +125,7 @@ const handlerDownload = (index: number): void => {
   toast.loading('正在下载...')
   let attachmentId: string = props.renderOnly ? config.value.value[index].url : uploadedValues.value.split(',')[index]
   uni.downloadFile({
-    url: `${BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
+    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
     method: 'GET',
     responseType: 'arraybuffer',
     header: {
@@ -180,7 +179,7 @@ const handlerFile = (): void => {
       const tempFilePath = tempFilePaths[0]
       toast.loading('上传中...')
       uni.uploadFile({
-        url: `${BASE_URL}/api/v1/dl_approval/file/upload`,
+        url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
         filePath: tempFilePath,
         name: 'file',
         header: {

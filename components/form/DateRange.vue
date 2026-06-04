@@ -32,6 +32,7 @@
           </picker>
           <image
             class="suffix-icon"
+            v-if="!config.disabled"
             :src="`${startDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
             mode="aspectFit"
             @click.stop="handleClearStartDate"
@@ -55,6 +56,7 @@
             </view>
           </picker>
           <image
+            v-if="!config.disabled"
             class="suffix-icon"
             :src="`${endDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
             mode="aspectFit"

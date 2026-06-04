@@ -12,6 +12,7 @@
         v-else
         :name="`COMP_SECRET_MULTI_INPUT___${props.formItem.sequence}`"
         class="component-style"
+        :disabled="config.disabled"
         placeholder-style="color: #86909C; font-size: 28rpx;"
         style="height: 192rpx"
         :value="inputValue"
@@ -33,6 +34,7 @@ interface FormConfig {
   placeholder: string
   showTitle: boolean
   desc: string
+  disabled: boolean
   showFieldDesc: boolean
   maxlength: number
   required: boolean
@@ -53,6 +55,7 @@ const inputValue = ref<string>('')
 let config = ref<FormConfig>({
   placeholder: '',
   showTitle: false,
+  disabled: false,
   desc: '',
   showFieldDesc: false,
   maxlength: 0,
@@ -86,6 +89,7 @@ const getConfig = (): FormConfig => {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,
     desc: fieldDesc?.value as string,
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     maxlength: Number(maxlength) || 1000,
     required: required,

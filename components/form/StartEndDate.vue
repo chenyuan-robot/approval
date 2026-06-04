@@ -20,6 +20,7 @@
             style="height: 80rpx"
             :name="`COMP_START_END_DATE___${props.formItem.sequence}_start`"
             mode="date"
+            :disabled="config.disabled"
             :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
             :value="startDate"
             :start="getDate('start')"
@@ -31,6 +32,7 @@
             </view>
           </picker>
           <image
+            v-if="!config.disabled"
             class="suffix-icon"
             :src="`${startDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
             mode="aspectFit"
@@ -43,6 +45,7 @@
             style="height: 80rpx"
             :name="`COMP_START_END_DATE___${props.formItem.sequence}_end`"
             mode="date"
+            :disabled="config.disabled"
             :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
             :value="endDate"
             :start="getDate('start')"
@@ -54,6 +57,7 @@
             </view>
           </picker>
           <image
+            v-if="!config.disabled"
             class="suffix-icon"
             :src="`${endDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
             mode="aspectFit"

@@ -35,6 +35,7 @@
         />
         <image
           class="suffix-icon"
+          v-if="!config.disabled"
           :src="`${selectedValue ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
           mode="aspectFit"
           @click.stop="handleClear"

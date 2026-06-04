@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
 import { feishuLogin } from '@/apis/modules/login'
-import { APP_ID, APP_SECRET } from '@/constants/common'
+// import { APP_ID, APP_SECRET } from '@/constants/common'
 import store from '@/store'
 import type { LoginResponse } from '@/apis/typings/login'
 
@@ -20,10 +20,10 @@ const login = () => {
       if (res.code) {
         feishuLogin({
           code: res.code,
-          redirect_uri: 'http://172.16.115.41:5174/',
-          app_id: APP_ID,
-          app_secret: APP_SECRET,
-          tenant_abbr: 'coowa'
+          redirect_uri: process.env.REDIRECT_URI,
+          app_id: process.env.APP_ID,
+          app_secret: process.env.APP_SECRET,
+          tenant_abbr: process.env.TENANT_ABBR
         }).then((res) => {
           console.log('user info: ', res)
           if (res.code === 200) {

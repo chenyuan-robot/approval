@@ -14,6 +14,7 @@
         :name="`COMP_REASON___${props.formItem.sequence}`"
         class="component-style"
         style="height: 80rpx"
+        :disabled="config.disabled"
         :value="inputValue"
         :placeholder="config.placeholder"
         :maxlength="config.maxlength"
@@ -34,6 +35,7 @@ interface FormConfig {
   showTitle: boolean
   showFieldDesc: boolean
   desc: string
+  disabled: boolean
   maxlength: number
   required: boolean
   value: string
@@ -53,6 +55,7 @@ const inputValue = ref<string>('')
 const config = ref<FormConfig>({
   placeholder: '',
   showTitle: false,
+  disabled: false,
   showFieldDesc: false,
   desc: '',
   maxlength: 0,
@@ -86,6 +89,7 @@ const getConfig = (): FormConfig => {
     placeholder: placeholder || '请输入内容',
     showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showFieldDesc: showFieldDesc,
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     desc: fieldDesc?.value as string,
     maxlength: Number(maxlength) || 1000,
     required: required,
