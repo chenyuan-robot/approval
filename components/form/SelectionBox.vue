@@ -15,6 +15,7 @@
           v-if="config.single"
           style="height: 80rpx"
           range-key="name"
+          :disabled="config.disabled"
           :value="index"
           :range="config.options"
         >
@@ -84,6 +85,7 @@ interface FormConfig {
   placeholder: string
   showFieldDesc: boolean
   desc: string
+  disabled: boolean
   showTitle: boolean
   single: boolean
   required: boolean
@@ -105,6 +107,7 @@ const config = ref<FormConfig>({
   placeholder: '',
   showFieldDesc: false,
   desc: '',
+  disabled: false,
   showTitle: false,
   single: true,
   required: false,
@@ -128,7 +131,7 @@ const handleClick = (opt: OptionItem) => {
 }
 
 const handleClear = () => {
-  if (selectedValue.value) {
+  if (selectedValue.value && !config.value.disabled) {
     selectedValue.value = ''
     index.value = -1
     selectedLists.value = []
@@ -136,8 +139,7 @@ const handleClear = () => {
 }
 
 const handleOpenPanel = () => {
-  console.log(config.value.single)
-  if (!config.value.single && !props.renderOnly) {
+  if (!config.value.disabled && !config.value.single && !props.renderOnly) {
     popup?.value?.open()
   }
 }
@@ -167,6 +169,7 @@ const getConfig = (): FormConfig => {
   const fieldDesc = props.formItem.values.find((item) => item.name === '字段说明')
   const showFieldDesc = (fieldDesc?.extra_option_config as { default_value?: boolean })?.default_value ?? false
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const selectionMode = props.formItem.values.find((item) => item.name === '选择模式')?.value as string
   const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
   const required = (fieldAttr?.value as string)?.includes('必填') ?? false
@@ -184,6 +187,7 @@ const getConfig = (): FormConfig => {
   return {
     placeholder: placeholder || '请选择',
     showFieldDesc: showFieldDesc,
+    disabled: !((defaultItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false),
     desc: fieldDesc?.value as string,
     single: single,
     options: ((sectionOptions?.selection_list as string[]) ?? []).map((opt) => {
@@ -205,6 +209,19 @@ const getConfig = (): FormConfig => {
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig()
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
+  if (defaultItem?.value === '指定值') {
+    const specific_value = (defaultItem?.specific_value as string[]) || []
+    if (config.value.single) {
+      const selectedIndex = config.value.options.findIndex((opt) => opt.name === specific_value[0])
+      index.value = selectedIndex
+      selectedValue.value = specific_value[0]
+      selectedLists.value = specific_value
+    } else {
+      selectedValue.value = specific_value.join(',')
+      selectedLists.value = specific_value
+    }
+  }
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify' || type?.value === 'invalid') {
     if (config.value.value) {
       if (config.value.single) {

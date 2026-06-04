@@ -12,7 +12,6 @@
         v-else
         placeholder-style="color: #86909C; font-size: 28rpx;"
         style="height: 80rpx"
-        :disabled="isInvalidModify"
         class="component-style"
         :value="displayValue"
         :placeholder="config.placeholder as string"
@@ -52,7 +51,6 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const isInvalidModify = ref<boolean>(false)
 const config = ref<FormConfig>({
   placeholder: '',
   showTitle: false,
@@ -138,8 +136,6 @@ const bindInputValue = (event: Event) => {
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
-  config.value = getConfig()
   config.value = getConfig()
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     if (config.value.value) {

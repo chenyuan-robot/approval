@@ -30,7 +30,7 @@
   </view>
   <UserPopup
     ref="userPopupRef"
-    @update:modelValue="handleUserSelect"
+    @update:modelValues="handleUserSelect"
     :show-all="config.showAll"
     :depart-user-list="config.departUserList"
     :single="config.single"
@@ -44,6 +44,7 @@ import type { FormActionType, FormItem } from '../../pages/form/typings'
 import UserPopup from '@/components/UserPopup.vue'
 import type { IPerson } from '@/apis/typings/global'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+import personUtil from '@/utils/person'
 import { useStore } from 'vuex'
 
 interface FormConfig {
@@ -88,7 +89,6 @@ const config = ref<FormConfig>({
   value: ''
 })
 const userPopupRef = ref()
-const selectedUsers = ref<IPerson[]>([])
 const selectedValue = ref<string>('')
 const submitValue = ref<string>('')
 
@@ -108,6 +108,7 @@ const getConfig = (): FormConfig => {
   let nameStr: string = ''
   for (const item of formValues) {
     const person = store.state.userList.find((user: IPerson) => user.account === item)
+    if (person === undefined) continue
     formValuesPersons.push(person)
     const name: string = person?.name ?? ''
     nameStr += name ? `${name}、` : ''
@@ -138,10 +139,9 @@ const getConfig = (): FormConfig => {
 }
 
 const handleClear = () => {
-  if (submitValue.value) {
+  if (submitValue.value && !config.value.disabled) {
     submitValue.value = ''
     selectedValue.value = ''
-    selectedUsers.value = []
     userPopupRef?.value?.reset()
   }
 }
@@ -152,25 +152,40 @@ const openPanel = (): void => {
   }
 }
 
-const handleUserSelect = (selectedUser: IPerson) => {
+const handleUserSelect = (selectedUsers: [IPerson]) => {
   if (config.value.single) {
-    selectedValue.value = selectedUser.name
-    submitValue.value = selectedUser.account
+    if (selectedUsers.length > 0) {
+      selectedValue.value = selectedUsers[0].name
+      submitValue.value = selectedUsers[0].account
+    } else {
+      selectedValue.value = ''
+      submitValue.value = ''
+    }
     return
   }
-  const index = selectedUsers.value.findIndex((item) => item.account === selectedUser.account)
-  if (index > -1) {
-    selectedUsers.value.splice(index, 1)
-  } else {
-    selectedUsers.value.push(selectedUser)
-  }
-  selectedValue.value = selectedUsers.value.map((item) => item.name).join(', ')
-  submitValue.value = selectedUsers.value.map((item) => item.account).join(', ')
+  selectedValue.value = selectedUsers.map((item) => item.name).join(', ')
+  submitValue.value = selectedUsers.map((item) => item.account).join(', ')
 }
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig()
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
+  if (defaultItem?.value === '指定值') {
+    const specific_value = defaultItem.specific_value
+    if (Array.isArray(specific_value) && specific_value.length > 0) {
+      if (config.value.single) {
+        const account = specific_value[0]
+        const person = personUtil.lookupV2(account)
+        selectedValue.value = person.name
+        submitValue.value = account
+      } else {
+        selectedValue.value = specific_value.map((account) => personUtil.lookupV2(account).name).join(', ')
+        submitValue.value = specific_value.join(', ')
+      }
+      userPopupRef?.value?.setSelectedAccounts(specific_value)
+    }
+  }
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify' || type?.value === 'invalid') {
     const accounts = config.value.formValuesPersons.map((person) => person.account)
     if (config.value.single) {
@@ -180,7 +195,6 @@ onMounted(() => {
       selectedValue.value = config.value.value.split('、').join(', ')
       submitValue.value = accounts.join(', ')
     }
-    selectedUsers.value = config.value.formValuesPersons
     userPopupRef?.value?.setSelectedAccounts(accounts)
   }
 })

@@ -26,8 +26,8 @@
       <rich-text v-if="props.renderOnly" :nodes="config.value"></rich-text>
       <editor 
         v-else
+        ref="editorRef"
         id="editor"
-        :name="`COMP_DESC_INPUT___${props.formItem.sequence}`"
         class="component-style"
         style="height: 80rpx; width: 100%; display: block;"
         placeholder-style="color: #86909C; font-size: 28rpx;"
@@ -36,7 +36,9 @@
         :maxlength="config.maxlength"
         @ready="onEditorReady"
         @statuschange="onStatusChange"
+        @input="handleEditorInput"
       ></editor>
+      <input hidden :name="`COMP_DESC_INPUT___${props.formItem.sequence}`" :value="htmlContent" />
     </view>
     <view class="field-sub-desc" v-if="config.showFieldDesc">{{ config.desc }}</view>
   </view>
@@ -46,65 +48,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onUnmounted } from 'vue'
 import type { FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 
+const editorRef = ref(null)
 const htmlContent = ref('');
 const formats = ref({});
-let editorCtx = null;
 
 const onEditorReady = () => {
-  uni.createSelectorQuery().select('#editor').context((res) => {
-    editorCtx = res.context;
-    if (htmlContent.value) {
-      editorCtx.setContents({ html: htmlContent.value });
-    }
-  }).exec();
+  if (htmlContent.value) {
+    editorRef.setContents({ html: htmlContent.value });
+  }
 };
 
 const format = (name, value) => {
-  if (!editorCtx) return;
-  editorCtx.format(name, value);
+  editorRef.format(name, value);
 };
 
-// 监听样式变化（比如点击了加粗文字，工具栏对应的按钮要高亮）
 const onStatusChange = (e) => {
   formats.value = e.detail;
 };
 
 const undo = () => {
-  editorCtx.undo();
+  editorRef.undo();
 };
 
 const removeFormat = () => {
-  editorCtx.removeFormat();
+  editorRef.removeFormat();
 };
 
-// const toggleMode = () => {
-//   if (isEditing.value) {
-//     editorCtx.getContents({
-//       success: (res) => {
-//         htmlContent.value = res.html;
-//         isEditing.value = false;
-//       }
-//     });
-//   } else {
-//     isEditing.value = true;
-//   }
-// };
-
-const saveContent = () => {
-  editorCtx.getContents({
-    success: (res) => {
-      console.log('即将传给 Tiptap 的 HTML:', res.html);
-    }
-  });
-};
-
-
-
-
+const handleEditorInput = (event) => {
+  const html = event.detail.html
+  htmlContent.value = html
+  console.log('实时HTML:', htmlContent.value)
+}
 
 defineOptions({
   name: 'DescInput',

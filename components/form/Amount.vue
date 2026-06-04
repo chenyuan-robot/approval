@@ -9,14 +9,7 @@
     <view class="component-value">
       <text class="render-text" v-if="props.renderOnly">{{ formatThousand(config.value) }}</text>
       <view v-else style="width: 100%">
-        <picker
-          class="component-style"
-          :range="AMountOpts"
-          :disabled="isInvalidModify"
-          :value="index"
-          range-key="label"
-          @change="bindValueChange"
-        >
+        <picker class="component-style" :range="AMountOpts" :value="index" range-key="label" @change="bindValueChange">
           <view :class="['action-result', AMountOpts[index]?.label ? 'fill' : 'empty']">
             {{ AMountOpts[index]?.label || '请选择' }}
           </view>
@@ -25,7 +18,6 @@
         <input
           placeholder-style="color: #86909C; font-size: 28rpx;"
           class="component-style"
-          :disabled="isInvalidModify"
           :placeholder="config.placeholder as string"
           :value="displayValue"
           @input="bindInputValue"
@@ -53,7 +45,6 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const isInvalidModify = ref<boolean>(false)
 const config = ref<Record<string, string | number | boolean>>({})
 const index = ref<number>(0)
 const selectedValue = ref<string>('')
@@ -139,7 +130,6 @@ watch(
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   selectedValue.value = AMountOpts[0]?.value || ''
   concernValue.value = `${selectedValue.value}_` // 数值部分置空

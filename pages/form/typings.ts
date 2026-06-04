@@ -20,6 +20,7 @@ export interface FormItem {
 export interface PageOptions {
   id?: string
   type?: FormActionType
+  approve?: string
   workflow_code?: string
   workflow_version?: string
 }

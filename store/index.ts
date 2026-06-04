@@ -45,7 +45,8 @@ const store = createStore<RootState>({
         return {
           device_id: s.device_id,
           userList: s.userList,
-          user: s.user
+          user: s.user,
+          instance: s.instance
         }
       },
       storage: {

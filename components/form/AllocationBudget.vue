@@ -12,7 +12,6 @@
         <picker
           class="component-style"
           :range="options"
-          :disabled="isInvalidModify"
           v-if="config.single"
           style="height: 80rpx"
           range-key="label"
@@ -65,7 +64,7 @@ interface FormConfig {
 }
 
 defineOptions({
-  name: 'AllocationBudget',
+  name: 'AllocationBudget', // 预算归口
   inheritAttrs: false
 })
 
@@ -74,7 +73,6 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const isInvalidModify = ref<boolean>(false)
 const index = ref<number>(0)
 const config = ref<FormConfig>({
   placeholder: '',
@@ -124,7 +122,6 @@ const getConfig = (): FormConfig => {
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     console.log('edit', props.formItem)

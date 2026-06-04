@@ -121,7 +121,6 @@ const page = {
   page: 1,
   page_size: 50
 }
-const isInvalidModify = ref<boolean>(false)
 const isLimited = ref(false)
 const limitedValue = ref<string[]>([])
 const popupRef = ref()
@@ -157,7 +156,7 @@ const handleClear = () => {
 }
 const handleOpenPanel = () => {
   console.log(config.value.single)
-  if (props.renderOnly || isInvalidModify.value) return
+  if (props.renderOnly) return
   popupRef?.value?.open()
 }
 
@@ -373,7 +372,6 @@ const getAreaList = async (province: string, city: string) => {
 
 onMounted(async () => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     if (config.value.value) {

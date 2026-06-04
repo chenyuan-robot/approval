@@ -11,7 +11,7 @@
       ></ui-data-select>
     </view>
     <view class="list-wrapper">
-      <view v-if="filteredDataSource.length == 0" class="empty-box">
+      <view v-if="dataSource.length == 0" class="empty-box">
         <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
         <text>暂无数据</text>
       </view>
@@ -22,7 +22,7 @@
         style="height: 100vh"
         refresher-enabled="true"
         :refresher-triggered="loading" -->
-        <view class="apply-card" v-for="(item, index) in filteredDataSource" :key="index">
+        <view class="apply-card" v-for="(item, index) in dataSource" :key="index">
           <view class="card-header">
             <text class="title">{{ item.form_name }}</text>
             <status-tag :status="item.status" />
@@ -78,32 +78,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { submittedList } from '@/apis/modules/apply'
 import type { SubmittedItem, SubmittedListResponse } from '@/apis/typings/apply'
 import { makeToast } from '@/utils/toast'
-import { getStatusType } from '@/hooks/base/status'
+import { getStatusType, STATUS_MAP } from '@/hooks/base/status'
 import { deleteApproval } from '@/apis/modules/detail'
 
 const loading = ref(false)
 const dataSource = ref<SubmittedItem[]>([])
 const filteredDataSource = ref<SubmittedItem[]>([])
 const toast = makeToast()
-const typeList = ref()
+const typeList = ref([{ value: 'all', text: '全部单据类型' }])
 const selectedType = ref('all')
-const statusList = ref()
+const statusList = ref([
+        { value: 'all', text: '全部状态' },
+        ...Object.keys(STATUS_MAP).map(text => ({
+            value: text,
+            text
+          }))
+    ])
 const selectedStatus = ref('all')
 
-const pageSize = 10000
+const pageSize = 10
 var pageNum = 1
 var isEnd = false
+
+onMounted(() => {
+  console.log(statusList.value)
+})
 
 function getData() {
   if (loading.value || isEnd) return
   loading.value = true
-
-  submittedList({ page_num: pageNum, page_size: pageSize })
+  const param = {page_num: pageNum, page_size: pageSize}
+  if (selectedStatus.value !== 'all') {
+    param.status = [selectedStatus.value]
+  }
+  submittedList(param)
     .then((res) => {
       console.log(res)
       const datas = res.message as SubmittedListResponse
@@ -116,23 +129,23 @@ function getData() {
         dataSource.value = [...dataSource.value, ...datas.submitted_instances]
       }
 
-      const formNameSet = new Set()
-      const statusSet = new Set()
+      // const formNameSet = new Set()
+      // const statusSet = new Set()
 
-      for (const item of dataSource.value) {
-        if (item.form_name) formNameSet.add(item.form_name)
-        if (item.status) statusSet.add(item.status)
-      }
+      // for (const item of dataSource.value) {
+      //   if (item.form_name) formNameSet.add(item.form_name)
+      //   if (item.status) statusSet.add(item.status)
+      // }
 
-      typeList.value = [
-        { value: 'all', text: '全部单据类型' },
-        ...Array.from(formNameSet).map((name) => ({ value: name, text: name }))
-      ]
+      // typeList.value = [
+      //   { value: 'all', text: '全部单据类型' },
+      //   ...Array.from(formNameSet).map((name) => ({ value: name, text: name }))
+      // ]
 
-      statusList.value = [
-        { value: 'all', text: '全部状态' },
-        ...Array.from(statusSet).map((name) => ({ value: name, text: name }))
-      ]
+      // statusList.value = [
+      //   { value: 'all', text: '全部状态' },
+      //   ...Array.from(statusSet).map((name) => ({ value: name, text: name }))
+      // ]
 
       pageNum++
     })
@@ -145,18 +158,28 @@ function getData() {
 }
 
 watch(
-  [selectedType, selectedStatus, dataSource],
+  [selectedType, selectedStatus],
   () => {
-    filteredDataSource.value = dataSource.value.filter((item: SubmittedItem) => {
-      const matchType = selectedType.value === 'all' || item.form_name === selectedType.value
-
-      const matchStatus = selectedStatus.value === 'all' || item.status === selectedStatus.value
-
-      return matchType && matchStatus
-    })
+    isEnd = false
+    pageNum = 1
+    getData()
   },
   { immediate: true }
 )
+
+// watch(
+//   [selectedType, selectedStatus, dataSource],
+//   () => {
+//     filteredDataSource.value = dataSource.value.filter((item: SubmittedItem) => {
+//       const matchType = selectedType.value === 'all' || item.form_name === selectedType.value
+
+//       const matchStatus = selectedStatus.value === 'all' || item.status === selectedStatus.value
+
+//       return matchType && matchStatus
+//     })
+//   },
+//   { immediate: true }
+// )
 
 // 跳转到详情页
 const goToDetail = (item: SubmittedItem) => {

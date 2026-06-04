@@ -13,7 +13,6 @@
         class="component-style"
         :name="`COMP_DATE___${props.formItem.sequence}`"
         style="height: 80rpx"
-        :disabled="isInvalidModify"
         mode="date"
         :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
         :value="selectedDate"
@@ -21,13 +20,14 @@
         :end="getDate('end')"
         @change="bindDateChange($event)"
       >
-        <view :class="['action-result', selectedDate ? 'fill' : 'empty']">
-          {{ selectedDate || config.placeholder }}
+        <view :class="['action-result', selectedDate === '0' ? 'empty' : 'fill']">
+          {{ selectedDate === '0' ? config.placeholder : selectedDate }}
         </view>
       </picker>
       <image
+        v-if="!props.renderOnly"
         class="suffix-icon"
-        :src="`${selectedDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+        :src="`${selectedDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
         mode="aspectFit"
         @click.stop="handleClear"
       />
@@ -62,8 +62,7 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const isInvalidModify = ref<boolean>(false)
-const selectedDate = ref<string>('')
+const selectedDate = ref<string>('0')
 const config = ref<FormConfig>({
   placeholder: '',
   dateType: '',
@@ -88,7 +87,8 @@ const getConfig = (): FormConfig => {
     name: `COMP_DATE___${props.formItem.sequence}`,
     rules: [
       {
-        ruleType: required ? '^.+$' : '.*',
+        // ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^(?!0$).*$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
     ]
@@ -105,8 +105,8 @@ const getConfig = (): FormConfig => {
 }
 
 const handleClear = () => {
-  if (selectedDate.value) {
-    selectedDate.value = ''
+  if (selectedDate.value !== '0') {
+    selectedDate.value = '0'
   }
 }
 
@@ -136,11 +136,12 @@ const bindDateChange = (event: Event) => {
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     const formValue = config.value.value as string
-    selectedDate.value = formValue
+    if (formValue) {
+      selectedDate.value = formValue
+    }
   }
 })
 </script>

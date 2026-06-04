@@ -1,6 +1,11 @@
 import { NEW_BASE_URL } from '@/constants/common'
 import { http } from '../request'
-import type { ConditionNodeValueListItem, FormDetailResponse, ProvinceCityAreaListResponse } from '../typings/form'
+import type {
+  CompanyListResponse,
+  ConditionNodeValueListItem,
+  FormDetailResponse,
+  ProvinceCityAreaListResponse
+} from '../typings/form'
 
 /**
  * 获取表单详情
@@ -55,6 +60,17 @@ export const queryConditionNodeValueList = (code: string, col: string) => {
   return http.get<ConditionNodeValueListItem[] | string>(`/api/v1/dl_approval/value_list/col/detail`, {
     code,
     col
+  })
+}
+
+/**
+ * 条件节点获取值公司列表
+ * @returns
+ */
+export const queryCompanyList = (page: number, page_size: number) => {
+  return http.post<CompanyListResponse>(`${NEW_BASE_URL}/api/v1/basis/finance/company/query`, {
+    page,
+    page_size
   })
 }
 

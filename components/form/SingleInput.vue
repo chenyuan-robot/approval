@@ -13,9 +13,8 @@
         :name="`COMP_SINGLE_INPUT___${props.formItem.sequence}`"
         class="component-style"
         style="height: 80rpx"
-        :disabled="isInvalidModify"
         placeholder-style="color: #86909C; font-size: 28rpx;"
-        :value="inputValue"
+        v-model="inputValue"
         :placeholder="config.placeholder"
         :maxlength="config.maxlength"
       />
@@ -51,7 +50,6 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const isInvalidModify = ref<boolean>(false)
 const inputValue = ref<string>('')
 const config = ref<FormConfig>({
   placeholder: '',
@@ -98,7 +96,6 @@ const getConfig = (): FormConfig => {
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     const formValue = config.value.value

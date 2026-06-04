@@ -92,7 +92,6 @@ const config = ref<FormConfig>({
   maxCount: 5,
   value: []
 })
-const isInvalidModify = ref<boolean>(false)
 const toast = makeToast()
 const uploadedNames = ref<string[]>([])
 const uploadedValues = ref<string>('')
@@ -165,9 +164,6 @@ const handlerDelete = (index: number): void => {
 }
 
 const handlerFile = (): void => {
-  if (isInvalidModify.value) {
-    return
-  }
   if (uploadedNames.value.length >= config.value.maxCount) {
     uni.showToast({
       title: `最多只能上传${config.value.maxCount}个附件`,
@@ -260,7 +256,6 @@ const getConfig = (type: string): FormConfig => {
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig(type!.value)
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     console.log('edit', config.value)

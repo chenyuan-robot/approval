@@ -48,6 +48,10 @@
 
     <view v-if="isOpen" class="action-panel" :style="{ height: height + 'px' }" @click="isOpen = false">
       <view class="actions">
+        <view class="action" @click="handlerEdit" v-if="operateConfig.edit">
+          <image class="search-icon" src="/static/detail/edit.svg" mode="aspectFit" />
+          <view class="action-text">编辑</view>
+        </view>
         <view class="action" @click="handlerReturn">
           <image class="search-icon" src="/static/detail/return.svg" mode="aspectFit" />
           <view class="action-text">退回</view>
@@ -131,7 +135,8 @@ const operateConfig = reactive({
   return_no_reapprove: false,
   return_reapprove: false,
   terminate: false,
-  transfer: false
+  transfer: false,
+  edit: false
 })
 const permission = reactive({
   pass: false,
@@ -179,8 +184,8 @@ const getApprovalHistory = (id: string) => {
     })
 }
 
-const getInstance = (instance_id: string, type: InstanceType) => {
-  queryInstanceDetail(instance_id, type)
+const getInstance = (instance_id: string, type: InstanceType, task_node_instance_id: string) => {
+  queryInstanceDetail(instance_id, type, task_node_instance_id)
     .then((res) => {
       if (res.code === 200) {
         const message = res.message || {}
@@ -217,6 +222,7 @@ const getInstance = (instance_id: string, type: InstanceType) => {
         operateConfig.return_reapprove = operate_config.return_reapprove
         operateConfig.transfer = operate_config.transfer
         operateConfig.terminate = operate_config.terminate
+        operateConfig.edit = message.is_reviewer && message.is_review_node
         if (isMyInitiation.value && type === 'myInitiation') {
           console.log('【我的申请】 | 飞书本人提交的单子消息 进入')
           permission.pass = false
@@ -248,6 +254,9 @@ const getInstance = (instance_id: string, type: InstanceType) => {
     .catch((error) => {
       console.error('获取单据详情失败：', error)
     })
+    .finally(() => {
+      toast.hiddenLoading()
+    })
 }
 
 const ccRead = (id: string) => {
@@ -273,6 +282,15 @@ const handlerUnRead = (instance_id: string) => {
       }
     })
     .catch((err) => console.error(err))
+}
+
+/**
+ * 审批相关操作-编辑
+ */
+const handlerEdit = (): void => {
+  uni.navigateTo({
+    url: `/pages/form/form?id=${instanceDetail.value.instance_code}&type=edit&approve=true`
+  })
 }
 
 /**
@@ -334,7 +352,10 @@ const handlerWithdraw = (): void => {
     .then((res) => {
       if (res.code === 200) {
         toast.success('撤回成功')
-        uni.navigateBack()
+        // uni.navigateBack()
+        uni.switchTab({
+          url: '/pages/center/center'
+        })
       } else {
         toast.info((res.message as string) ?? '撤回失败')
       }
@@ -346,15 +367,18 @@ const handlerWithdraw = (): void => {
 
 // 此处处理飞书消息跳转
 const globalInstanceId = computed(() => store.state.instance.instance_id)
-watch(globalInstanceId.value, (newVal: string) => {
-  setTimeout(() => {
-    toast.info(newVal, 2000)
-  }, 3000)
-  if (newVal) {
-    const globalInstanceType = store.state.instance.instance_type
-    getInstance(globalInstanceId.value, globalInstanceType)
-  }
-})
+watch(
+  globalInstanceId,
+  (newVal: string) => {
+    if (newVal) {
+      toast.loading('加载中...')
+      const globalInstanceType = store.state.instance.instance_type
+      const globalTaskNodeInstanceId = store.state.instance.task_node_instance_id
+      getInstance(globalInstanceId.value, globalInstanceType, globalTaskNodeInstanceId)
+    }
+  },
+  { immediate: true }
+)
 
 // onLoad 生命周期接收路由参数
 onLoad((options?: PageOptions) => {
@@ -363,7 +387,7 @@ onLoad((options?: PageOptions) => {
   if (obj?.instance_id) {
     console.log('obj:', obj)
     const { instance_id, instance_type } = obj
-    getInstance(instance_id, instance_type)
+    getInstance(instance_id, instance_type, '')
   }
 })
 

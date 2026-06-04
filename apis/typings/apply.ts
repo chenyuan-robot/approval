@@ -19,6 +19,7 @@ export interface SubmittedItem {
   workflow_cfg: WorkflowCfg
   form_instance_code: string
   task_node_instance_id: string
+  application_time: string
 }
 
 export interface OperationFlags {

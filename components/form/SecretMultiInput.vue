@@ -96,7 +96,7 @@ const getConfig = (): FormConfig => {
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig()
-  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify') {
+  if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'modify' || type?.value === 'invalid') {
     const formValue = config.value.value
     inputValue.value = formValue
   }

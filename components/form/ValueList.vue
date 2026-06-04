@@ -7,7 +7,7 @@
       </view>
     </view>
     <view class="component-value" @click="handlerOpenPanel">
-      <text class="render-text" v-if="props.renderOnly">{{ config.value }}</text>
+      <text class="render-text" v-if="props.renderOnly">{{ displayValue }}</text>
       <view v-else style="width: 100%">
         <picker
           class="component-style"
@@ -25,7 +25,7 @@
           </view>
         </picker>
         <input
-          :value="selectedValue"
+          :value="displayValue"
           v-else
           placeholder-style="color: #86909C; font-size: 28rpx;"
           class="component-style"
@@ -63,7 +63,11 @@
         :style="{ maxHeight: scrollHeight + 'px' }"
       >
         <view class="opt-list" v-for="option in newOpts" :key="option.code" @click="handleClick(option)">
-          <text class="check-icon" v-if="option.checked">√</text>
+          <image
+            :src="`${option.checked ? '/static/checked_rect.svg' : '/static/uncheck_rect.svg'} `"
+            mode="aspectFit"
+            style="width: 32rpx; height: 32rpx; margin-right: 16rpx; vertical-align: middle"
+          />
           <text class="text">{{ option.name }}</text>
         </view>
       </scroll-view>
@@ -78,6 +82,7 @@ import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { queryConditionNodeValueList } from '@/apis/modules/form'
 import type { ConditionNodeValueListItem } from '@/apis/typings/form'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+import { makeToast } from '@/utils/toast'
 
 interface OptionItem extends ConditionNodeValueListItem {
   checked: boolean
@@ -104,6 +109,7 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const toast = makeToast()
 const config = ref<FormConfig>({
   placeholder: '',
   showTitle: false,
@@ -114,7 +120,7 @@ const config = ref<FormConfig>({
   disabled: false,
   value: ''
 })
-const index = ref<number>(0)
+const index = ref<number>(-1)
 const options = ref<OptionItem[]>([])
 const selectedValue = ref<string>('')
 const scrollHeight = uni.getSystemInfoSync().windowHeight - 200
@@ -122,11 +128,11 @@ const popup = ref()
 const selectedLists = ref<string[]>([])
 
 const handleClick = (opt: OptionItem) => {
-  const index = selectedLists.value.findIndex((item) => item === opt.name)
+  const index = selectedLists.value.findIndex((item) => item === opt.code)
   if (index > -1) {
     selectedLists.value.splice(index, 1)
   } else {
-    selectedLists.value.push(opt.name)
+    selectedLists.value.push(opt.code)
   }
   selectedValue.value = selectedLists.value.join(',')
   console.log(selectedValue.value)
@@ -148,7 +154,7 @@ const bindValueChange = (event: Event) => {
   }
   index.value = e.detail.value
   const selectedOption = options.value[index.value]
-  selectedValue.value = selectedOption.name
+  selectedValue.value = selectedOption.code
 }
 
 const handleClear = () => {
@@ -163,9 +169,21 @@ const newOpts = computed(() => {
   return options.value.map((opt) => {
     return {
       ...opt,
-      checked: selectedLists.value.includes(opt.name)
+      checked: selectedLists.value.includes(opt.code)
     }
   })
+})
+
+const displayValue = computed(() => {
+  let str: string = ''
+  selectedLists.value.forEach((item) => {
+    const option = options.value.find((opt) => opt.code === item)
+    if (option) {
+      str += option.name + ', '
+    }
+  })
+  console.log('displayValue:', selectedLists.value)
+  return str.slice(0, -2)
 })
 
 const getConfig = (): FormConfig => {
@@ -206,24 +224,46 @@ const getConfig = (): FormConfig => {
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig()
-  if (props.renderOnly) return
   const sectionOptions = props.formItem.values.find((item) => item.name === '选择列表')
+  const selectionRange = props.formItem.values.find((item) => item.name === '选择范围')
+  const defaultItem = props.formItem.values.find((item) => item.name === '默认值')
   const value = sectionOptions?.value ?? ''
   if (value) {
     const arr = (value as string).split(':')
     queryConditionNodeValueList(arr[0], arr[1])
       .then((res) => {
         if (res.code === 200) {
-          options.value = ((res.message as ConditionNodeValueListItem[]) || []).map((option) => {
+          let lists: ConditionNodeValueListItem[] = []
+          const opts = (res.message as ConditionNodeValueListItem[]) || []
+          const specific_value = (selectionRange?.specific_value as string[]) || []
+          const isDepart = selectionRange?.value === '部分'
+          if (isDepart && specific_value.length > 0) {
+            lists = opts.filter((opt) => specific_value.includes(opt.code))
+          } else {
+            lists = opts
+          }
+          console.log('获取到的选项列表lists：', lists)
+          options.value = lists.map((option) => {
             return {
               ...option,
               checked: false
             }
           })
-          console.log('获取到的选项列表：', options.value)
-          selectedValue.value = options.value[0]?.name ?? ''
-          if (selectedValue.value) {
-            selectedLists.value = [selectedValue.value]
+          if (props.renderOnly) {
+            selectedLists.value = config.value.value.split(',')
+            return
+          }
+          if (defaultItem?.value === '指定值') {
+            const specific_value = (defaultItem?.specific_value as string[]) || []
+            if (config.value.single) {
+              const specific_index = lists.findIndex((opt) => opt.code === specific_value[0])
+              index.value = specific_index
+              selectedValue.value = specific_value[0]
+              selectedLists.value = specific_value
+            } else {
+              selectedValue.value = specific_value.join(',')
+              selectedLists.value = specific_value
+            }
           }
           if (
             type?.value === 'edit' ||
@@ -232,9 +272,10 @@ onMounted(() => {
             type?.value === 'invalid'
           ) {
             if (config.value.single) {
-              const selectedIndex = options.value.findIndex((opt) => opt.name === config.value.value)
+              const selectedIndex = options.value.findIndex((opt) => opt.code === config.value.value)
               index.value = selectedIndex
               selectedValue.value = config.value.value
+              selectedLists.value = [config.value.value]
             } else {
               selectedValue.value = config.value.value as string
               selectedLists.value = (config.value.value as string).split(',')
@@ -253,6 +294,8 @@ onMounted(() => {
           icon: 'none'
         })
       })
+  } else {
+    toast.info('暂无值列表数据', 2000)
   }
 })
 </script>
@@ -266,10 +309,9 @@ onMounted(() => {
   .overlay-content {
     padding: 32rpx;
     .opt-list {
-      height: 60rpx;
-      .check-icon {
-        margin-right: 16rpx;
-      }
+      height: 70rpx;
+      display: flex; 
+      align-items: center;
       .split {
         margin: 0 8rpx;
       }

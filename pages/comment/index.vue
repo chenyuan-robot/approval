@@ -102,18 +102,19 @@
 
 <script setup lang="ts">
 import { addComment } from '@/apis/modules/comment'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { makeToast } from '@/utils/toast'
 import type { FileItem, PageOptions } from './typings'
 import { onLoad } from '@dcloudio/uni-app'
 import bus from '@/utils/bus'
 import { BASE_URL } from '@/constants/common'
-import store from '@/store'
 import type { StoreState } from '@/store/types'
 import type { IPerson } from '@/apis/typings/global'
 import { queryReturnNodes } from '@/apis/modules/detail'
 import type { ReturnNodeResponse } from '@/apis/typings/detail'
 import ImagePreview from '@/components/ImagePreview.vue'
+import type { FormConfigItem } from '@/apis/typings/form'
+import { useStore } from 'vuex'
 
 const toast = makeToast()
 const commentValue = ref<string>('')
@@ -132,6 +133,19 @@ const showPostAddSign = ref<boolean>(true)
 const searchQuery = ref<string>('')
 const uploadedFiles = ref<Array<FileItem>>([])
 const imagePreview = ref<InstanceType<typeof ImagePreview>>()
+// const formInstance = ref<Array<FormConfigItem>>([])
+
+const store = useStore()
+
+const formInstance = computed(() => store.state.instance.form_instance)
+watch(
+  formInstance,
+  (newVal: Array<FormConfigItem>) => {
+    if (newVal) {
+    }
+  },
+  { immediate: true }
+)
 
 const userLists = computed(() => {
   let filterUsers = [...store.state.userList]
@@ -325,7 +339,9 @@ const handleSend = (): void => {
   if (uploadedFiles.value.length > 0) {
     params['attachment'] = uploadedFiles.value.map((item) => item.oss_key)
   }
-  console.log('params: ', params)
+  if (Array.isArray(formInstance.value) && formInstance.value.length > 0) {
+    params['form_instance'] = formInstance.value
+  }
   addComment(params)
     .then((res) => {
       if (res.code === 200) {

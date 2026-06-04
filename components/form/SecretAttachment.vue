@@ -92,7 +92,6 @@ const config = ref<FormConfig>({
   maxCount: 5,
   value: []
 })
-const isInvalidModify = ref<boolean>(false)
 const toast = makeToast()
 const uploadedNames = ref<string[]>([])
 const uploadedValues = ref<string>('')
@@ -170,9 +169,6 @@ const handlerDelete = (index: number): void => {
 }
 
 const handlerFile = (): void => {
-  if (isInvalidModify.value) {
-    return
-  }
   if (uploadedNames.value.length >= config.value.maxCount) {
     uni.showToast({
       title: `最多只能上传${config.value.maxCount}个附件`,
@@ -228,7 +224,7 @@ const getConfig = (type: string): FormConfig => {
   const titleItem = props.formItem.values.find((item) => item.name === '标题')
   const formValues = (titleItem?.form_values as string[]) ?? []
   let fileNames: { url: string; name: string }[] = []
-  if (props.renderOnly || type === 'resubmit' || type === 'invalid' || type === 'modify') {
+  if (props.renderOnly || type === 'edit' || type === 'resubmit' || type === 'invalid' || type === 'modify') {
     fileNames = formValues.map((url) => {
       const match = url.match(/_(.+)$/)
       const result = match ? match[1] : ''
@@ -263,7 +259,6 @@ const getConfig = (type: string): FormConfig => {
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig(type!.value)
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     console.log('edit', config.value)
     config.value.value.forEach((item) => {

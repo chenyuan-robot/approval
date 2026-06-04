@@ -20,13 +20,13 @@
           :end="getDate('end')"
           @change="bindDateChange($event)"
         >
-          <view :class="['action-result', selectedDate ? 'fill' : 'empty']">
-            {{ selectedDate || config.placeholder }}
+          <view :class="['action-result', selectedDate === '0' ? 'empty' : 'fill']">
+            {{ selectedDate === '0' ? config.placeholder : selectedDate }}
           </view>
         </picker>
         <image
           class="suffix-icon"
-          :src="`${selectedDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+          :src="`${selectedDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
           mode="aspectFit"
           @click.stop="handleClear"
         />
@@ -71,7 +71,7 @@ const config = ref<FormConfig>({
   required: false,
   value: ''
 })
-const selectedDate = ref<string>('')
+const selectedDate = ref<string>('0')
 
 const getConfig = (): FormConfig => {
   console.log('formItem values: ', props.formItem.values)
@@ -87,7 +87,7 @@ const getConfig = (): FormConfig => {
     name: `COMP_HAPPEN_DATE___${props.formItem.sequence}`,
     rules: [
       {
-        ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^(?!0$).*$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
     ]
@@ -128,8 +128,8 @@ const bindDateChange = (event: Event) => {
 }
 
 const handleClear = () => {
-  if (selectedDate.value) {
-    selectedDate.value = ''
+  if (selectedDate.value !== '0') {
+    selectedDate.value = '0'
   }
 }
 

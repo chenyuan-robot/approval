@@ -1,7 +1,13 @@
 <template>
   <view class="container">
     <scroll-view scroll-y class="scroll-content">
-      <view class="form-container" v-if="formItems.length > 0">
+      <view
+        class="form-container"
+        :style="{
+          pointerEvents: type === 'invalid' ? 'none' : 'auto' // 作废时禁止编辑表单
+        }"
+        v-if="formItems.length > 0"
+      >
         <form @submit="formSubmit">
           <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
             <Renderer style="width: 100%" :formItem="formItem" />
@@ -23,13 +29,47 @@
               />
             </view>
           </view>
-          <view class="bottom-submit-bar">
+          <view class="bottom-submit-bar" v-if="showApproveBar">
+            <view v-if="isOpen" class="action-panel" :style="{ height: height + 'px' }" @click="isOpen = false">
+              <view class="actions">
+                <button class="action" form-type="submit" @click="approveType = 'return'">
+                  <image class="search-icon" src="/static/detail/return.svg" mode="aspectFit" />
+                  <view class="action-text">退回</view>
+                </button>
+                <button class="action" form-type="submit" @click="approveType = 'transfer'">
+                  <image class="search-icon" src="/static/detail/transfer.svg" mode="aspectFit" />
+                  <view class="action-text">转交</view>
+                </button>
+              </view>
+            </view>
+            <view class="action-group">
+              <view class="action-more">
+                <view class="action-item" @click="openPanel">
+                  <image class="search-icon" src="/static/detail/more.svg" mode="aspectFit" />
+                  <view class="action-text">更多</view>
+                </view>
+                <view class="line"></view>
+              </view>
+              <view class="action-btns">
+                <button class="reject" form-type="submit" @click="approveType = 'reject'">
+                  <image class="search-icon" src="/static/detail/reject.svg" mode="aspectFit" />
+                  <text class="action-text">拒绝</text>
+                </button>
+                <button class="agree" form-type="submit" @click="approveType = 'agree'">
+                  <image class="search-icon" src="/static/detail/agree.svg" mode="aspectFit" />
+                  <text class="action-text">同意</text>
+                </button>
+              </view>
+            </view>
+          </view>
+          <view class="bottom-submit-bar" v-else>
             <button
               :class="['submit-btn', isUploading ? 'disabled' : 'activite']"
               :disabled="isUploading"
               :style="{
                 width: `${type === 'resubmit' ? '48%' : '100%'}`,
-                marginRight: type === 'resubmit' ? '4%' : '0'
+                marginRight: type === 'resubmit' ? '4%' : '0',
+                pointerEvents: 'auto'
               }"
               form-type="submit"
               @click="submitType = 'submit'"
@@ -38,7 +78,8 @@
             </button>
             <button
               :style="{
-                width: `${type === 'resubmit' ? '48%' : '0'}`
+                width: `${type === 'resubmit' ? '48%' : '0'}`,
+                pointerEvents: 'auto'
               }"
               v-if="type === 'resubmit'"
               @click="submitType = 'save'"
@@ -58,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, provide } from 'vue'
+import { reactive, ref, provide, onMounted, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import {
   createForm,
@@ -76,11 +117,13 @@ import { formRulesUtil } from './utils/rules'
 import { makeToast } from '@/utils/toast'
 import { queryInstanceDetail } from '@/apis/modules/detail'
 import { debounce } from 'lodash'
+import { useStore } from 'vuex'
 
 interface FormValues {
   [key: string]: string
 }
 
+const store = useStore()
 const toast = makeToast()
 
 const isUploading = ref<boolean>(false)
@@ -94,8 +137,12 @@ const formInfo = reactive<FormInfo>({
   workflow_cfg: {} as WorkflowCfg
 })
 const formItems = ref<FormItem[]>([])
-const type = ref<FormActionType>('create')
+const type = ref<FormActionType>('create') // create、edit、view、resubmit、invalid、modify的类型
 const comment = ref<string>('')
+const showApproveBar = ref<boolean>(false)
+const isOpen = ref<boolean>(false)
+let approveType = '' // 同意、退回、转交、拒绝的类型
+const height = ref(0)
 let submitType = 'submit' // submit 或 save
 
 provide('type', type)
@@ -106,45 +153,28 @@ const formSubmit = debounce((event: Event) => {
       value: FormValues
     }
   }
-  if (type.value === 'invalid' || type.value === 'modify') {
+  // 处理作废单
+  if (type.value === 'invalid') {
     if (!comment.value) {
-      toast.error(type.value === 'invalid' ? '请输入作废理由' : '请输入修改理由', 2000)
+      toast.error('请输入作废理由', 2000)
       return
     }
-    if (type.value === 'invalid') {
-      invalidateApplicationInstance({ comment: comment.value, instance_id: formInfo.form_code })
-        .then((res) => {
-          if (res.code === 200) {
-            toast.success('操作成功', 2000)
-            uni.navigateBack()
-          } else {
-            toast.error(res.message.toString() || '操作失败', 2000)
-          }
-        })
-        .catch((err) => {
-          console.error('作废单据失败：', err)
-          toast.error('操作异常', 2000)
-        })
-    } else {
-      modifyApplicationInstance({
-        comment: comment.value,
-        form_name: formInfo.form_name,
-        instance_id: formInfo.form_code,
-        form_instance: formInfo.form_instance
+    invalidateApplicationInstance({ comment: comment.value, instance_id: formInfo.form_code })
+      .then((res) => {
+        if (res.code === 200) {
+          toast.success('操作成功', 2000)
+          // uni.navigateBack()
+          uni.switchTab({
+            url: '/pages/center/center'
+          })
+        } else {
+          toast.error(res.message.toString() || '操作失败', 2000)
+        }
       })
-        .then((res) => {
-          if (res.code === 200) {
-            toast.success('操作成功', 2000)
-            uni.navigateBack()
-          } else {
-            toast.error(res.message.toString() || '操作失败', 2000)
-          }
-        })
-        .catch((err) => {
-          console.error('修改单据失败：', err)
-          toast.error('操作异常', 2000)
-        })
-    }
+      .catch((err) => {
+        console.error('作废单据失败：', err)
+        toast.error('操作异常', 2000)
+      })
     return
   }
   console.log('提交的表单数据：', e.detail.value)
@@ -237,15 +267,24 @@ const formSubmit = debounce((event: Event) => {
         }
       } else if (comp === 'COMP_DATE') {
         // 处理自定义控件日期选择组件的值
-        find.form_value = value
+        if (value !== '0') {
+          find.form_value = value
+        }
       } else if (comp === 'COMP_DATE_RANGE') {
         // 处理自定义控件日期范围选择组件的值
         console.log('value_date_range', value)
-        if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
-          console.log('value_date_range_clear')
-          find.form_values = []
+        if (value !== '0') {
+          if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
+            find.form_values = []
+          }
+          // 防止开始、结束日期顺序错误
+          const formValues = find.form_values as string[]
+          if (formValues.length === 1 && last.endsWith('_start')) {
+            formValues.unshift(value)
+          } else {
+            formValues.push(value)
+          }
         }
-        ;(find.form_values as string[]).push(value)
       } else if (comp === 'COMP_ATTACHMENT') {
         // 处理自定义控件附件组件的值
         find.form_values = value.split(',')
@@ -253,18 +292,36 @@ const formSubmit = debounce((event: Event) => {
         // 处理自定义控件用户选择组件的值
         find.form_values = value.split(', ')
       } else if (comp === 'COMP_START_END_DATE') {
-        if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
-          find.form_values = []
+        if (value !== '0') {
+          if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
+            find.form_values = []
+          }
+          // 防止开始、结束日期顺序错误
+          const formValues = find.form_values as string[]
+          if (formValues.length === 1 && last.endsWith('_start')) {
+            formValues.unshift(value)
+          } else {
+            formValues.push(value)
+          }
         }
-        ;(find.form_values as string[]).push(value)
       } else if (comp === 'COMP_HAPPEN_DATE') {
-        find.form_value = value
+        if (value !== '0') {
+          find.form_value = value
+        }
       } else if (comp === 'COMP_SUBSTITUTE') {
         // 处理自定义控件替班组件的值
         find.form_value = value
       } else if (comp === 'COMP_SECRET_ATTACHMENT') {
         // 处理自定义控件附件组件的值
         find.form_values = value.split(',')
+      } else if (comp === 'COMP_COMPANY_SELECT') {
+        const multiple =
+          formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多选'
+        if (multiple) {
+          find.form_values = value.split(',')
+        } else {
+          find.form_value = value
+        }
       } else if (comp === 'COMP_REASON') {
         // 处理自定义控件原因组件的值
         find.form_value = value
@@ -280,12 +337,52 @@ const formSubmit = debounce((event: Event) => {
       } else if (comp === 'COMP_DEPARTMENT_SELECT') {
         // 处理自定义控件选部门组件的值
         find.form_values = value.split(', ')
+      } else if (comp === 'COMP_DESC_INPUT') {
+        // 说明 组件
+        find.form_value = value
       } else {
         // 处理其他组件的值
         console.warn(`未处理组件 ${comp} 的值`)
       }
     }
     console.log('提交表单数据：', formInfo)
+    if (showApproveBar.value) {
+      const formInstance = formInfo.form_instance
+      store.commit('instance/SET_FORM_INSTANCE', formInstance)
+      uni.navigateTo({
+        url: `/pages/comment/index?id=${formInfo.form_code}&type=${approveType}`
+      })
+      return
+    }
+    // 处理变更单
+    if (type.value === 'modify') {
+      if (!comment.value) {
+        toast.error('请输入修改理由', 2000)
+        return
+      }
+      modifyApplicationInstance({
+        comment: comment.value,
+        form_name: formInfo.form_name,
+        instance_id: formInfo.form_code,
+        form_instance: formInfo.form_instance
+      })
+        .then((res) => {
+          if (res.code === 200) {
+            toast.success('操作成功', 2000)
+            // uni.navigateBack()
+            uni.switchTab({
+              url: '/pages/center/center'
+            })
+          } else {
+            toast.error(res.message.toString() || '操作失败', 2000)
+          }
+        })
+        .catch((err) => {
+          console.error('修改单据失败：', err)
+          toast.error('操作异常', 2000)
+        })
+      return
+    }
     // return
   }
 
@@ -355,7 +452,10 @@ const formSubmit = debounce((event: Event) => {
           const instanceId = res.message
           if (submitType === 'save') {
             toast.success('保存成功', 2000)
-            uni.navigateBack()
+            // uni.navigateBack()
+            uni.switchTab({
+              url: '/pages/center/center'
+            })
             return
           }
           submittion(
@@ -384,7 +484,10 @@ const submittion = (data: Record<string, unknown>, id: string) => {
     .then((res) => {
       if (res.code === 200) {
         toast.success('提交成功', 2000)
-        uni.navigateBack()
+        // uni.navigateBack()
+        uni.switchTab({
+          url: '/pages/center/center'
+        })
       } else {
         toast.error(res.message.toString(), 2000)
       }
@@ -426,6 +529,9 @@ const queryFormCfg = (id: string) => {
       .catch((err) => {
         console.error('查询表单详情失败：', err)
       })
+      .finally(() => {
+        toast.hiddenLoading()
+      })
   } else if (type.value === 'edit' || type.value === 'invalid' || type.value === 'modify') {
     queryInstanceDetail(id)
       .then((res) => {
@@ -453,6 +559,9 @@ const queryFormCfg = (id: string) => {
       })
       .catch((err) => {
         console.error('查询表单编辑详情失败：', err)
+      })
+      .finally(() => {
+        toast.hiddenLoading()
       })
   } else if (type.value === 'resubmit') {
     getResubmitForm({ instance_id: id })
@@ -487,21 +596,65 @@ const queryFormCfg = (id: string) => {
       .catch((err) => {
         console.error('查询表单详情失败：', err)
       })
+      .finally(() => {
+        toast.hiddenLoading()
+      })
   }
 }
+
+const openPanel = () => {
+  isOpen.value = true
+}
+
+// 此处处理飞书消息跳转
+const globalInstanceId = computed(() => store.state.instance.instance_id)
+watch(globalInstanceId, (newVal: string) => {
+  if (newVal) {
+    toast.loading('加载中...')
+    const globalInstanceType = store.state.instance.instance_type
+    type.value = globalInstanceType
+    if (type.value === 'edit' || type.value === 'invalid' || type.value === 'modify') {
+      queryFormDetail(globalInstanceId.value)
+        .then((res) => {
+          if (res.code === 200) {
+            const message = res.message || {}
+            formInfo.workflow_cfg = message.workflow_cfg || {}
+          } else {
+            console.error('查询表单详情失败：', res.message)
+          }
+        })
+        .catch((err) => {
+          console.error('查询表单详情失败：', err)
+        })
+        .finally(() => {
+          toast.hiddenLoading()
+        })
+    }
+    queryFormCfg(globalInstanceId.value)
+  }
+})
 
 onLoad((options?: PageOptions) => {
   formRulesUtil.clearRules()
   if (options?.id) {
     type.value = options.type as FormActionType
     if (type.value === 'edit') {
+      console.log('编辑表单：', options)
       formInfo.workflow_cfg = {
         workflow_code: options.workflow_code!,
         workflow_version: options.workflow_version!
       }
+      if (Boolean(options.approve)) {
+        // 即可编辑也可执行同意、拒绝等操作
+        showApproveBar.value = true
+      }
     }
     queryFormCfg(options.id)
   }
+})
+
+onMounted(() => {
+  height.value = uni.getSystemInfoSync().windowHeight
 })
 </script>
 
@@ -532,6 +685,7 @@ onLoad((options?: PageOptions) => {
       width: calc(100% - 64rpx);
       margin-left: 32rpx;
       padding-bottom: 32rpx;
+      pointer-events: auto;
       .component-label {
         margin-bottom: 10rpx;
         .field-desc {
@@ -619,6 +773,130 @@ onLoad((options?: PageOptions) => {
       color: #fff;
       &:active {
         opacity: 0.8;
+      }
+    }
+  }
+
+  .action-panel {
+    position: fixed;
+    bottom: 120rpx;
+    left: 0;
+    right: 0;
+    height: 400px;
+    background-color: rgba(0, 0, 0, 0.2);
+    .actions {
+      height: 188rpx;
+      width: 100%;
+      padding-left: 72rpx;
+      padding-right: 72rpx;
+      box-sizing: border-box;
+      background-color: #ffffff;
+      display: flex;
+      align-items: center;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      box-shadow: 0px 2px 8px 0px #0000001a;
+      .action {
+        border: none !important;
+        text-align: center;
+        margin-right: 132rpx;
+        margin-left: 0;
+        line-height: normal;
+        background-color: #ffffff;
+        .search-icon {
+          width: 32rpx;
+          height: 32rpx;
+          margin-bottom: 8rpx;
+        }
+        .action-text {
+          color: #4b5563;
+          font-size: 26rpx;
+        }
+        &::after {
+          border: none !important;
+        }
+        &::host {
+          border: none !important;
+        }
+      }
+    }
+  }
+
+  .action-group {
+    width: 100%;
+    display: flex;
+    .action-more {
+      display: flex;
+      align-items: center;
+      margin-right: 32rpx;
+      margin-left: 40rpx;
+      .action-item {
+        margin-right: 56rpx;
+        text-align: center;
+        .search-icon {
+          width: 28rpx;
+          height: 28rpx;
+        }
+        .action-text {
+          color: #4b5563;
+          font-size: 26rpx;
+        }
+      }
+      .line {
+        width: 1px;
+        height: 72rpx;
+        background-color: rgba(229, 230, 235, 0.6);
+      }
+    }
+    .action-btns {
+      display: flex;
+      flex: 1;
+      margin-right: 54rpx;
+      .reject {
+        background-color: #ffffff;
+        height: 88rpx;
+        border-radius: 8px;
+        border: 1px solid #e5e6eb;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        .search-icon {
+          width: 32rpx;
+          height: 32rpx;
+          margin-right: 16rpx;
+        }
+        .action-text {
+          color: #4b5563;
+          font-size: 28rpx;
+        }
+        &::after {
+          border: none !important;
+        }
+      }
+      .agree {
+        background-color: #277eff;
+        height: 88rpx;
+        border-radius: 8px;
+        border: 1px solid #e5e6eb;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .search-icon {
+          width: 32rpx;
+          height: 32rpx;
+          margin-right: 16rpx;
+        }
+        .action-text {
+          color: #ffffff;
+          font-size: 28rpx;
+        }
+        &::after {
+          border: none !important;
+        }
       }
     }
   }

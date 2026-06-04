@@ -8,6 +8,8 @@ export interface FormDetailResponse {
   reform: string | null // 关联申请单
   operation_comment: string | null
   task_node_instance_id: string
+  is_review_node: boolean
+  is_reviewer: boolean
   instance_code: string
   form_name: string
   form_instance_code: string

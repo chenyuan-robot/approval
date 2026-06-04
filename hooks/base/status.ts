@@ -1,6 +1,10 @@
 
 export const getStatusType = (status : string) : string => {
-	const map : Record<string, string> = {
+	const map = STATUS_MAP;
+	return Object.hasOwn(map, status) ? map[status] : 'unknow';
+};
+
+export const STATUS_MAP: Record<string, string> = {
 		'已撤回': 'withdraw',
 		'已退回': 'return',
 		'已终止': 'terminate',
@@ -10,6 +14,4 @@ export const getStatusType = (status : string) : string => {
 		'已拒绝': 'reject',
 		'作废': 'invalid',
 		'异常': 'exception'
-	};
-	return Object.hasOwn(map, status) ? map[status] : 'unknow';
-};
+}

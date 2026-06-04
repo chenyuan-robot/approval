@@ -112,6 +112,7 @@ const submit = () => {
 }
 
 const emitItems = () => {
+  if (selectedItems.length == 0) return
   lastSelectedKeys = [...selectedKeys.value]
   lastSelectedItems = [...selectedItems]
   emit('update:modelValues', selectedItems)
@@ -125,7 +126,9 @@ defineExpose({
 
 onMounted(() => {
   for(var key of props.selectedList) {
+    if (key.length == 0) continue
     const item = store.state.departmentsMap[key]
+    if (item === undefined) continue
     handleDepartmentSelect(key, item)
   }
   emitItems()
@@ -147,7 +150,7 @@ onMounted(() => {
   .form-footer {
     margin-top: auto;
     padding: 32rpx;
-    border-top: 1px solid #eee;
+    border-top: 2rpx solid #eee;
     text-align: center;
   }
   
@@ -157,6 +160,8 @@ onMounted(() => {
     border: none;
     border-radius: 16rpx;
     cursor: pointer;
+    font-size: 28rpx;
+    height: 72rpx;
   }
   
   .scroll-wrapper {

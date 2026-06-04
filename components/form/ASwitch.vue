@@ -14,7 +14,7 @@
       <switch
         class="a-switch"
         v-else
-        :disabled="config.disabled || isInvalidModify"
+        :disabled="config.disabled"
         :name="`COMP_SWITCH___${props.formItem.sequence}`"
         :checked="isChecked"
       />
@@ -47,7 +47,6 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const isInvalidModify = ref<boolean>(false)
 const isChecked = ref(false)
 const config = ref<FormConfig>({
   showFieldDesc: false,
@@ -79,7 +78,6 @@ const getConfig = (): FormConfig => {
 
 onMounted(() => {
   const type = inject<Ref<FormActionType>>('type')
-  isInvalidModify.value = type?.value === 'invalid' || type?.value === 'modify'
   config.value = getConfig()
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
     console.log('ASwitch组件接收到的formValue数据：', config.value.value)

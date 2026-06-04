@@ -26,13 +26,13 @@
             :disabled="config.disabled"
             @change="bindDateChange($event, 'start')"
           >
-            <view :class="['action-result', startDate ? 'fill' : 'empty']">
-              {{ startDate || '请选择开始时间' }}
+            <view :class="['action-result', startDate === '0' ? 'empty' : 'fill']">
+              {{ startDate === '0' ? '请选择开始时间' : startDate }}
             </view>
           </picker>
           <image
             class="suffix-icon"
-            :src="`${startDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+            :src="`${startDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
             mode="aspectFit"
             @click.stop="handleClearStartDate"
           />
@@ -50,13 +50,13 @@
             :disabled="config.disabled"
             @change="bindDateChange($event, 'end')"
           >
-            <view :class="['action-result', endDate ? 'fill' : 'empty']">
-              {{ endDate || '请选择结束时间' }}
+            <view :class="['action-result', endDate === '0' ? 'empty' : 'fill']">
+              {{ endDate === '0' ? '请选择结束时间' : endDate }}
             </view>
           </picker>
           <image
             class="suffix-icon"
-            :src="`${endDate ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+            :src="`${endDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
             mode="aspectFit"
             @click.stop="handleClearEndDate"
           />
@@ -113,8 +113,8 @@ const config = ref<FormConfig>({
 })
 const between = ref<number>(0)
 const toast = makeToast()
-const startDate = ref<string>('')
-const endDate = ref<string>('')
+const startDate = ref<string>('0')
+const endDate = ref<string>('0')
 
 const getConfig = (): FormConfig => {
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
@@ -138,7 +138,7 @@ const getConfig = (): FormConfig => {
     name: `COMP_DATE_RANGE___${props.formItem.sequence}_start`,
     rules: [
       {
-        ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^(?!0$).*$' : '.*',
         errorMessage: `请选择开始时间`
       }
     ]
@@ -147,7 +147,7 @@ const getConfig = (): FormConfig => {
     name: `COMP_DATE_RANGE___${props.formItem.sequence}_end`,
     rules: [
       {
-        ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^(?!0$).*$' : '.*',
         errorMessage: `请选择结束时间`
       }
     ]
@@ -169,18 +169,22 @@ const getConfig = (): FormConfig => {
 watch(
   () => startDate.value,
   () => {
-    if (endDate.value) {
+    if (startDate.value !== '0' && endDate.value !== '0') {
       const startTimeStamp = dayjs(startDate.value).unix()
       const endTimeStamp = dayjs(endDate.value).unix()
       if (startTimeStamp > endTimeStamp) {
-        endDate.value = ''
+        endDate.value = '0'
         toast.error('开始时间不能大于结束时间', 2000)
         return
       }
     }
-    if (config.value.dateType === '年-月-日' && config.value.showBetween && startDate.value && endDate.value) {
+    if (
+      config.value.dateType === '年-月-日' &&
+      config.value.showBetween &&
+      startDate.value !== '0' &&
+      endDate.value !== '0'
+    ) {
       const diffDays = Math.abs(dayjs(startDate.value).diff(dayjs(endDate.value), 'day'))
-      console.log(diffDays) // 输出：29
       between.value = diffDays + 1
     }
   }
@@ -189,18 +193,22 @@ watch(
 watch(
   () => endDate.value,
   () => {
-    if (startDate.value) {
+    if (startDate.value !== '0' && endDate.value !== '0') {
       const startTimeStamp = dayjs(startDate.value).unix()
       const endTimeStamp = dayjs(endDate.value).unix()
       if (startTimeStamp > endTimeStamp) {
-        startDate.value = ''
+        startDate.value = '0'
         toast.error('结束时间不能小于开始时间', 2000)
         return
       }
     }
-    if (config.value.dateType === '年-月-日' && config.value.showBetween && startDate.value && endDate.value) {
+    if (
+      config.value.dateType === '年-月-日' &&
+      config.value.showBetween &&
+      startDate.value !== '0' &&
+      endDate.value !== '0'
+    ) {
       const diffDays = Math.abs(dayjs(startDate.value).diff(dayjs(endDate.value), 'day'))
-      console.log(diffDays) // 输出：29
       between.value = diffDays + 1
     }
   }
@@ -228,23 +236,21 @@ const bindDateChange = (event: Event, type: 'start' | 'end') => {
     }
   }
   if (type === 'start') {
-    console.log('start__', e.detail.value)
     startDate.value = e.detail.value
   } else {
-    console.log('end__', e.detail.value)
     endDate.value = e.detail.value
   }
 }
 
 const handleClearStartDate = () => {
-  if (startDate.value) {
-    startDate.value = ''
+  if (startDate.value !== '0') {
+    startDate.value = '0'
   }
 }
 
 const handleClearEndDate = () => {
-  if (endDate.value) {
-    endDate.value = ''
+  if (endDate.value !== '0') {
+    endDate.value = '0'
   }
 }
 

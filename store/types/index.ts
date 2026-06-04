@@ -1,5 +1,6 @@
 import type { IPerson, DepartmentsResponse } from '@/apis/typings/global'
 import type { UserState } from './user'
+import type { InstanceState } from './instance'
 
 /**
  * 全量store state
@@ -13,4 +14,5 @@ export interface RootState {
 
 export interface StoreState extends RootState {
   user: UserState
+  instance: InstanceState
 }
