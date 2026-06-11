@@ -26,10 +26,25 @@
           >
           <view class="p-content">
             <view class="approving">{{ history.operate_type }}</view>
-            <view class="comment-box">
+            <view class="comment-box" style="width: 100%">
               <view class="comment" v-if="history.comment">{{ history.comment }}</view>
-              <view class="comment-attachment" v-if="Array.isArray(history.attachment)" @click="handlerPreview">
+              <!-- <view class="comment-attachment" v-if="Array.isArray(history.attachment)" @click="handlerPreview">
                 <image :src="`${blobURL}`" alt="附件" class="attachment" />
+              </view> -->
+              <view
+                class="detail-lists"
+                style="padding: 8rpx 12rpx"
+                v-for="(item, index) in history.attachment ?? []"
+                :key="index"
+              >
+                <view class="list-start">
+                  <image src="/static/attachment.svg" alt="附件" class="attachment-svg" />
+                  <text class="file-name">{{ item }}</text>
+                </view>
+                <view class="list-end">
+                  <image src="/static/eye.svg" alt="查看" @click="handlerPreview(item)" class="suffix-eye" />
+                  <image src="/static/download.svg" alt="附件" @click="handlerDownload(item)" class="suffix-download" />
+                </view>
               </view>
             </view>
           </view>
@@ -51,6 +66,7 @@ import store from '@/store'
 import type { StoreState } from '@/store/types'
 import personUtil from '@/utils/person'
 import ImagePreview from '@/components/ImagePreview.vue'
+import { makeToast } from '@/utils/toast'
 
 defineOptions({
   name: 'TimeLine',
@@ -63,6 +79,7 @@ const props = defineProps<{
   nodeIndex: number
 }>()
 
+const toast = makeToast()
 const imagePreview = ref<InstanceType<typeof ImagePreview>>()
 const blobURL = ref<string>('')
 
@@ -74,13 +91,112 @@ const getPersonInfo = (user_name: string, slice?: boolean) => {
   return slice ? r.name.slice(-1) : r.name
 }
 
-const handlerPreview = () => {
-  if (!blobURL.value) return
-  imagePreview.value?.open()
+const handlerPreview = (id: string): void => {
+  let attachmentId: string = id
+  const suffix = attachmentId.split('.').pop()
+  if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
+    uni.request({
+      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      header: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+      },
+      success: (res) => {
+        console.log('rt_res', res)
+        const base64 = uni.arrayBufferToBase64(res.data as ArrayBuffer)
+        blobURL.value = 'data:image/png;base64,' + base64
+        imagePreview.value?.open()
+      }
+    })
+  } else {
+    handlerDownload(id)
+  }
+}
+
+const handlerDownload = (id: string): void => {
+  toast.loading('正在下载...')
+  let attachmentId: string = id
+  const suffix = attachmentId.split('.').pop()
+  uni.downloadFile({
+    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
+    method: 'GET',
+    responseType: 'arraybuffer',
+    header: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+    },
+    success: (res) => {
+      /* #ifdef H5 */
+      toast.info('暂不支持下载')
+      /* #endif */
+      /* #ifndef H5 */
+      if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
+        const filePath = res.tempFilePath
+        uni.saveImageToPhotosAlbum({
+          filePath,
+          success: () => {
+            toast.info('已保存至手机相册')
+          },
+          fail: (err) => {
+            if (
+              err.errMsg === 'saveImageToPhotosAlbum:fail:auth denied' ||
+              err.errMsg === 'saveImageToPhotosAlbum:fail auth deny'
+            ) {
+              uni.showModal({
+                title: '提示',
+                content: '需要您授权保存相册',
+                showCancel: false,
+                success: () => {
+                  uni.openSetting({
+                    success(settingdata) {
+                      if (settingdata.authSetting['scope.writePhotosAlbum']) {
+                        uni.showModal({
+                          title: '提示',
+                          content: '获取权限成功,再次点击图片即可保存',
+                          showCancel: false
+                        })
+                      } else {
+                        uni.showModal({
+                          title: '提示',
+                          content: '获取权限失败，将无法保存到相册哦~',
+                          showCancel: false
+                        })
+                      }
+                    },
+                    fail(failData) {
+                      console.log('failData', failData)
+                    }
+                  })
+                }
+              })
+            }
+          }
+        })
+      } else {
+        uni.saveFile({
+          tempFilePath: res.tempFilePath,
+          success: function (saveRes) {
+            uni.openDocument({
+              filePath: saveRes.savedFilePath,
+              showMenu: true,
+              success: () => {
+                toast.hiddenLoading()
+                console.log('打开文件成功')
+              }
+            })
+          }
+        })
+      }
+      /* #endif */
+    }
+  })
 }
 
 onMounted(() => {
   if (props.history.attachment) {
+    console.log(props.history)
     const attachmentId = props.history.attachment[0]
     uni.request({
       url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
@@ -93,7 +209,11 @@ onMounted(() => {
       success: (res) => {
         console.log('rt_res', res)
         const contentType = res.header['content-type']
-        if (contentType.includes('image/png') || contentType.includes('image/jpeg')) {
+        if (
+          contentType.includes('image/png') ||
+          contentType.includes('image/jpg') ||
+          contentType.includes('image/jpeg')
+        ) {
           const base64 = uni.arrayBufferToBase64(res.data as ArrayBuffer)
           blobURL.value = 'data:image/png;base64,' + base64
         } else {
@@ -154,8 +274,11 @@ onMounted(() => {
       }
     }
     .person-box {
+      width: calc(100vw - 60rpx - 64rpx - 20rpx - 40rpx);
+      // background-color: red;
       display: flex;
       align-items: flex-start;
+      position: relative;
       .mini-avatar {
         width: 64rpx;
         height: 64rpx;
@@ -167,9 +290,60 @@ onMounted(() => {
         border-radius: 50%;
         margin-right: 16rpx;
       }
+      .detail-lists {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14rpx;
+        // width: 100%;
+        font-size: 24rpx;
+        color: #606266;
+        background-color: #f5f6f8cc;
+        border-radius: 4px;
+        .list-start {
+          display: flex;
+          align-items: center;
+          .attachment-svg {
+            width: 24rpx;
+            height: 24rpx;
+            margin-right: 8rpx;
+            vertical-align: middle;
+            position: relative;
+            top: 2rpx;
+          }
+          .file-name {
+            width: 140px;
+            font-size: 24rpx;
+            color: #4e5969;
+            white-space: nowrap; /* 不换行 */
+            overflow: hidden; /* 超出隐藏 */
+            text-overflow: ellipsis; /* 显示... */
+          }
+        }
+        .list-end {
+          display: flex;
+          align-items: center;
+          .suffix-eye {
+            width: 40rpx;
+            height: 40rpx;
+            display: block;
+            position: relative;
+            top: 2rpx;
+            margin-right: 28rpx;
+          }
+          .suffix-download {
+            width: 40rpx;
+            height: 40rpx;
+            display: block;
+          }
+        }
+      }
       .person-info {
-        flex: 1;
+        // flex: 1;
+        width: calc(100% - 64rpx - 16rpx - 20rpx);
+        // background-color: blue;
         .p-top {
+          width: 100%;
           display: flex;
           align-items: center;
           margin-bottom: 6rpx;
@@ -184,6 +358,8 @@ onMounted(() => {
           }
         }
         .p-content {
+          width: calc(100% - 64rpx - 16rpx - 20rpx);
+          width: 100%;
           .submited {
             color: #00b42a;
             font-size: 22rpx;
@@ -199,14 +375,7 @@ onMounted(() => {
             border-radius: 8px;
             padding: 16rpx;
             margin-top: 12rpx;
-            margin-right: 12rpx;
-          }
-          .comment-attachment {
-            margin-top: 12rpx;
-            .attachment {
-              width: 80rpx;
-              height: 80rpx;
-            }
+            // margin-right: 12rpx;
           }
         }
       }
@@ -216,6 +385,8 @@ onMounted(() => {
         align-items: flex-end;
         font-size: 22rpx;
         color: #999;
+        position: absolute;
+        right: 0;
         .date {
           margin-top: 4rpx;
         }

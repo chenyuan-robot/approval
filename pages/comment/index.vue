@@ -44,7 +44,7 @@
         v-model="commentValue"
         :placeholder="type === 'comment' ? '请输入评论' : type === 'agree' ? '请输入' : '请输入'"
       />
-      <view class="attachment" @click="handlerChoose">
+      <view class="attachment" @click="openPopup">
         <image src="/static/attachment.svg" alt="附件" class="attachment-svg" />
         <text class="attachment-text">附件</text>
       </view>
@@ -71,7 +71,7 @@
       border-radius="10px 10px 0 0"
       :mask-closable="true"
     >
-      <view class="popup-content">
+      <view class="user-popup-content">
         <view class="filter-header">
           <view class="search-bar">
             <image class="search-icon" src="/static/search.svg" mode="aspectFit" />
@@ -98,6 +98,20 @@
     </ui-popup>
   </view>
   <ImagePreview ref="imagePreview" :blobData="blobURL" />
+  <ui-popup
+    ref="popupRef"
+    type="bottom"
+    style="z-index: 9999"
+    background-color="#fff"
+    border-radius="10px 10px 0 0"
+    :mask-closable="true"
+  >
+    <view class="popup-content" :style="{ height: 230 + 'px' }">
+      <view class="item" @click="chooseFileType('album')">照片图库</view>
+      <view class="item" @click="chooseFileType('camera')">拍照</view>
+      <view class="item" @click="chooseFileType('system')">选取文件</view>
+    </view>
+  </ui-popup>
 </template>
 
 <script setup lang="ts">
@@ -114,8 +128,11 @@ import type { ReturnNodeResponse } from '@/apis/typings/detail'
 import ImagePreview from '@/components/ImagePreview.vue'
 import type { FormConfigItem } from '@/apis/typings/form'
 import { useStore } from 'vuex'
+import type { FSFileSuccess } from '@/typings/global'
 
 const toast = makeToast()
+const fileType = ref<'album' | 'camera' | 'system'>('album')
+const popupRef = ref()
 const commentValue = ref<string>('')
 const instanceId = ref<string>('')
 const taskNodeInstanceId = ref<string>('')
@@ -156,43 +173,79 @@ const userLists = computed(() => {
   })
 })
 
-const handlerChoose = (): void => {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['original', 'compressed'],
-    sourceType: ['album'], // 从相册选择
-    success: function (res) {
-      const tempFilePaths = res.tempFilePaths
-      const tempFilePath = tempFilePaths[0]
-      toast.loading('上传中...')
-      uni.uploadFile({
-        url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
-        filePath: tempFilePath,
-        name: 'file',
-        header: {
-          Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
-        },
-        formData: {},
-        success: (uploadFileRes) => {
-          const data = JSON.parse(uploadFileRes.data)
-          const url = data.message?.[0]?.oss_key
-          console.log(url)
-          if (url) {
-            uploadedFiles.value.push(data.message?.[0])
-          }
-        },
-        fail: () => {
-          uni.showToast({
-            title: '附件上传失败',
-            icon: 'error'
-          })
-        },
-        complete: () => {
-          toast.hiddenLoading()
-        }
+const openPopup = (): void => {
+  popupRef?.value?.open()
+}
+
+const chooseFileType = (type: 'album' | 'camera' | 'system'): void => {
+  fileType.value = type
+  popupRef?.value?.close()
+  handlerFile()
+}
+
+const uploadFile = (path: string) => {
+  uni.uploadFile({
+    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
+    filePath: path,
+    name: 'file',
+    header: {
+      Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+    },
+    formData: {},
+    success: (uploadFileRes) => {
+      const data = JSON.parse(uploadFileRes.data)
+      const url = data.message?.[0]?.oss_key
+      console.log(url)
+      if (url) {
+        uploadedFiles.value.push(data.message?.[0])
+      }
+    },
+    fail: () => {
+      uni.showToast({
+        title: '附件上传失败',
+        icon: 'error'
       })
+    },
+    complete: () => {
+      toast.hiddenLoading()
     }
   })
+}
+
+const handlerFile = (): void => {
+  if (fileType.value === 'system') {
+    // #ifdef MP-LARK
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    tt.filePicker({
+      maxNum: 1,
+      pickerTitle: 'Select a file',
+      pickerConfirm: 'Confirm',
+      isSystem: true,
+      success(res: FSFileSuccess) {
+        toast.loading('上传中...')
+        console.log(JSON.stringify(res))
+        const tempFilePath = res.list[0].path
+        uploadFile(tempFilePath)
+      },
+      fail() {
+        console.log('filePicker fail')
+      }
+    })
+    // #endif
+  } else {
+    uni.chooseImage({
+      count: 1,
+      sizeType: ['original', 'compressed'],
+      sourceType: ['album'], // 从相册选择
+      success: function (res) {
+        const tempFilePaths = res.tempFilePaths
+        const tempFilePath = tempFilePaths[0]
+        toast.loading('上传中...')
+        uploadFile(tempFilePath)
+      }
+    })
+  }
 }
 
 const handlerPreview = (data: FileItem): void => {
@@ -595,7 +648,7 @@ onLoad((options?: PageOptions) => {
       background-color: #009eff;
     }
   }
-  .popup-content {
+  .user-popup-content {
     position: relative;
     z-index: 9999;
     height: 80vh;
@@ -639,6 +692,20 @@ onLoad((options?: PageOptions) => {
           color: #bdc5cf;
         }
       }
+    }
+  }
+}
+.popup-content {
+  padding-top: 32rpx;
+  .item {
+    color: rgba(16, 20, 28, 1);
+    font-size: 28rpx;
+    height: 100rpx;
+    text-align: center;
+    line-height: 100rpx;
+    border-bottom: 1px solid rgba(229, 230, 235, 0.4);
+    &:last-child {
+      border-bottom: none;
     }
   }
 }

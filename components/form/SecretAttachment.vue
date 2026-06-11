@@ -73,6 +73,7 @@ import { makeToast } from '@/utils/toast'
 import type { StoreState } from '@/store/types'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import ImagePreview from '@/components/ImagePreview.vue'
+import type { FSFileSuccess } from '@/typings/global'
 
 export interface FormConfig {
   placeholder: string
@@ -281,19 +282,21 @@ const handlerFile = (): void => {
   }
   if (fileType.value === 'system') {
     // #ifdef MP-LARK
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     tt.filePicker({
       maxNum: 1,
       pickerTitle: 'Select a file',
       pickerConfirm: 'Confirm',
       isSystem: true,
-      success(res) {
+      success(res: FSFileSuccess) {
         toast.loading('上传中...')
         console.log(JSON.stringify(res))
         const tempFilePath = res.list[0].path
         uploadFile(tempFilePath)
       },
-      fail(res) {
-        console.log(`filePicker fail: ${JSON.stringify(res)}`)
+      fail() {
+        console.log('filePicker fail')
       }
     })
     // #endif

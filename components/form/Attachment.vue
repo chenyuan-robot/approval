@@ -20,7 +20,7 @@
         </view>
       </view>
       <view class="form-container" v-else>
-        <view class="upload-btn" @click="handlerFile" v-if="!props.renderOnly">
+        <view class="upload-btn" @click="openPopup">
           <image class="upload-icon" src="/static/upload_icon.svg" mode="aspectFit" />
           <text class="upload-text">上传附件文件</text>
         </view>
@@ -48,6 +48,20 @@
     <input hidden :name="`COMP_ATTACHMENT___${props.formItem.sequence}`" :value="uploadedValues" />
   </view>
   <ImagePreview ref="imagePreview" :blobData="blobURL" />
+  <ui-popup
+    ref="popupRef"
+    type="bottom"
+    style="z-index: 9999"
+    background-color="#fff"
+    border-radius="10px 10px 0 0"
+    :mask-closable="true"
+  >
+    <view class="popup-content" :style="{ height: 230 + 'px' }">
+      <view class="item" @click="chooseFileType('album')">照片图库</view>
+      <view class="item" @click="chooseFileType('camera')">拍照</view>
+      <view class="item" @click="chooseFileType('system')">选取文件</view>
+    </view>
+  </ui-popup>
 </template>
 
 <script setup lang="ts">
@@ -59,6 +73,7 @@ import { makeToast } from '@/utils/toast'
 import type { StoreState } from '@/store/types'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import ImagePreview from '@/components/ImagePreview.vue'
+import type { FSFileSuccess } from '@/typings/global'
 
 export interface FormConfig {
   placeholder: string
@@ -80,6 +95,8 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
+const fileType = ref<'album' | 'camera' | 'system'>('album')
+const popupRef = ref()
 const imagePreview = ref<InstanceType<typeof ImagePreview>>()
 const blobURL = ref<string>('')
 const config = ref<FormConfig>({
@@ -205,56 +222,48 @@ const handlerDelete = (index: number): void => {
   uploadedValues.value = lists.join(',')
 }
 
-const handlerFile = (): void => {
-if (Math.random() > 0) {
-    // #ifdef MP-LARK
-    tt.filePicker({
-      maxNum: 10,
-      pickerTitle: "Select a file",
-      pickerConfirm: "Confirm",
-      isSystem: true,
-      success(res) {
-        console.log(JSON.stringify(res));
-        const tempFilePath = res.list[0].path
-        toast.info(tempFilePath, 3000)
-        uni.uploadFile({
-          url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
-          filePath: tempFilePath,
-          name: 'file',
-          header: {
-            Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
-          },
-          formData: {
-            is_secret: 'true'
-          },
-          success: (uploadFileRes) => {
-            const data = JSON.parse(uploadFileRes.data)
-            const url = data.message?.[0]?.oss_key
-            if (url) {
-              uploadedNames.value.push(data.message?.[0]?.file_name || '未知文件')
-              uploadedValues.value = (uploadedValues.value ? uploadedValues.value + ',' : '') + url
-            }
-          },
-          fail: () => {
-            uni.showToast({
-              title: '附件上传失败',
-              icon: 'error'
-            })
-          },
-          complete: () => {
-            // toast.hiddenLoading()
-          }
-        })
-      },
-      fail(res) {
-        console.log(`filePicker fail: ${JSON.stringify(res)}`);
-        toast.info(`filePicker fail: ${JSON.stringify(res)}`, 3000)
-      },
-    });
-     // #endif
-    return
-  }
+const openPopup = (): void => {
+  popupRef?.value?.open()
+}
 
+const chooseFileType = (type: 'album' | 'camera' | 'system'): void => {
+  fileType.value = type
+  popupRef?.value?.close()
+  handlerFile()
+}
+
+const uploadFile = (path: string): void => {
+  uni.uploadFile({
+    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
+    filePath: path,
+    name: 'file',
+    header: {
+      Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+    },
+    formData: {
+      is_secret: 'true'
+    },
+    success: (uploadFileRes) => {
+      const data = JSON.parse(uploadFileRes.data)
+      const url = data.message?.[0]?.oss_key
+      if (url) {
+        uploadedNames.value.push(data.message?.[0]?.file_name || '未知文件')
+        uploadedValues.value = (uploadedValues.value ? uploadedValues.value + ',' : '') + url
+      }
+    },
+    fail: () => {
+      uni.showToast({
+        title: '附件上传失败',
+        icon: 'error'
+      })
+    },
+    complete: () => {
+      toast.hiddenLoading()
+    }
+  })
+}
+
+const handlerFile = (): void => {
   if (uploadedNames.value.length >= config.value.maxCount) {
     uni.showToast({
       title: `最多只能上传${config.value.maxCount}个附件`,
@@ -262,42 +271,39 @@ if (Math.random() > 0) {
     })
     return
   }
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['original', 'compressed'],
-    sourceType: ['album'], // 从相册选择
-    success: function (res) {
-      const tempFilePaths = res.tempFilePaths
-      const tempFilePath = tempFilePaths[0]
-      toast.loading('上传中...')
-      uni.uploadFile({
-        url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
-        filePath: tempFilePath,
-        name: 'file',
-        header: {
-          Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
-        },
-        formData: {},
-        success: (uploadFileRes) => {
-          const data = JSON.parse(uploadFileRes.data)
-          const url = data.message?.[0]?.oss_key
-          if (url) {
-            uploadedNames.value.push(data.message?.[0]?.file_name || '未知文件')
-            uploadedValues.value = (uploadedValues.value ? uploadedValues.value + ',' : '') + url
-          }
-        },
-        fail: () => {
-          uni.showToast({
-            title: '附件上传失败',
-            icon: 'error'
-          })
-        },
-        complete: () => {
-          toast.hiddenLoading()
-        }
-      })
-    }
-  })
+  if (fileType.value === 'system') {
+    // #ifdef MP-LARK
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    tt.filePicker({
+      maxNum: 1,
+      pickerTitle: 'Select a file',
+      pickerConfirm: 'Confirm',
+      isSystem: true,
+      success(res: FSFileSuccess) {
+        toast.loading('上传中...')
+        console.log(JSON.stringify(res))
+        const tempFilePath = res.list[0].path
+        uploadFile(tempFilePath)
+      },
+      fail() {
+        console.log('filePicker fail')
+      }
+    })
+    // #endif
+  } else {
+    uni.chooseImage({
+      count: 1,
+      sizeType: ['original', 'compressed'],
+      sourceType: [fileType.value], // 从相册选择
+      success: function (res) {
+        const tempFilePaths = res.tempFilePaths
+        const tempFilePath = tempFilePaths[0]
+        toast.loading('上传中...')
+        uploadFile(tempFilePath)
+      }
+    })
+  }
 }
 
 const getConfig = (type: string): FormConfig => {
@@ -360,4 +366,18 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 @import '../../styles/common_attachment.scss';
+.popup-content {
+  padding-top: 32rpx;
+  .item {
+    color: rgba(16, 20, 28, 1);
+    font-size: 28rpx;
+    height: 100rpx;
+    text-align: center;
+    line-height: 100rpx;
+    border-bottom: 1px solid rgba(229, 230, 235, 0.4);
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
 </style>
