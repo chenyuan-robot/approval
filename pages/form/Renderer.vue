@@ -15,13 +15,13 @@
     </view>
     <!-- 专用控件 -->
     <view v-else-if="props.formItem.component_code === 'COMP_SECRET_MULTI_INPUT'">
-      <SecretMultiInput :formItem="props.formItem" />
+      <SecretMultiInput :formItem="props.formItem" :isReview="props.isReview" />
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_COST_BEAR'">
       <CostBear :formItem="props.formItem" />
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SECRET_ATTACHMENT'">
-      <SecretAttachment :formItem="props.formItem" />
+      <SecretAttachment :formItem="props.formItem" :isReview="props.isReview" />
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SUBSTITUTE'">
       <Substitute :formItem="props.formItem" />
@@ -76,7 +76,7 @@
       <DescInput :formItem="props.formItem" />
     </view>
     <view v-else>
-       <Unknown :formItem="props.formItem" />
+      <Unknown :formItem="props.formItem" />
     </view>
   </view>
 </template>
@@ -116,6 +116,7 @@ defineOptions({
 
 const props = defineProps<{
   formItem: FormItem
+  isReview: boolean // 是否是审核编辑
 }>()
 </script>
 

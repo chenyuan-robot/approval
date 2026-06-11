@@ -22,19 +22,21 @@
             type="text"
             placeholder="搜索单据名称、发起人"
             placeholder-class="ph-color"
+            confirm-type="search"
+            @confirm="onSearch"
           />
         </view>
 
         <view class="filter-row">
           <ui-data-select
-            v-model="selectedType[currentTab]"
+            v-model="selectedType"
             :localdata="typeList[currentTab]"
             :clear="false"
             class="filter-item"
           ></ui-data-select>
 
           <ui-data-select
-            v-model="selectedStatus[currentTab]"
+            v-model="selectedStatus"
             :localdata="statusList[currentTab]"
             :clear="false"
             class="filter-item"
@@ -44,16 +46,16 @@
     </view>
 
     <swiper class="swiper-content" :current="currentTab" @change="onSwiperChange">
-      <swiper-item v-for="(tabItem, tabIndex) in filteredDataSource" :key="tabIndex">
+      <swiper-item v-for="(tabItem, tabIndex) in dataSource" :key="tabIndex">
         <template v-if="tabIndex === currentTab">
           <view class="tab-container" v-if="currentTab === 2">
             <view class="tab-item" :class="{ active: currentReadTab === 0 }" @click="switchReadTab(0)"> 未读消息 </view>
             <view class="tab-item" :class="{ active: currentReadTab === 1 }" @click="switchReadTab(1)"> 已读消息 </view>
           </view>
 
-          <scroll-view scroll-y class="list-content" :class="{ 'tab-0': currentTab === 0, 'tab-1': currentTab === 1 }">
+          <scroll-view scroll-y @scrolltolower="getData(false)" :lower-threshold="50" class="list-content" :class="{ 'tab-0': currentTab === 0, 'tab-1': currentTab === 1 }">
             <view v-if="getVisibleList(tabItem, tabIndex).length == 0" class="empty-box">
-              <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
+              <image class="no_data_img" src="/static/no_data.svg" mode="aspectFit" />
               <text>暂无数据</text>
             </view>
             <view
@@ -186,12 +188,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { makeToast } from '@/utils/toast'
 import { approvedList, ccList, agreeOperation, rejectOperation } from '@/apis/modules/center'
 import type { ApprovedItem, ApprovedListResponse, CCListResponse } from '@/apis/typings/center'
 import personUtil from '@/utils/person'
 import bus from '@/utils/bus'
+import { STATUS_MAP } from '@/hooks/base/status'
 
 interface FilterOption {
   value: string
@@ -204,47 +207,57 @@ interface SwiperChangeEvent {
   }
 }
 
-const dataSource = ref<{
-  0: ApprovedItem[]
-  1: ApprovedItem[]
-  2: [ApprovedItem[], ApprovedItem[]]
-}>({
-  0: [],
-  1: [],
-  2: [[], []]
-})
+const dataSource = ref<[ApprovedItem[], ApprovedItem[], [ApprovedItem[], ApprovedItem[]]]>([[], [], [[], []]])
+
 const toast = makeToast()
 
 const currentTab = ref<number>(0)
 const currentReadTab = ref<number>(0)
 const searchQuery = ref<string>('')
 
-const typeList = ref<FilterOption[][]>([[], [], []])
-const selectedType = ref<string[]>(['all', 'all', 'all'])
-const statusList = ref<FilterOption[][]>([[], [], []])
-const selectedStatus = ref<string[]>(['all', 'all', 'all'])
+const typeList = ref<FilterOption[][]>( 
+  Array.from({ length: 3 }, () => [{ value: 'all', text: '全部单据类型' }])
+)
+const selectedType = ref<string>('all')
+const statusList = ref<FilterOption[][]>(
+  Array.from({ length: 3 }, () => [
+    { value: 'all', text: '全部状态' },
+    ...Object.keys(STATUS_MAP).map(text => ({
+      value: text,
+      text
+    }))
+  ])
+);
+const selectedStatus = ref<string>('all')
 
 const tabList = ref<{ name: string }[]>([{ name: '待审批' }, { name: '已审批' }, { name: '抄送我的' }])
+
+const pageSize = 10
+let pageNum = 1
+let isEnd = false
 
 const switchTab = (index: number) => {
   currentTab.value = index
 }
 
-let timer: ReturnType<typeof setTimeout> | null = null
 const onSwiperChange = (e: SwiperChangeEvent) => {
   currentTab.value = e.detail.current
-
-  if (timer) clearTimeout(timer)
-
-  timer = setTimeout(() => {
-    getData()
-  }, 300)
+  refreshData()
 }
 
-function getData(showLoading = true) {
+function initPageParams() {
+  pageNum = 1
+  isEnd = false
+}
+
+function refreshData() {
+  initPageParams()
+  getData(true)
+}
+
+function getData(showLoading = false) {
+  if (isEnd) return
   const tabIndex = currentTab.value
-  // 不缓存
-  // if (tabIndex < 2 && dataSource.value[tabIndex].length > 0) return
   if (showLoading) {
     toast.loading('')
   }
@@ -252,38 +265,67 @@ function getData(showLoading = true) {
     case 0:
     case 1:
       let approved = tabIndex === 0 ? false : true
-      approvedList({ page_num: 1, page_size: 1000, approved: approved })
-        .then((res) => {
-          const datas = res.message as ApprovedListResponse
-          const result = datas.approval_instances
-          for (var index = 0; index < result.length; index++) {
-            var element = result[index]
+      const baseParam: any = { page_num: pageNum, page_size: pageSize, approved: approved }
+      if (selectedStatus.value !== 'all') {
+        baseParam.status = [selectedStatus.value]
+      }
+
+      const requests: Promise<any>[] = []
+      if (searchQuery.value.length > 0) {
+        const param1 = { ...baseParam, form_name: searchQuery.value }
+        requests.push(approvedList(param1))
+        
+        const param2 = { ...baseParam, applicant: searchQuery.value }
+        requests.push(approvedList(param2))
+      } else {
+        requests.push(approvedList(baseParam))
+      }
+      
+      Promise.all(requests)
+        .then((results) => {
+          let mergedInstances: ApprovedItem[] = []
+          let allEnd = true
+
+          results.forEach((res) => {
+            const datas = res.message as ApprovedListResponse
+            const result = datas.approval_instances || []
+            
+            if (result.length >= pageSize) {
+              allEnd = false
+            }
+            
+            mergedInstances = mergedInstances.concat(result)
+          })
+
+          const uniqueMap = new Map<string, ApprovedItem>()
+          mergedInstances.forEach((item) => {
+            if (!uniqueMap.has(item.instance_id)) {
+              uniqueMap.set(item.instance_id, item)
+            }
+          })
+          let finalInstances = Array.from(uniqueMap.values())
+
+          finalInstances.sort((a, b) => {
+            return b.application_time.localeCompare(a.application_time)
+          })
+
+          if (allEnd) {
+            isEnd = true
+          }
+
+          for (let index = 0; index < finalInstances.length; index++) {
+            let element = finalInstances[index]
             const r = personUtil.lookup(element.applicant_person_key)
             element.back_ground = r.back_ground
           }
 
-          dataSource.value[tabIndex] = result
-
-          const formNameSet = new Set<string>()
-          const statusSet = new Set<string>()
-
-          for (const item of result) {
-            if (item.form_name) formNameSet.add(item.form_name)
-            if (item.status) statusSet.add(item.status)
+          if (pageNum == 1) {
+            dataSource.value[tabIndex] = [...finalInstances]
+          } else {
+            dataSource.value[tabIndex] = [...dataSource.value[tabIndex], ...finalInstances]
           }
 
-          typeList.value[tabIndex] = [
-            { value: 'all', text: '全部单据类型' },
-            ...Array.from(formNameSet).map((name) => ({ value: name, text: name }))
-          ]
-
-          statusList.value[tabIndex] = [
-            { value: 'all', text: '全部状态' },
-            ...Array.from(statusSet).map((name) => ({ value: name, text: name }))
-          ]
-
-          selectedType.value[tabIndex] = 'all'
-          selectedStatus.value[tabIndex] = 'all'
+          pageNum++
         })
         .catch((err: any) => console.error(err))
         .finally(() => {
@@ -294,39 +336,63 @@ function getData(showLoading = true) {
       break
     case 2:
       let read = currentReadTab.value === 0 ? false : true
-      ccList({ page_num: 1, page_size: 1000, read: read })
-        .then((res) => {
-          const datas = res.message as CCListResponse
-          const result = datas.cc_instances
+      const baseParamCC: any = { page_num: pageNum, page_size: pageSize, read: read }
+      if (selectedStatus.value !== 'all') {
+        baseParamCC.status = [selectedStatus.value]
+      }
+      const requestsCC: Promise<any>[] = []
+      if (searchQuery.value.length > 0) {
+        requestsCC.push(ccList({ ...baseParamCC, form_name: searchQuery.value }))
+        requestsCC.push(ccList({ ...baseParamCC, applicant: searchQuery.value }))
+      } else {
+        requestsCC.push(ccList(baseParamCC))
+      }
+      
+      Promise.all(requestsCC)
+        .then((results) => {
+          let mergedInstances: any[] = []
+          let allEnd = true 
 
-          for (var index = 0; index < result.length; index++) {
-            var element = result[index]
+          results.forEach((res) => {
+            const datas = res.message as CCListResponse
+            const result = datas.cc_instances || []
+            
+            if (result.length >= pageSize) {
+              allEnd = false
+            }
+            
+            mergedInstances = mergedInstances.concat(result)
+          })
+
+          const uniqueMap = new Map<string, any>()
+          mergedInstances.forEach((item) => {
+            if (!uniqueMap.has(item.instance_id)) {
+              uniqueMap.set(item.instance_id, item)
+            }
+          })
+          let finalInstances = Array.from(uniqueMap.values())
+
+          finalInstances.sort((a, b) => {
+            return b.application_time.localeCompare(a.application_time)
+          })
+
+          if (allEnd) {
+            isEnd = true
+          }
+
+          for (let index = 0; index < finalInstances.length; index++) {
+            let element = finalInstances[index]
             const r = personUtil.lookup(element.applicant_person_key)
             element.back_ground = r.back_ground
           }
 
-          dataSource.value[tabIndex][currentReadTab.value] = result
-
-          const formNameSet = new Set<string>()
-          const statusSet = new Set<string>()
-
-          for (const item of result) {
-            if (item.form_name) formNameSet.add(item.form_name)
-            if (item.status) statusSet.add(item.status)
+          if (pageNum == 1) {
+            dataSource.value[tabIndex][currentReadTab.value] = [...finalInstances]
+          } else {
+            dataSource.value[tabIndex][currentReadTab.value] = [...dataSource.value[tabIndex][currentReadTab.value], ...finalInstances]
           }
 
-          typeList.value[tabIndex] = [
-            { value: 'all', text: '全部单据类型' },
-            ...Array.from(formNameSet).map((name) => ({ value: name, text: name }))
-          ]
-
-          statusList.value[tabIndex] = [
-            { value: 'all', text: '全部状态' },
-            ...Array.from(statusSet).map((name) => ({ value: name, text: name }))
-          ]
-
-          selectedType.value[tabIndex] = 'all'
-          selectedStatus.value[tabIndex] = 'all'
+          pageNum++
         })
         .catch((err: any) => console.error(err))
         .finally(() => {
@@ -334,6 +400,7 @@ function getData(showLoading = true) {
             toast.hiddenLoading()
           }
         })
+ 
       break
   }
 }
@@ -355,38 +422,25 @@ const toggleCheck = (item: ApprovedItem) => {
 
 const switchReadTab = (flag: number) => {
   currentReadTab.value = flag
-  getData()
+  refreshData()
 }
 
-type TabData = ApprovedItem[] | [ApprovedItem[], ApprovedItem[]]
-type FilteredDataSource = TabData[]
+const onSearch = () => {
+  refreshData()
+}
 
-const filteredDataSource = computed<FilteredDataSource>(() => {
-  const keyword = searchQuery.value.trim().toLowerCase()
+watch(
+  [selectedType, selectedStatus],
+  () => {
+    refreshData()
+  },
+  { immediate: true }
+)
 
-  const filterFn = (item: ApprovedItem, tabIdx: number): boolean => {
-    const typeVal: string = selectedType.value[tabIdx] ?? 'all'
-    const statusVal: string = selectedStatus.value[tabIdx] ?? 'all'
-
-    const matchKeyword =
-      !keyword ||
-      (typeof item.form_name === 'string' && item.form_name.toLowerCase().includes(keyword)) ||
-      (typeof item.applicant === 'string' && item.applicant.toLowerCase().includes(keyword))
-
-    const matchType = typeVal === 'all' || item.form_name === typeVal
-    const matchStatus = statusVal === 'all' || item.status === statusVal
-
-    return matchKeyword && matchType && matchStatus
+watch(searchQuery, (newVal) => {
+  if (newVal === '') {
+    refreshData()
   }
-
-  return [
-    dataSource.value[0].filter((item) => filterFn(item, 0)),
-    dataSource.value[1].filter((item) => filterFn(item, 1)),
-    [
-      dataSource.value[2][0].filter((item) => filterFn(item, 2)),
-      dataSource.value[2][1].filter((item) => filterFn(item, 2))
-    ]
-  ]
 })
 
 const getVisibleList = (
@@ -400,18 +454,18 @@ const getVisibleList = (
 }
 
 const isAllChecked = computed(() => {
-  const currentVisibleData = filteredDataSource.value[0] || []
+  const currentVisibleData = dataSource.value[0] || []
   return currentVisibleData.length > 0 && currentVisibleData.every((item: any) => item.checked)
 })
 
 const checkedCount = computed(() => {
-  const currentVisibleData = filteredDataSource.value[0] || []
+  const currentVisibleData = dataSource.value[0] || []
   return currentVisibleData.filter((item: any) => item.checked).length
 })
 
 const toggleAll = () => {
   const targetState = !isAllChecked.value
-  const currentVisibleData = filteredDataSource.value[0] || []
+  const currentVisibleData = dataSource.value[0] || []
   currentVisibleData.forEach((item: any) => {
     item.checked = targetState
   })
@@ -427,7 +481,7 @@ const handleReject = (item: ApprovedItem) => {
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已拒绝', icon: 'success' })
-        getData(false)
+        refreshData()
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
@@ -445,7 +499,7 @@ const handleAgree = (item: ApprovedItem) => {
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已同意', icon: 'success' })
-        getData(false)
+        refreshData()
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
@@ -458,7 +512,7 @@ type BatchItemType = Pick<ApprovedItem, 'instance_id' | 'task_node_instance_id'>
 const handleAgreeBatch = (): void => {
   if (currentTab.value !== 0) return
   const instance_id_list: BatchItemType[] = []
-  const dataList = filteredDataSource.value[0]
+  const dataList = dataSource.value[0]
   for (const _item of dataList) {
     const item = _item as ApprovedItem
     if (item.checked) {
@@ -476,7 +530,7 @@ const handleAgreeBatch = (): void => {
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已同意', icon: 'success' })
-        getData(false)
+        refreshData()
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
@@ -487,7 +541,7 @@ const handleAgreeBatch = (): void => {
 const handleRejectBatch = () => {
   if (currentTab.value !== 0) return
   const instance_id_list = []
-  const dataList = filteredDataSource.value[0]
+  const dataList = dataSource.value[0]
   for (const _item of dataList) {
     const item = _item as ApprovedItem
     if (item.checked) {
@@ -505,7 +559,7 @@ const handleRejectBatch = () => {
     .then((res) => {
       if (res.code == 200) {
         uni.showToast({ title: '已拒绝', icon: 'success' })
-        getData(false)
+        refreshData()
       } else {
         uni.showToast({ title: '请求失败：' + res.message, icon: 'error' })
       }
@@ -513,19 +567,16 @@ const handleRejectBatch = () => {
     .catch((err: any) => console.error(err))
 }
 
-onMounted(() => {
-  getData()
+const handleBusRefresh = () => {
+  refreshData()
+}
 
-  // 刷新列表
-  bus.on('center:refresh', () => {
-    getData()
-  })
+onMounted(() => {
+  bus.on('center:refresh', handleBusRefresh)
 })
 
 onUnmounted(() => {
-  bus.off('center:refresh', () => {
-    console.log('cleanup refresh listener')
-  })
+  bus.off('center:refresh', handleBusRefresh)
 })
 </script>
 

@@ -32,6 +32,7 @@ const instance = {
     SET_STATE(state: InstanceState, data: InstanceState) {
       state.instance_id = data.instance_id
       state.instance_type = data.instance_type
+      state.task_node_instance_id = data.task_node_instance_id
     },
 
     SET_FORM_INSTANCE(state: InstanceState, data: Array<FormConfigItem>) {

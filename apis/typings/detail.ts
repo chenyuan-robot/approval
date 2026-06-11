@@ -1,3 +1,5 @@
+import type { WorkflowCfg } from './form'
+
 /**
  * FormDetailResponse
  */
@@ -8,6 +10,7 @@ export interface FormDetailResponse {
   reform: string | null // 关联申请单
   operation_comment: string | null
   task_node_instance_id: string
+  workflow_cfg: WorkflowCfg
   is_review_node: boolean
   is_reviewer: boolean
   instance_code: string

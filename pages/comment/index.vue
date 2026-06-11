@@ -137,14 +137,6 @@ const imagePreview = ref<InstanceType<typeof ImagePreview>>()
 const store = useStore()
 
 const formInstance = computed(() => store.state.instance.form_instance)
-watch(
-  formInstance,
-  (newVal: Array<FormConfigItem>) => {
-    if (newVal) {
-    }
-  },
-  { immediate: true }
-)
 
 const userLists = computed(() => {
   let filterUsers = [...store.state.userList]
@@ -234,6 +226,8 @@ const handlerPreview = (data: FileItem): void => {
 
 const handlerDownload = (data: FileItem): void => {
   toast.loading('正在下载...')
+  let attachmentId: string = data.oss_key
+  const suffix = attachmentId.split('.').pop()
   uni.downloadFile({
     url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${data.oss_key}`,
     method: 'GET',
@@ -247,19 +241,63 @@ const handlerDownload = (data: FileItem): void => {
       toast.info('暂不支持下载')
       /* #endif */
       /* #ifndef H5 */
-      uni.saveFile({
-        tempFilePath: res.tempFilePath,
-        success: function (saveRes) {
-          uni.openDocument({
-            filePath: saveRes.savedFilePath,
-            showMenu: true,
-            success: () => {
-              toast.hiddenLoading()
-              console.log('打开文件成功')
+      if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
+        const filePath = res.tempFilePath
+        uni.saveImageToPhotosAlbum({
+          filePath,
+          success: () => {
+            toast.info('已保存至手机相册')
+          },
+          fail: (err) => {
+            if (
+              err.errMsg === 'saveImageToPhotosAlbum:fail:auth denied' ||
+              err.errMsg === 'saveImageToPhotosAlbum:fail auth deny'
+            ) {
+              uni.showModal({
+                title: '提示',
+                content: '需要您授权保存相册',
+                showCancel: false,
+                success: () => {
+                  uni.openSetting({
+                    success(settingdata) {
+                      if (settingdata.authSetting['scope.writePhotosAlbum']) {
+                        uni.showModal({
+                          title: '提示',
+                          content: '获取权限成功,再次点击图片即可保存',
+                          showCancel: false
+                        })
+                      } else {
+                        uni.showModal({
+                          title: '提示',
+                          content: '获取权限失败，将无法保存到相册哦~',
+                          showCancel: false
+                        })
+                      }
+                    },
+                    fail(failData) {
+                      console.log('failData', failData)
+                    }
+                  })
+                }
+              })
             }
-          })
-        }
-      })
+          }
+        })
+      } else {
+        uni.saveFile({
+          tempFilePath: res.tempFilePath,
+          success: function (saveRes) {
+            uni.openDocument({
+              filePath: saveRes.savedFilePath,
+              showMenu: true,
+              success: () => {
+                toast.hiddenLoading()
+                console.log('打开文件成功')
+              }
+            })
+          }
+        })
+      }
       /* #endif */
     }
   })

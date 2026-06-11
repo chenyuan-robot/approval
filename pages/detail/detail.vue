@@ -393,6 +393,7 @@ onLoad((options?: PageOptions) => {
 
 onMounted(() => {
   height.value = uni.getSystemInfoSync().windowHeight
+  store.commit('instance/SET_FORM_INSTANCE', [])
   bus.on('detail:refresh-history', () => {
     console.log('refresh history')
     getApprovalHistory(instanceDetail.value.form_instance_code)
@@ -555,7 +556,7 @@ onUnmounted(() => {
     box-shadow: 0px 2px 8px 0px #0000001a;
     .action {
       text-align: center;
-      margin-right: 132rpx;
+      margin-right: 100rpx;
       .search-icon {
         width: 32rpx;
         height: 32rpx;

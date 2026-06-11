@@ -98,8 +98,6 @@ const uploadedValues = ref<string>('')
 const handlerPreview = (index: number): void => {
   let attachmentId: string = props.renderOnly ? config.value.value[index].url : uploadedValues.value.split(',')[index]
   const suffix = attachmentId.split('.').pop()
-  console.log('suffix', suffix)
-  console.log('attachmentId', attachmentId)
   if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
     uni.request({
       url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
@@ -124,6 +122,7 @@ const handlerPreview = (index: number): void => {
 const handlerDownload = (index: number): void => {
   toast.loading('正在下载...')
   let attachmentId: string = props.renderOnly ? config.value.value[index].url : uploadedValues.value.split(',')[index]
+  const suffix = attachmentId.split('.').pop()
   uni.downloadFile({
     url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
     method: 'GET',
@@ -137,19 +136,63 @@ const handlerDownload = (index: number): void => {
       toast.info('暂不支持下载')
       /* #endif */
       /* #ifndef H5 */
-      uni.saveFile({
-        tempFilePath: res.tempFilePath,
-        success: function (saveRes) {
-          uni.openDocument({
-            filePath: saveRes.savedFilePath,
-            showMenu: true,
-            success: () => {
-              toast.hiddenLoading()
-              console.log('打开文件成功')
+      if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
+        const filePath = res.tempFilePath
+        uni.saveImageToPhotosAlbum({
+          filePath,
+          success: () => {
+            toast.info('已保存至手机相册')
+          },
+          fail: (err) => {
+            if (
+              err.errMsg === 'saveImageToPhotosAlbum:fail:auth denied' ||
+              err.errMsg === 'saveImageToPhotosAlbum:fail auth deny'
+            ) {
+              uni.showModal({
+                title: '提示',
+                content: '需要您授权保存相册',
+                showCancel: false,
+                success: () => {
+                  uni.openSetting({
+                    success(settingdata) {
+                      if (settingdata.authSetting['scope.writePhotosAlbum']) {
+                        uni.showModal({
+                          title: '提示',
+                          content: '获取权限成功,再次点击图片即可保存',
+                          showCancel: false
+                        })
+                      } else {
+                        uni.showModal({
+                          title: '提示',
+                          content: '获取权限失败，将无法保存到相册哦~',
+                          showCancel: false
+                        })
+                      }
+                    },
+                    fail(failData) {
+                      console.log('failData', failData)
+                    }
+                  })
+                }
+              })
             }
-          })
-        }
-      })
+          }
+        })
+      } else {
+        uni.saveFile({
+          tempFilePath: res.tempFilePath,
+          success: function (saveRes) {
+            uni.openDocument({
+              filePath: saveRes.savedFilePath,
+              showMenu: true,
+              success: () => {
+                toast.hiddenLoading()
+                console.log('打开文件成功')
+              }
+            })
+          }
+        })
+      }
       /* #endif */
     }
   })
@@ -163,6 +206,55 @@ const handlerDelete = (index: number): void => {
 }
 
 const handlerFile = (): void => {
+if (Math.random() > 0) {
+    // #ifdef MP-LARK
+    tt.filePicker({
+      maxNum: 10,
+      pickerTitle: "Select a file",
+      pickerConfirm: "Confirm",
+      isSystem: true,
+      success(res) {
+        console.log(JSON.stringify(res));
+        const tempFilePath = res.list[0].path
+        toast.info(tempFilePath, 3000)
+        uni.uploadFile({
+          url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
+          filePath: tempFilePath,
+          name: 'file',
+          header: {
+            Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
+          },
+          formData: {
+            is_secret: 'true'
+          },
+          success: (uploadFileRes) => {
+            const data = JSON.parse(uploadFileRes.data)
+            const url = data.message?.[0]?.oss_key
+            if (url) {
+              uploadedNames.value.push(data.message?.[0]?.file_name || '未知文件')
+              uploadedValues.value = (uploadedValues.value ? uploadedValues.value + ',' : '') + url
+            }
+          },
+          fail: () => {
+            uni.showToast({
+              title: '附件上传失败',
+              icon: 'error'
+            })
+          },
+          complete: () => {
+            // toast.hiddenLoading()
+          }
+        })
+      },
+      fail(res) {
+        console.log(`filePicker fail: ${JSON.stringify(res)}`);
+        toast.info(`filePicker fail: ${JSON.stringify(res)}`, 3000)
+      },
+    });
+     // #endif
+    return
+  }
+
   if (uploadedNames.value.length >= config.value.maxCount) {
     uni.showToast({
       title: `最多只能上传${config.value.maxCount}个附件`,

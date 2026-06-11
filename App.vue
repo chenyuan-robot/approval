@@ -11,7 +11,7 @@ export default {
     const data = {
       user_name: '陈远',
       access_token:
-        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImtzMSJ9.eyJrZXkiOiI2OGE2ZDJhZWYzNDdkNGNlOGE2ZWMwODgzY2VhYTg2OCIsIm5hbWUiOiLpmYjov5wiLCJ0ZW5hbnQiOiLphbflk4fnp5HmioAiLCJ0bnRrZXkiOiJjb3dhcm9ib3QiLCJtYWluZ3JvdXAiOiI4YjNiNGVjZWI5YjBmYjFhMGU5MWVjZjQxYjZkYmE5YyIsImdyb3VwcyI6WyI4YjNiNGVjZWI5YjBmYjFhMGU5MWVjZjQxYjZkYmE5YyIsImRoYUp0RiJdLCJhZG1pbiI6ZmFsc2UsImV4cCI6MTc4MDc0MzgzMH0.eQTTC73IKCa5SqhKxlEeCTL7W7vccSwM-Hk7_DqvulaFywILJQlsH972rOaUzve1ubfDgND6_moQOwYSaYShENRcWlm4E0SQNX4B9TqJ1hQU5b-CGr1-TmX2xus4P4Qk4tshCosKIF-SmYXYoWMAGvdbZoPwVIGCm1J5HZ3nJAadvfYeIv8aYCa0mvI42B-zeq8ndgjddTpHD-F6p9PBHN6p7zniGSUwTXh__cEKuJUPSKAtJku5zQxnIwvhc0hLrZSjwag3dCeekdw4yVsBoC6T-UmR_9I55qtIoPhHlgWdplTHrrvlomhys2nZeKIQul4cJNqBmjFFc-a8R7Ln2Q'
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImtzMSJ9.eyJrZXkiOiI2OGE2ZDJhZWYzNDdkNGNlOGE2ZWMwODgzY2VhYTg2OCIsIm5hbWUiOiLpmYjov5wiLCJ0ZW5hbnQiOiLphbflk4fnp5HmioAiLCJ0bnRrZXkiOiJjb3dhcm9ib3QiLCJtYWluZ3JvdXAiOiI4YjNiNGVjZWI5YjBmYjFhMGU5MWVjZjQxYjZkYmE5YyIsImdyb3VwcyI6WyI4YjNiNGVjZWI5YjBmYjFhMGU5MWVjZjQxYjZkYmE5YyIsImRoYUp0RiJdLCJhZG1pbiI6ZmFsc2UsImV4cCI6MTc4MTMzNDc5N30.O_jYjLu47b15TfEWGuXNCYk4Agl9F7fCCQ6l0BWsmVUrWl7gtAw80S1xwjwF0idrzeVaWmRKSmv6_PbW7BlcEoOQyBxLxDOhXkso5aruq3rZCNUQgFmjXxbfyoUCqW6NQgC0nhEbuRTNUcfqiJkoWWUOaBPt5t6BnYtAUc1di0DROWJKlvzFmjAtYeRxomZBV4dsYlKg0gyH5uswQrwzkfsVJIlGcwtQyYLn2hfmtUJiyC1SeBip-zSWTZnH7asiGmeagWsOtgkIoOrgKZXnBwzMBbuhxwGqCPIBy_K10bu0GAhyilNLvYpl3xbokbrSojbf4ebbdAUg2FdkJWJK0A'
     }
 
     if (launchInfo['referrerInfo']['extraData']['access_token'] != undefined) {
@@ -25,6 +25,7 @@ export default {
     // #endif
 
     // 全局网络监听
+    // #ifdef MP-LARK
     useNetworkMonitor({
       onConnected(type) {
         console.log('网络已连接', type)
@@ -38,6 +39,7 @@ export default {
         toast.info('网络已恢复', 2000)
       }
     })
+    // #endif
   },
 
   onShow: function (options: {
@@ -49,18 +51,15 @@ export default {
       task_node_instance_id?: string
     }
   }) {
-    const toast = makeToast()
     // 获取热启动参数
     // #ifdef MP-LARK
     setTimeout(() => {
-      const toast = makeToast()
       const path = options?.path ?? ''
       if (path === 'pages/detail/detail') {
         const instance_id = options?.query?.instance_id ?? ''
         const instance_type = options?.query?.type ?? ''
         const task_node_instance_id = options?.query?.task_node_instance_id ?? ''
         if (instance_id && instance_type) {
-          toast.info(instance_type, 2000)
           store.commit('instance/SET_STATE', { instance_id, instance_type, task_node_instance_id })
         }
       } else if (path === 'pages/form/form') {

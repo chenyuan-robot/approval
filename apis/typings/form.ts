@@ -4,7 +4,7 @@
 export interface FormDetailResponse {
   applicable_company: Array<string>
   applicable_department: Array<string>
-  status: boolean
+  status: string
   owner: string
   name: string
   group: string

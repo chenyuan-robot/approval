@@ -12,7 +12,7 @@
     </view>
     <view class="list-wrapper">
       <view v-if="dataSource.length == 0" class="empty-box">
-        <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
+        <image class="no_data_img" src="/static/no_data.svg" mode="aspectFit" />
         <text>暂无数据</text>
       </view>
       <scroll-view v-else scroll-y class="scroll-area" @scrolltolower="getData" :lower-threshold="50">

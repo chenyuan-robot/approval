@@ -78,7 +78,7 @@ const getConfig = (): FormConfig => {
     name: `COMP_MULTI_INPUT___${props.formItem.sequence}`,
     rules: [
       {
-        ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^[\\s\\S]+$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
     ]

@@ -12,7 +12,7 @@
         v-else
         :name="`COMP_SECRET_MULTI_INPUT___${props.formItem.sequence}`"
         class="component-style"
-        :disabled="config.disabled"
+        :disabled="config.disabled || props.isReview"
         placeholder-style="color: #86909C; font-size: 28rpx;"
         style="height: 192rpx"
         :value="inputValue"
@@ -49,6 +49,7 @@ defineOptions({
 const props = defineProps<{
   formItem: FormItem
   renderOnly?: boolean
+  isReview?: boolean
 }>()
 
 const inputValue = ref<string>('')
@@ -80,7 +81,7 @@ const getConfig = (): FormConfig => {
       {
         // ^.+$: 至少一个字符（必填）
         // .*: 任意字符（非必填）
-        ruleType: required ? '^.+$' : '.*',
+        ruleType: required ? '^[\\s\\S]+$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
     ]

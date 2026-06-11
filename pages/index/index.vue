@@ -8,7 +8,7 @@
       </view>
     </view>
     <view v-if="filteredDataSource.length == 0" class="empty-box">
-      <img class="no_data_img" src="@/static/no_data.svg" alt="icon" />
+      <image class="no_data_img" src="/static/no_data.svg" mode="aspectFit" />
       <text>暂无数据</text>
     </view>
     <scroll-view v-else scroll-y class="scroll-content">
@@ -87,9 +87,9 @@ function getData() {
       for (var index = 0; index < documents.length; index++) {
         var element = documents[index]
         // ------ 临时代码，后面会删除
-        if (element.name !== '开发组') {
-          continue
-        }
+        // if (element.name !== '开发组') {
+        //   continue
+        // }
         // -------临时代码，后面会删除
 
         var item: FormGroupItem = {

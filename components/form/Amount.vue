@@ -16,11 +16,16 @@
           <image class="suffix-icon" src="/static/arrow_down.svg" mode="aspectFit" />
         </picker>
         <input
+          ref="inputAmountRef"
           placeholder-style="color: #86909C; font-size: 28rpx;"
           class="component-style"
+          type="text"
+          inputmode="decimal"
           :placeholder="config.placeholder as string"
           :value="displayValue"
           @input="bindInputValue"
+          @focus="bindInputFocus"
+          @blur="bindInputBlur"
         />
         <input hidden :name="`COMP_AMOUNT___${props.formItem.sequence}_picker`" :value="concernValue" />
       </view>
@@ -29,11 +34,19 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, ref, watch } from 'vue'
+import { inject, nextTick, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import { AMountOpts } from '../../pages/form/data'
 import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+
+export interface FormConfig {
+  placeholder: string
+  required: boolean
+  showTitle: boolean
+  showThousand: boolean
+  value: string
+}
 
 defineOptions({
   name: 'Amount',
@@ -45,13 +58,21 @@ const props = defineProps<{
   renderOnly?: boolean
 }>()
 
-const config = ref<Record<string, string | number | boolean>>({})
+const config = ref<FormConfig>({
+  placeholder: '',
+  required: false,
+  showTitle: false,
+  showThousand: false,
+  value: ''
+})
 const index = ref<number>(0)
 const selectedValue = ref<string>('')
 const concernValue = ref<string>('')
 const displayValue = ref<string>('')
+const isFocused = ref<boolean>(false)
+const inputAmountRef = ref()
 
-const getConfig = () => {
+const getConfig = (): FormConfig => {
   console.log('formItem values: ', props.formItem.values)
   const placeholder = props.formItem.values.find((item) => item.name === '录入提示')?.value as string
   const fieldAttr = props.formItem.values.find((item) => item.name === '字段属性')
@@ -74,7 +95,7 @@ const getConfig = () => {
   return {
     placeholder: placeholder || '请输入金额',
     required: required,
-    showTitle: (titleItem?.extra_option_config as { default_value?: string })?.default_value ?? false,
+    showTitle: (titleItem?.extra_option_config as { default_value?: boolean })?.default_value ?? false,
     showThousand,
     value: Array.isArray(titleItem?.form_values) ? titleItem?.form_values?.join(', ') : ''
   }
@@ -97,6 +118,24 @@ const unFormatThousand = (str: string) => {
   return str.replace(/,/g, '')
 }
 
+// 限制只保留数字和最多两位小数
+const limitDecimal = (str: string) => {
+  // 只保留数字和小数点
+  let val = str.replace(/[^\d.]/g, '')
+  // 只保留第一个小数点
+  const dotIndex = val.indexOf('.')
+  if (dotIndex !== -1) {
+    val = val.slice(0, dotIndex + 1) + val.slice(dotIndex + 1).replace(/\./g, '')
+  }
+  // 小数点后最多两位
+  const parts = val.split('.')
+  if (parts.length === 2) {
+    val = parts[0] + '.' + parts[1].slice(0, 2)
+  }
+  console.log('val: ', val)
+  return val
+}
+
 const bindValueChange = (event: Event) => {
   const e = event as unknown as {
     detail: { value: number }
@@ -108,23 +147,65 @@ const bindValueChange = (event: Event) => {
   concernValue.value = `${selectedValue.value}_${num}`
 }
 
+// H5 下 Vue 对聚焦中的 input 会跳过 value 同步，这里直接写底层 DOM 兜底
+const syncInputDom = (val: string) => {
+  // #ifdef H5
+  nextTick(() => {
+    const el = inputAmountRef.value?.$el?.querySelector('input') || inputAmountRef.value?.$el
+    if (el && el.tagName === 'INPUT' && el.value !== val) {
+      el.value = val
+    }
+  })
+  // #endif
+  // #ifndef H5
+  // 小程序/App：value 未变化时不会刷新输入框，先置空再改回目标值强制刷新
+  displayValue.value = ''
+  nextTick(() => {
+    displayValue.value = val
+  })
+  // #endif
+}
+
 const bindInputValue = (event: Event) => {
   const e = event as unknown as { detail: { value: string } }
-  let val = unFormatThousand(e.detail.value)
+  const rawInput = unFormatThousand(e.detail.value)
+  // 输入时不格式化千分位，只限制为数字和最多两位小数
+  const val = limitDecimal(rawInput)
+  // 回写修正后的值，超过两位小数的字符无法输入
+  displayValue.value = val
+  // 若输入被修正（超出两位小数等），强制同步 DOM，否则 H5 下聚焦中不会刷新
+  if (val !== e.detail.value) {
+    syncInputDom(val)
+  }
   if (!val) {
-    displayValue.value = ''
     concernValue.value = `${selectedValue.value}_`
     return
   }
   concernValue.value = `${selectedValue.value}_${val}`
-  displayValue.value = formatThousand(val)
+}
+
+// 聚焦时显示原始数值（去掉千分位）
+const bindInputFocus = () => {
+  isFocused.value = true
+  const raw = unFormatThousand(displayValue.value)
+  displayValue.value = raw
+  syncInputDom(raw)
+}
+
+// 失焦时格式化成千分位
+const bindInputBlur = () => {
+  console.log('bindInputBlur: ', displayValue.value)
+  isFocused.value = false
+  displayValue.value = formatThousand(displayValue.value)
+  console.log('bindInputBlur: ', displayValue.value)
 }
 
 watch(
   () => concernValue.value,
   (val: string) => {
     const num = val.split('_')[1] || ''
-    displayValue.value = formatThousand(num)
+    // 聚焦输入中显示原始值，失焦时显示千分位格式
+    displayValue.value = isFocused.value ? num : formatThousand(num)
   }
 )
 

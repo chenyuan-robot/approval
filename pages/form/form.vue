@@ -10,7 +10,7 @@
       >
         <form @submit="formSubmit">
           <view v-for="formItem in formItems" :key="formItem.sequence" class="uni-form-item">
-            <Renderer style="width: 100%" :formItem="formItem" />
+            <Renderer style="width: 100%" :formItem="formItem" :isReview="showApproveBar" />
           </view>
           <view v-if="type === 'invalid' || type === 'modify'" class="uni-form-comment">
             <view class="component-label">
@@ -118,6 +118,7 @@ import { makeToast } from '@/utils/toast'
 import { queryInstanceDetail } from '@/apis/modules/detail'
 import { debounce } from 'lodash'
 import { useStore } from 'vuex'
+import { getStatusType } from '@/hooks/base/status'
 
 interface FormValues {
   [key: string]: string
@@ -144,6 +145,7 @@ const isOpen = ref<boolean>(false)
 let approveType = '' // 同意、退回、转交、拒绝的类型
 const height = ref(0)
 let submitType = 'submit' // submit 或 save
+const fromLarkMsg = ref<boolean>(false)
 
 provide('type', type)
 
@@ -529,18 +531,27 @@ const queryFormCfg = (id: string) => {
       .catch((err) => {
         console.error('查询表单详情失败：', err)
       })
-      .finally(() => {
-        toast.hiddenLoading()
-      })
   } else if (type.value === 'edit' || type.value === 'invalid' || type.value === 'modify') {
     queryInstanceDetail(id)
       .then((res) => {
         if (res.code === 200) {
-          console.log('获取单据详情成功：', res.message)
+          // console.log('获取单据详情成功：', res.message)
           const message = res.message || {}
+          if (getStatusType(message.status) !== 'draft' && fromLarkMsg.value) {
+            toast.info('正在跳转...')
+            const applicaitonItem = {
+              instance_id: id,
+              instance_type: ''
+            }
+            uni.reLaunch({
+              url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`
+            })
+            return
+          }
           formInfo.form_code = id || ''
           formInfo.form_instance_code = message.form_instance_code || ''
           formInfo.form_name = message.form_name || ''
+          formInfo.workflow_cfg = message.workflow_cfg || {}
           formInfo.form_instance = message.form_instance || []
           let depItems: FormItem[] = []
           const formConfigs = message.form_instance || []
@@ -568,6 +579,17 @@ const queryFormCfg = (id: string) => {
       .then(async (res) => {
         if (res.code === 200) {
           const message = res.message || {}
+          if (getStatusType(message.status) !== 'draft' && fromLarkMsg.value) {
+            toast.info('正在跳转...')
+            const applicaitonItem = {
+              instance_id: id,
+              instance_type: ''
+            }
+            uni.reLaunch({
+              url: `/pages/detail/detail?data=${encodeURIComponent(JSON.stringify(applicaitonItem))}`
+            })
+            return
+          }
           formInfo.form_code = message.form_code || ''
           formInfo.form_name = message.form_name || ''
           formInfo.workflow_cfg = message.workflow_cfg || {}
@@ -611,25 +633,9 @@ const globalInstanceId = computed(() => store.state.instance.instance_id)
 watch(globalInstanceId, (newVal: string) => {
   if (newVal) {
     toast.loading('加载中...')
+    fromLarkMsg.value = true
     const globalInstanceType = store.state.instance.instance_type
     type.value = globalInstanceType
-    if (type.value === 'edit' || type.value === 'invalid' || type.value === 'modify') {
-      queryFormDetail(globalInstanceId.value)
-        .then((res) => {
-          if (res.code === 200) {
-            const message = res.message || {}
-            formInfo.workflow_cfg = message.workflow_cfg || {}
-          } else {
-            console.error('查询表单详情失败：', res.message)
-          }
-        })
-        .catch((err) => {
-          console.error('查询表单详情失败：', err)
-        })
-        .finally(() => {
-          toast.hiddenLoading()
-        })
-    }
     queryFormCfg(globalInstanceId.value)
   }
 })
@@ -637,6 +643,7 @@ watch(globalInstanceId, (newVal: string) => {
 onLoad((options?: PageOptions) => {
   formRulesUtil.clearRules()
   if (options?.id) {
+    fromLarkMsg.value = false
     type.value = options.type as FormActionType
     if (type.value === 'edit') {
       console.log('编辑表单：', options)
@@ -800,7 +807,7 @@ onMounted(() => {
       .action {
         border: none !important;
         text-align: center;
-        margin-right: 132rpx;
+        margin-right: 100rpx;
         margin-left: 0;
         line-height: normal;
         background-color: #ffffff;

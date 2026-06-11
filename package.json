@@ -5,6 +5,10 @@
   "scripts": {
     "dev:h5": "uni",
     "dev:mp-lark": "uni -p mp-lark",
+    "wgt:env:test": "node scripts/set-wgt-env.mjs test",
+    "wgt:env:prod": "node scripts/set-wgt-env.mjs prod",
+    "build:wgt:test": "node scripts/build-wgt.mjs test",
+    "build:wgt:prod": "node scripts/build-wgt.mjs prod",
     "test": "echo \"Error: no test specified\" && exit 1",
     "type-check": "vue-tsc --noEmit"
   },
