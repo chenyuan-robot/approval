@@ -37,11 +37,11 @@
         "env": {
           "UNI_PLATFORM": "mp-lark",
           "ENV_TYPE": "prod",
-          "BASE_URL": "https://approval.soft.cowarobot.com",
-          "DIGITAL_BASE_URL": "https://digital.soft.cowarobot.com",
-          "NEW_BASE_URL": "https://newbasis.soft.cowarobot.com",
-          "APP_ID": "cli_aa896edfa6b91cc4",
-          "APP_SECRET": "NTrZj7yEW9xlGFWspbavLe0w0L53hYNB",
+          "BASE_URL": "https://coowa.tech",
+          "DIGITAL_BASE_URL": "https://callcenter.coowa.tech",
+          "NEW_BASE_URL": "https://coowa.tech",
+          "APP_ID": "cli_aaba54586e799cde",
+          "APP_SECRET": "tetQpeOl3Pis1utOnnJq4fjLQPeesvFm",
           "TENANT_ABBR": "coowa",
           "REDIRECT_URI": "http://172.16.115.41:5174/"
         }
@@ -52,7 +52,7 @@
         "env": {
           "UNI_PLATFORM": "h5",
           "ENV_TYPE": "dev",
-          "BASE_URL": "https://approval.softtest.cowarobot.com",
+          "BASE_URL": "http://172.16.115.128:6300",
           "DIGITAL_BASE_URL": "https://digital.softtest.cowarobot.com",
           "NEW_BASE_URL": "https://newbasis.softtest.cowarobot.com",
           "APP_ID": "cli_aa896edfa6b91cc4",
@@ -80,6 +80,7 @@
     "fs": "^0.0.1-security",
     "lodash": "^4.17.21",
     "mitt": "^3.0.1",
+    "nanoid": "^5.1.11",
     "path": "^0.12.7",
     "vuex": "^4.1.0",
     "vuex-persistedstate": "^4.1.0"

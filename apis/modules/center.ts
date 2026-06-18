@@ -6,12 +6,12 @@ import type { ApprovedListReqParams, ApprovedListResponse, CCListReqParams, CCLi
  * @param params
  * @returns
  */
-export const approvedList = (params : ApprovedListReqParams) => {
-	return http.post<ApprovedListResponse | string>('/api/v1/dl_approval/instance/approved/list', { ...params })
+export const approvedList = (params: ApprovedListReqParams) => {
+  return http.post<ApprovedListResponse | string>('/api/v1/approval/instance/approved/list', { ...params })
 }
 
-export const ccList = (params : CCListReqParams) => {
-	return http.post<CCListResponse | string>('/api/v1/dl_approval/instance/cc/list', { ...params })
+export const ccList = (params: CCListReqParams) => {
+  return http.post<CCListResponse | string>('/api/v1/approval/instance/cc/list', { ...params })
 }
 
 /**
@@ -19,9 +19,12 @@ export const ccList = (params : CCListReqParams) => {
  * @param params
  * @returns
  */
-export const agreeOperation = (instance_id_list : Array<Record<string, string>>) => {
-	return http.put<boolean | string>('/api/v1/dl_approval/instance/operation', 
-	{ "instance_id": instance_id_list, "operate_type": "agree", "comment": "" })
+export const agreeOperation = (instance_id_list: Array<Record<string, string>>) => {
+  return http.put<boolean | string>('/api/v1/approval/instance/operation', {
+    instance_id: instance_id_list,
+    operate_type: 'agree',
+    comment: ''
+  })
 }
 
 /**
@@ -29,7 +32,10 @@ export const agreeOperation = (instance_id_list : Array<Record<string, string>>)
  * @param params
  * @returns
  */
-export const rejectOperation = (instance_id_list : Array<Record<string, string>>) => {
-	return http.put<boolean | string>('/api/v1/dl_approval/instance/operation', 
-	{ "instance_id": instance_id_list, "operate_type": "reject", "comment": "" })
+export const rejectOperation = (instance_id_list: Array<Record<string, string>>) => {
+  return http.put<boolean | string>('/api/v1/approval/instance/operation', {
+    instance_id: instance_id_list,
+    operate_type: 'reject',
+    comment: ''
+  })
 }

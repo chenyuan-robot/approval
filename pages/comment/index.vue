@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { addComment } from '@/apis/modules/comment'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { makeToast } from '@/utils/toast'
 import type { FileItem, PageOptions } from './typings'
 import { onLoad } from '@dcloudio/uni-app'
@@ -126,9 +126,10 @@ import type { IPerson } from '@/apis/typings/global'
 import { queryReturnNodes } from '@/apis/modules/detail'
 import type { ReturnNodeResponse } from '@/apis/typings/detail'
 import ImagePreview from '@/components/ImagePreview.vue'
-import type { FormConfigItem } from '@/apis/typings/form'
 import { useStore } from 'vuex'
 import type { FSFileSuccess } from '@/typings/global'
+import { gisFileNameOverLimit } from '@/utils'
+import { nanoid } from 'nanoid'
 
 const toast = makeToast()
 const fileType = ref<'album' | 'camera' | 'system'>('album')
@@ -150,6 +151,7 @@ const searchQuery = ref<string>('')
 const uploadedFiles = ref<Array<FileItem>>([])
 const imagePreview = ref<InstanceType<typeof ImagePreview>>()
 // const formInstance = ref<Array<FormConfigItem>>([])
+const MAX_SIZE = 10 * 1024 * 1024
 
 const store = useStore()
 
@@ -185,7 +187,7 @@ const chooseFileType = (type: 'album' | 'camera' | 'system'): void => {
 
 const uploadFile = (path: string) => {
   uni.uploadFile({
-    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
+    url: `${process.env.BASE_URL}/api/v1/approval/file/upload`,
     filePath: path,
     name: 'file',
     header: {
@@ -198,6 +200,10 @@ const uploadFile = (path: string) => {
       console.log(url)
       if (url) {
         uploadedFiles.value.push(data.message?.[0])
+        store.commit(
+          'instance/SET_COMMENT_ATTACHMENT_LIST',
+          uploadedFiles.value.map((item) => item.oss_key)
+        )
       }
     },
     fail: () => {
@@ -223,10 +229,37 @@ const handlerFile = (): void => {
       pickerConfirm: 'Confirm',
       isSystem: true,
       success(res: FSFileSuccess) {
-        toast.loading('上传中...')
-        console.log(JSON.stringify(res))
+        const size = res.list[0].size
+        if (size >= MAX_SIZE) {
+          toast.info('文件不能超过10M')
+          return
+        }
         const tempFilePath = res.list[0].path
         uploadFile(tempFilePath)
+
+        const fullName = res.list[0].name ?? ''
+        if (fullName && Math.random() < 0) {
+          toast.loading('上传中...')
+          const fileName = fullName.split('.')[0]
+          const ext = `.${fullName.split('.').pop()}`
+          const overLimit = gisFileNameOverLimit(fileName)
+          if (overLimit) {
+            try {
+              const lastDashIndex = tempFilePath.lastIndexOf('-')
+              const tempFileId = tempFilePath.slice(0, lastDashIndex)
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const fileSystemManager = tt.getFileSystemManager()
+              const newFileName = `${tempFileId}-${nanoid(4)}${ext}`
+              fileSystemManager.renameSync(tempFilePath, newFileName)
+              uploadFile(newFileName)
+            } catch (err) {
+              console.log('重命名失败', err)
+            }
+            return
+          }
+          uploadFile(tempFilePath)
+        }
       },
       fail() {
         console.log('filePicker fail')
@@ -237,12 +270,39 @@ const handlerFile = (): void => {
     uni.chooseImage({
       count: 1,
       sizeType: ['original', 'compressed'],
-      sourceType: ['album'], // 从相册选择
-      success: function (res) {
+      sourceType: [fileType.value], // 从相册选择
+      success: function (res: UniApp.ChooseImageSuccessCallbackResult) {
+        const size = (res.tempFiles as UniApp.ChooseImageSuccessCallbackResultFile[])[0].size
+        if (size >= MAX_SIZE) {
+          toast.info('文件不能超过10M')
+          return
+        }
+        toast.loading('上传中...')
         const tempFilePaths = res.tempFilePaths
         const tempFilePath = tempFilePaths[0]
-        toast.loading('上传中...')
         uploadFile(tempFilePath)
+
+        const fileName = tempFilePath.match(/-([^-.]+)\.\w+$/)?.[1]
+        if (fileName && Math.random() < 0) {
+          const overLimit = gisFileNameOverLimit(fileName)
+          if (overLimit) {
+            try {
+              const lastDashIndex = tempFilePath.lastIndexOf('-')
+              const tempFileId = tempFilePath.slice(0, lastDashIndex)
+              const ext = tempFilePath.slice(tempFilePath.lastIndexOf('.')).trim()
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const fileSystemManager = tt.getFileSystemManager()
+              const newFileName = `${tempFileId}-${nanoid(4)}${ext}`
+              fileSystemManager.renameSync(tempFilePath, newFileName)
+              uploadFile(newFileName)
+            } catch (err) {
+              console.log('重命名失败', err)
+            }
+            return
+          }
+        }
+        // uploadFile(tempFilePath)
       }
     })
   }
@@ -253,7 +313,7 @@ const handlerPreview = (data: FileItem): void => {
   const suffix = attachmentId.split('.').pop()
   if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
     uni.request({
-      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${data.oss_key}`,
+      url: `${process.env.BASE_URL}/api/v1/approval/file/preview/proxy/${data.oss_key}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -282,7 +342,7 @@ const handlerDownload = (data: FileItem): void => {
   let attachmentId: string = data.oss_key
   const suffix = attachmentId.split('.').pop()
   uni.downloadFile({
-    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${data.oss_key}`,
+    url: `${process.env.BASE_URL}/api/v1/approval/file/download/proxy/${data.oss_key}`,
     method: 'GET',
     responseType: 'arraybuffer',
     header: {
@@ -359,6 +419,10 @@ const handlerDownload = (data: FileItem): void => {
 const handlerDelete = (data: FileItem): void => {
   const index = uploadedFiles.value.findIndex((item) => item.oss_key === data.oss_key)
   uploadedFiles.value.splice(index, 1)
+  store.commit(
+    'instance/SET_COMMENT_ATTACHMENT_LIST',
+    uploadedFiles.value.map((item) => item.oss_key)
+  )
 }
 
 const handlerOpenPanel = (): void => {
@@ -427,7 +491,8 @@ const handleSend = (): void => {
     params['return_node_id'] = node_id
   }
   if (uploadedFiles.value.length > 0) {
-    params['attachment'] = uploadedFiles.value.map((item) => item.oss_key)
+    // params['attachment'] = uploadedFiles.value.map((item) => item.oss_key)
+    params['attachment'] = store.state.instance.commentAttachmentList
   }
   if (Array.isArray(formInstance.value) && formInstance.value.length > 0) {
     params['form_instance'] = formInstance.value
@@ -512,6 +577,10 @@ onLoad((options?: PageOptions) => {
     })
   }
 })
+
+// onMounted(() => {
+//   store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
+// })
 </script>
 
 <style lang="scss" scoped>

@@ -13,4 +13,11 @@ export interface FSFileSuccess {
   list: FSFileItem[]
 }
 
-export interface FSFileError {}
+export interface TempFile {
+  size: number
+}
+
+export interface ChooseImageResponse {
+  tempFilePaths: string[]
+  tempFiles: TempFile[]
+}

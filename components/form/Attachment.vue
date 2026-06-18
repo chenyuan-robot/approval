@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, onMounted } from 'vue'
+import { ref, inject, onMounted, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import type { FormActionType, FormItem } from '../../pages/form/typings'
 import store from '@/store'
@@ -73,7 +73,9 @@ import { makeToast } from '@/utils/toast'
 import type { StoreState } from '@/store/types'
 import { formRulesUtil } from '@/pages/form/utils/rules'
 import ImagePreview from '@/components/ImagePreview.vue'
-import type { FSFileSuccess } from '@/typings/global'
+import type { ChooseImageResponse, FSFileSuccess } from '@/typings/global'
+import { gisFileNameOverLimit } from '@/utils'
+import { nanoid } from 'nanoid'
 
 export interface FormConfig {
   placeholder: string
@@ -111,13 +113,14 @@ const config = ref<FormConfig>({
 const toast = makeToast()
 const uploadedNames = ref<string[]>([])
 const uploadedValues = ref<string>('')
+const MAX_SIZE = 10 * 1024 * 1024
 
 const handlerPreview = (index: number): void => {
   let attachmentId: string = props.renderOnly ? config.value.value[index].url : uploadedValues.value.split(',')[index]
   const suffix = attachmentId.split('.').pop()
   if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
     uni.request({
-      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
+      url: `${process.env.BASE_URL}/api/v1/approval/file/preview/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -141,7 +144,7 @@ const handlerDownload = (index: number): void => {
   let attachmentId: string = props.renderOnly ? config.value.value[index].url : uploadedValues.value.split(',')[index]
   const suffix = attachmentId.split('.').pop()
   uni.downloadFile({
-    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
+    url: `${process.env.BASE_URL}/api/v1/approval/file/download/proxy/${attachmentId}`,
     method: 'GET',
     responseType: 'arraybuffer',
     header: {
@@ -220,9 +223,11 @@ const handlerDelete = (index: number): void => {
   const lists = uploadedValues.value.split(',')
   lists.splice(index, 1)
   uploadedValues.value = lists.join(',')
+  store.commit('instance/SET_ATTACHMENT_LIST', uploadedValues.value.split(','))
 }
 
 const openPopup = (): void => {
+  if (props.renderOnly) return
   popupRef?.value?.open()
 }
 
@@ -234,21 +239,20 @@ const chooseFileType = (type: 'album' | 'camera' | 'system'): void => {
 
 const uploadFile = (path: string): void => {
   uni.uploadFile({
-    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/upload`,
+    url: `${process.env.BASE_URL}/api/v1/approval/file/upload`,
     filePath: path,
     name: 'file',
     header: {
       Authorization: `Bearer ${(store.state as StoreState).user.access_token}`
     },
-    formData: {
-      is_secret: 'true'
-    },
+    formData: {},
     success: (uploadFileRes) => {
       const data = JSON.parse(uploadFileRes.data)
       const url = data.message?.[0]?.oss_key
       if (url) {
         uploadedNames.value.push(data.message?.[0]?.file_name || '未知文件')
         uploadedValues.value = (uploadedValues.value ? uploadedValues.value + ',' : '') + url
+        store.commit('instance/SET_ATTACHMENT_LIST', uploadedValues.value.split(','))
       }
     },
     fail: () => {
@@ -281,10 +285,37 @@ const handlerFile = (): void => {
       pickerConfirm: 'Confirm',
       isSystem: true,
       success(res: FSFileSuccess) {
-        toast.loading('上传中...')
-        console.log(JSON.stringify(res))
+        const size = res.list[0].size
+        if (size >= MAX_SIZE) {
+          toast.info('文件不能超过10M')
+          return
+        }
         const tempFilePath = res.list[0].path
         uploadFile(tempFilePath)
+
+        const fullName = res.list[0].name ?? ''
+        if (fullName && Math.random() < 0) {
+          toast.loading('上传中...')
+          const fileName = fullName.split('.')[0]
+          const ext = `.${fullName.split('.').pop()}`
+          const overLimit = gisFileNameOverLimit(fileName)
+          if (overLimit) {
+            try {
+              const lastDashIndex = tempFilePath.lastIndexOf('-')
+              const tempFileId = tempFilePath.slice(0, lastDashIndex)
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const fileSystemManager = tt.getFileSystemManager()
+              const newFileName = `${tempFileId}-${nanoid(4)}${ext}`
+              fileSystemManager.renameSync(tempFilePath, newFileName)
+              uploadFile(newFileName)
+            } catch (err) {
+              console.log('重命名失败', err)
+            }
+            return
+          }
+          uploadFile(tempFilePath)
+        }
       },
       fail() {
         console.log('filePicker fail')
@@ -295,12 +326,39 @@ const handlerFile = (): void => {
     uni.chooseImage({
       count: 1,
       sizeType: ['original', 'compressed'],
-      sourceType: [fileType.value], // 从相册选择
-      success: function (res) {
+      sourceType: [fileType.value],
+      success: function (res: UniApp.ChooseImageSuccessCallbackResult) {
+        const size = (res.tempFiles as UniApp.ChooseImageSuccessCallbackResultFile[])[0].size
+        if (size >= MAX_SIZE) {
+          toast.info('文件不能超过10M')
+          return
+        }
+        toast.loading('上传中...')
         const tempFilePaths = res.tempFilePaths
         const tempFilePath = tempFilePaths[0]
-        toast.loading('上传中...')
         uploadFile(tempFilePath)
+
+        const fileName = tempFilePath.match(/-([^-.]+)\.\w+$/)?.[1]
+        if (fileName && Math.random() < 0) {
+          const overLimit = gisFileNameOverLimit(fileName)
+          if (overLimit) {
+            try {
+              const lastDashIndex = tempFilePath.lastIndexOf('-')
+              const tempFileId = tempFilePath.slice(0, lastDashIndex)
+              const ext = tempFilePath.slice(tempFilePath.lastIndexOf('.')).trim()
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-expect-error
+              const fileSystemManager = tt.getFileSystemManager()
+              const newFileName = `${tempFileId}-${nanoid(4)}${ext}`
+              fileSystemManager.renameSync(tempFilePath, newFileName)
+              uploadFile(newFileName)
+            } catch (err) {
+              console.log('重命名失败', err)
+            }
+            return
+          }
+        }
+        // uploadFile(tempFilePath)
       }
     })
   }
@@ -352,6 +410,7 @@ const getConfig = (type: string): FormConfig => {
 }
 
 onMounted(() => {
+  //  store.commit('instance/SET_ATTACHMENT_LIST', [])
   const type = inject<Ref<FormActionType>>('type')
   config.value = getConfig(type!.value)
   if (type?.value === 'edit' || type?.value === 'resubmit' || type?.value === 'invalid' || type?.value === 'modify') {
@@ -362,6 +421,11 @@ onMounted(() => {
     })
   }
 })
+
+// onUnmounted(() => {
+//   toast.info('正在清理数据...')
+//   store.commit('instance/SET_ATTACHMENT_LIST', [])
+// })
 </script>
 
 <style lang="scss" scoped>

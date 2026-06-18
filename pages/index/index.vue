@@ -52,13 +52,7 @@ import { queryUserList, getDepartments } from '@/apis/modules/global'
 import { useStore } from 'vuex'
 import _head from 'lodash/first'
 import type { DepartmentsResponse } from '@/apis/typings/global'
-import type {
-  FormListItem,
-  FormGroupItem,
-  DocumentItem,
-  TreeWithFormResponse,
-  TreeWithFormReqParams
-} from '@/apis/typings/home'
+import type { FormGroupItem, TreeWithFormResponse, TreeWithFormReqParams } from '@/apis/typings/home'
 
 const store = useStore()
 const loading = ref(true)
@@ -68,6 +62,9 @@ const toast = makeToast()
 
 // 跳转到创建页
 const goToForm = (id: string) => {
+  store.commit('instance/SET_ATTACHMENT_LIST', [])
+  store.commit('instance/SET_SECRET_ATTACHMENT_LIST', [])
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/form/form?id=${id}&type=create`
   })
@@ -87,7 +84,7 @@ function getData() {
       for (var index = 0; index < documents.length; index++) {
         var element = documents[index]
         // ------ 临时代码，后面会删除
-        if (element.name !== '开发组') {
+        if (element.name !== 'china') {
           continue
         }
         // -------临时代码，后面会删除

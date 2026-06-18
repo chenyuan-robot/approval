@@ -83,6 +83,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { submittedList } from '@/apis/modules/apply'
 import type { SubmittedItem, SubmittedListResponse } from '@/apis/typings/apply'
 import { makeToast } from '@/utils/toast'
+import store from '@/store'
 import { getStatusType, STATUS_MAP } from '@/hooks/base/status'
 import { deleteApproval } from '@/apis/modules/detail'
 
@@ -93,12 +94,12 @@ const toast = makeToast()
 const typeList = ref([{ value: 'all', text: '全部单据类型' }])
 const selectedType = ref('all')
 const statusList = ref([
-        { value: 'all', text: '全部状态' },
-        ...Object.keys(STATUS_MAP).map(text => ({
-            value: text,
-            text
-          }))
-    ])
+  { value: 'all', text: '全部状态' },
+  ...Object.keys(STATUS_MAP).map((text) => ({
+    value: text,
+    text
+  }))
+])
 const selectedStatus = ref('all')
 
 const pageSize = 10
@@ -112,7 +113,7 @@ onMounted(() => {
 function getData() {
   if (loading.value || isEnd) return
   loading.value = true
-  const param = {page_num: pageNum, page_size: pageSize}
+  const param = { page_num: pageNum, page_size: pageSize }
   if (selectedStatus.value !== 'all') {
     param.status = [selectedStatus.value]
   }
@@ -181,6 +182,12 @@ watch(
 //   { immediate: true }
 // )
 
+const resetAttachmentState = () => {
+  store.commit('instance/SET_ATTACHMENT_LIST', [])
+  store.commit('instance/SET_SECRET_ATTACHMENT_LIST', [])
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
+}
+
 // 跳转到详情页
 const goToDetail = (item: SubmittedItem) => {
   const applicaitonItem = {
@@ -195,6 +202,7 @@ const goToDetail = (item: SubmittedItem) => {
 // 跳转到表单页
 const goToEdit = (item: SubmittedItem) => {
   console.log('goToEdit', item)
+  resetAttachmentState()
   uni.navigateTo({
     url: `/pages/form/form?id=${item.instance_id}&type=edit&workflow_code=${item.workflow_cfg.workflow_code}&workflow_version=${item.workflow_cfg.workflow_version}`
   })
@@ -203,6 +211,7 @@ const goToEdit = (item: SubmittedItem) => {
 // 再次提交
 const reSubmit = (item: SubmittedItem) => {
   console.log('reSubmit', item)
+  resetAttachmentState()
   uni.navigateTo({
     url: `/pages/form/form?id=${item.instance_id}&type=resubmit`
   })
@@ -211,6 +220,7 @@ const reSubmit = (item: SubmittedItem) => {
 // 作废
 const handleInvalid = (item: SubmittedItem) => {
   console.log('handleInvalid', item)
+  resetAttachmentState()
   uni.navigateTo({
     url: `/pages/form/form?id=${item.instance_id}&type=invalid`
   })
@@ -219,6 +229,7 @@ const handleInvalid = (item: SubmittedItem) => {
 // 变更
 const handleModify = (item: SubmittedItem) => {
   console.log('handleModify', item)
+  resetAttachmentState()
   uni.navigateTo({
     url: `/pages/form/form?id=${item.instance_id}&type=modify`
   })

@@ -7,5 +7,5 @@ import type { SubmittedListReqParams, SubmittedListResponse } from '../typings/a
  * @returns
  */
 export const submittedList = (params: SubmittedListReqParams) => {
-  return http.post<SubmittedListResponse | string>('/api/v1/dl_approval/instance/submitted/list', { ...params })
+  return http.post<SubmittedListResponse | string>('/api/v1/approval/instance/submitted/list', { ...params })
 }

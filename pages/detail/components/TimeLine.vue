@@ -96,7 +96,7 @@ const handlerPreview = (id: string): void => {
   const suffix = attachmentId.split('.').pop()
   if (suffix === 'png' || suffix === 'jpg' || suffix === 'jpeg') {
     uni.request({
-      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
+      url: `${process.env.BASE_URL}/api/v1/approval/file/preview/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -120,7 +120,7 @@ const handlerDownload = (id: string): void => {
   let attachmentId: string = id
   const suffix = attachmentId.split('.').pop()
   uni.downloadFile({
-    url: `${process.env.BASE_URL}/api/v1/dl_approval/file/download/proxy/${attachmentId}`,
+    url: `${process.env.BASE_URL}/api/v1/approval/file/download/proxy/${attachmentId}`,
     method: 'GET',
     responseType: 'arraybuffer',
     header: {
@@ -199,7 +199,7 @@ onMounted(() => {
     console.log(props.history)
     const attachmentId = props.history.attachment[0]
     uni.request({
-      url: `${process.env.BASE_URL}/api/v1/dl_approval/file/preview/proxy/${attachmentId}`,
+      url: `${process.env.BASE_URL}/api/v1/approval/file/preview/proxy/${attachmentId}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
@@ -275,7 +275,6 @@ onMounted(() => {
     }
     .person-box {
       width: calc(100vw - 60rpx - 64rpx - 20rpx - 40rpx);
-      // background-color: red;
       display: flex;
       align-items: flex-start;
       position: relative;

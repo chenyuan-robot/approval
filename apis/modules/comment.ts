@@ -6,7 +6,7 @@ import { http } from '../request'
  * @returns
  */
 export const addComment = (params: Record<string, unknown>) => {
-  return http.put<boolean | string>('/api/v1/dl_approval/instance/operation', params)
+  return http.put<boolean | string>('/api/v1/approval/instance/operation', params)
 }
 
 /**
@@ -15,5 +15,5 @@ export const addComment = (params: Record<string, unknown>) => {
  * @returns
  */
 export const previewAttachment = (osskey: string) => {
-  return http.get(`/api/v1/dl_approval/file/preview/proxy/${osskey}`)
+  return http.get(`/api/v1/approval/file/preview/proxy/${osskey}`)
 }

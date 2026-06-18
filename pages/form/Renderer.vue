@@ -75,6 +75,9 @@
     <view v-else-if="props.formItem.component_code === 'COMP_DESC'">
       <DescInput :formItem="props.formItem" />
     </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_FORMULA'">
+      <Formula :formItem="props.formItem" />
+    </view>
     <view v-else>
       <Unknown :formItem="props.formItem" />
     </view>
@@ -107,6 +110,7 @@ import Reason from '@/components/form/Reason.vue'
 import SecretMultiInput from '@/components/form/SecretMultiInput.vue'
 import Invoice from '@/components/form/Invoice.vue'
 import DescInput from '@/components/form/DescInput.vue'
+import Formula from '@/components/form/Formula.vue'
 import Unknown from '@/components/form/Unknown.vue'
 
 defineOptions({

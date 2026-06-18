@@ -9,7 +9,10 @@ const getDefaultState = (): InstanceState => ({
   instance_id: '',
   instance_type: '',
   task_node_instance_id: '',
-  form_instance: []
+  form_instance: [],
+  attachmentList: [],
+  secretAttachmentList: [],
+  commentAttachmentList: []
 })
 
 const instance = {
@@ -20,9 +23,9 @@ const instance = {
      * reset instance state
      * @param state
      */
-    RESET_STATE(state: InstanceState) {
-      Object.assign(state, getDefaultState())
-    },
+    // RESET_STATE(state: InstanceState) {
+    //   Object.assign(state, getDefaultState())
+    // },
 
     /**
      * set instance state
@@ -37,6 +40,40 @@ const instance = {
 
     SET_FORM_INSTANCE(state: InstanceState, data: Array<FormConfigItem>) {
       state.form_instance = data
+    },
+
+    /**
+     * set attachment list
+     * @param state
+     * @param data
+     */
+    SET_ATTACHMENT_LIST(state: InstanceState, data: string[]) {
+      state.attachmentList = data
+    },
+
+    /**
+     * set secret attachment list
+     * @param state
+     * @param data
+     */
+    SET_SECRET_ATTACHMENT_LIST(state: InstanceState, data: string[]) {
+      state.secretAttachmentList = data
+    },
+
+    /**
+     * set comment attachment list
+     * @param state
+     * @param data
+     */
+    SET_COMMENT_ATTACHMENT_LIST(state: InstanceState, data: string[]) {
+      state.commentAttachmentList = data
+    },
+
+    CLEAR_INSTANCE_LINK(state: InstanceState) {
+      state.instance_id = ''
+      state.instance_type = ''
+      state.task_node_instance_id = ''
+      state.form_instance = []
     }
   }
 }

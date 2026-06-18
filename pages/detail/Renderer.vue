@@ -37,7 +37,7 @@
       <MultiInput :formItem="props.formItem" :renderOnly="true" />
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_DEPARTMENT_SELECT'">
-      <DepartmentSelect :formItem="props.formItem" :renderOnly="true"/>
+      <DepartmentSelect :formItem="props.formItem" :renderOnly="true" />
     </view>
     <view v-else-if="props.formItem.component_code === 'COMP_SINGLE_INPUT'">
       <SingleInput :formItem="props.formItem" :renderOnly="true" />
@@ -75,8 +75,11 @@
     <view v-else-if="props.formItem.component_code === 'COMP_DESC'">
       <DescInput :formItem="props.formItem" :renderOnly="true" />
     </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_FORMULA'">
+      <Formula :formItem="props.formItem" :renderOnly="true" />
+    </view>
     <view v-else>
-       <Unknown :formItem="props.formItem" :renderOnly="true" />
+      <Unknown :formItem="props.formItem" :renderOnly="true" />
     </view>
   </view>
 </template>
@@ -107,6 +110,7 @@ import Reason from '@/components/form/Reason.vue'
 import AllocationBudget from '@/components/form/AllocationBudget.vue'
 import CompanySelect from '@/components/form/CompanySelect.vue'
 import DescInput from '@/components/form/DescInput.vue'
+import Formula from '@/components/form/Formula.vue'
 import Unknown from '@/components/form/Unknown.vue'
 
 defineOptions({

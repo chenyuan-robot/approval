@@ -30,3 +30,26 @@ export const getTimeAgo = (dateStr: string): string => {
 
   return text
 }
+
+/**
+ * 获取文件名经过URL编码后的字符总长度
+ * @param fileName 原始文件名
+ * @returns number 编码后字符串长度
+ */
+export const getEncodedFileNameLength = (fileName: string): number => {
+  if (!fileName) return 0
+  // 和小程序上传时编码逻辑完全一致
+  const encoded = encodeURIComponent(fileName)
+  return encoded.length
+}
+
+/**
+ * 判断文件名编码后是否超过飞书250字符限制
+ * @param fileName 原始文件名
+ * @returns true=超限，false=合规
+ */
+export const gisFileNameOverLimit = (fileName: string): boolean => {
+  const maxLimit = 250
+  const len = getEncodedFileNameLength(fileName)
+  return len > maxLimit
+}

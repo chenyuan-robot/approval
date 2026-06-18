@@ -288,6 +288,9 @@ const handlerUnRead = (instance_id: string) => {
  * 审批相关操作-编辑
  */
 const handlerEdit = (): void => {
+  store.commit('instance/SET_ATTACHMENT_LIST', [])
+  store.commit('instance/SET_SECRET_ATTACHMENT_LIST', [])
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/form/form?id=${instanceDetail.value.instance_code}&type=edit&approve=true`
   })
@@ -297,6 +300,7 @@ const handlerEdit = (): void => {
  * 审批相关操作-转交
  */
 const handlerTransfer = (): void => {
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=transfer`
   })
@@ -306,6 +310,7 @@ const handlerTransfer = (): void => {
  * 审批相关操作-拒绝
  */
 const handlerReject = (): void => {
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=reject`
   })
@@ -315,6 +320,7 @@ const handlerReject = (): void => {
  * 审批相关操作-同意
  */
 const handlerAgree = (): void => {
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&task_node_instance_id=${instanceDetail.value.task_node_instance_id}&type=agree`
   })
@@ -324,6 +330,7 @@ const handlerAgree = (): void => {
  * 审批相关操作-退回
  */
 const handlerReturn = (): void => {
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&task_node_instance_id=${instanceDetail.value.task_node_instance_id}&type=return`
   })
@@ -333,6 +340,7 @@ const handlerReturn = (): void => {
  * 审批相关操作-加签
  */
 const handlerSign = (): void => {
+  store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
   uni.navigateTo({
     url: `/pages/comment/index?id=${instanceDetail.value.instance_code}&type=sign&pre=${operateConfig.pre_add_sign}&post=${operateConfig.post_add_sign}`
   })

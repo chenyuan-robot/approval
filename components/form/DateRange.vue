@@ -16,7 +16,13 @@
         <view class="start-date">
           <picker
             class="component-style"
-            style="height: 80rpx"
+            :style="{
+              height: '80rpx',
+              width:
+                config.dateType === '年' || config.dateType === '年-月' || config.dateType === '年-月-日'
+                  ? '100%'
+                  : '70%'
+            }"
             :name="`COMP_DATE_RANGE___${props.formItem.sequence}_start`"
             mode="date"
             :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
@@ -29,19 +35,32 @@
             <view :class="['action-result', startDate === '0' ? 'empty' : 'fill']">
               {{ startDate === '0' ? '请选择开始时间' : startDate }}
             </view>
+            <image
+              class="suffix-icon"
+              v-if="!config.disabled"
+              :src="`${startDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+              mode="aspectFit"
+              @click.stop="handleClearStartDate"
+            />
           </picker>
-          <image
-            class="suffix-icon"
-            v-if="!config.disabled"
-            :src="`${startDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
-            mode="aspectFit"
-            @click.stop="handleClearStartDate"
-          />
+          <view class="right" v-if="config.dateType === '年-月-日 时-分' || config.dateType === '年-月-日 上午/下午'">
+            <picker class="component-time-style" mode="time" :value="startDate" :disabled="config.disabled">
+              <view :class="['action-result', startDate === '0' ? 'empty' : 'fill']">
+                {{ startDate === '0' ? '请选择' : startDate }}
+              </view>
+            </picker>
+          </view>
         </view>
         <view class="end-date">
           <picker
             class="component-style"
-            style="height: 80rpx"
+            :style="{
+              height: '80rpx',
+              width:
+                config.dateType === '年' || config.dateType === '年-月' || config.dateType === '年-月-日'
+                  ? '100%'
+                  : '70%'
+            }"
             :name="`COMP_DATE_RANGE___${props.formItem.sequence}_end`"
             mode="date"
             :fields="`${config.dateType === '年' ? 'year' : config.dateType === '年-月' ? 'month' : 'day'}`"
@@ -54,14 +73,21 @@
             <view :class="['action-result', endDate === '0' ? 'empty' : 'fill']">
               {{ endDate === '0' ? '请选择结束时间' : endDate }}
             </view>
+            <image
+              v-if="!config.disabled"
+              class="suffix-icon"
+              :src="`${endDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
+              mode="aspectFit"
+              @click.stop="handleClearEndDate"
+            />
           </picker>
-          <image
-            v-if="!config.disabled"
-            class="suffix-icon"
-            :src="`${endDate !== '0' ? '/static/clear.svg' : '/static/arrow_down.svg'} `"
-            mode="aspectFit"
-            @click.stop="handleClearEndDate"
-          />
+          <view class="right" v-if="config.dateType === '年-月-日 时-分' || config.dateType === '年-月-日 上午/下午'">
+            <picker class="component-time-style" mode="time" :value="startDate" :disabled="config.disabled">
+              <view :class="['action-result', startDate === '0' ? 'empty' : 'fill']">
+                {{ startDate === '0' ? '请选择' : startDate }}
+              </view>
+            </picker>
+          </view>
         </view>
       </view>
     </view>

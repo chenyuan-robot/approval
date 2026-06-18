@@ -12,24 +12,26 @@ export type WgtEnv = 'test' | 'prod'
 /** 各环境独有的后端地址 */
 export const ENV_CONFIG: Record<
   WgtEnv,
-  { BASE_URL: string; DIGITAL_BASE_URL: string; NEW_BASE_URL: string }
+  { BASE_URL: string; DIGITAL_BASE_URL: string; NEW_BASE_URL: string; APP_ID: string; APP_SECRET: string }
 > = {
   test: {
     BASE_URL: 'https://approval.softtest.cowarobot.com',
     DIGITAL_BASE_URL: 'https://digital.softtest.cowarobot.com',
-    NEW_BASE_URL: 'https://newbasis.softtest.cowarobot.com'
+    NEW_BASE_URL: 'https://newbasis.softtest.cowarobot.com',
+    APP_ID: 'cli_aa896edfa6b91cc4',
+    APP_SECRET: 'NTrZj7yEW9xlGFWspbavLe0w0L53hYNB',
   },
   prod: {
-    BASE_URL: 'https://approval.softtest.cowarobot.com',
-    DIGITAL_BASE_URL: 'https://digital.softtest.cowarobot.com',
-    NEW_BASE_URL: 'https://newbasis.softtest.cowarobot.com'
+    BASE_URL: 'https://coowa.tech',
+    DIGITAL_BASE_URL: 'https://callcenter.coowa.tech',
+    NEW_BASE_URL: 'https://coowa.tech',
+    APP_ID: 'cli_aaba54586e799cde',
+    APP_SECRET: 'tetQpeOl3Pis1utOnnJq4fjLQPeesvFm',
   }
 }
 
 /** 测试版 / 正式版 共用、与环境无关的配置 */
 export const SHARED_ENV: Record<string, string> = {
-  APP_ID: 'cli_aa896edfa6b91cc4',
-  APP_SECRET: 'NTrZj7yEW9xlGFWspbavLe0w0L53hYNB',
   TENANT_ABBR: 'coowa',
   REDIRECT_URI: 'http://172.16.115.41:5174/'
 }

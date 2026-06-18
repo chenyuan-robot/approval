@@ -119,6 +119,7 @@ import { queryInstanceDetail } from '@/apis/modules/detail'
 import { debounce } from 'lodash'
 import { useStore } from 'vuex'
 import { getStatusType } from '@/hooks/base/status'
+import type { StoreState } from '@/store/types'
 
 interface FormValues {
   [key: string]: string
@@ -126,6 +127,10 @@ interface FormValues {
 
 const store = useStore()
 const toast = makeToast()
+
+const attachmentList = computed(() => (store.state as StoreState).instance.attachmentList)
+const secretAttachmentList = computed(() => (store.state as StoreState).instance.secretAttachmentList)
+// const { user_name } = toRefs(userInfo.value)
 
 const isUploading = ref<boolean>(false)
 const formInfo = reactive<FormInfo>({
@@ -165,7 +170,6 @@ const formSubmit = debounce((event: Event) => {
       .then((res) => {
         if (res.code === 200) {
           toast.success('操作成功', 2000)
-          // uni.navigateBack()
           uni.switchTab({
             url: '/pages/center/center'
           })
@@ -289,7 +293,7 @@ const formSubmit = debounce((event: Event) => {
         }
       } else if (comp === 'COMP_ATTACHMENT') {
         // 处理自定义控件附件组件的值
-        find.form_values = value.split(',')
+        find.form_values = attachmentList.value
       } else if (comp === 'COMP_USER_SELECT') {
         // 处理自定义控件用户选择组件的值
         find.form_values = value.split(', ')
@@ -315,7 +319,7 @@ const formSubmit = debounce((event: Event) => {
         find.form_value = value
       } else if (comp === 'COMP_SECRET_ATTACHMENT') {
         // 处理自定义控件附件组件的值
-        find.form_values = value.split(',')
+        find.form_values = secretAttachmentList.value
       } else if (comp === 'COMP_COMPANY_SELECT') {
         const multiple =
           formInfo.form_instance[sequence - 1].values.find((item) => item.name === '选择模式')?.value === '多选'
@@ -342,6 +346,8 @@ const formSubmit = debounce((event: Event) => {
       } else if (comp === 'COMP_DESC_INPUT') {
         // 说明 组件
         find.form_value = value
+      } else if (comp === 'COMP_FORMULA') {
+        find.form_value = value
       } else {
         // 处理其他组件的值
         console.warn(`未处理组件 ${comp} 的值`)
@@ -351,6 +357,7 @@ const formSubmit = debounce((event: Event) => {
     if (showApproveBar.value) {
       const formInstance = formInfo.form_instance
       store.commit('instance/SET_FORM_INSTANCE', formInstance)
+      store.commit('instance/SET_COMMENT_ATTACHMENT_LIST', [])
       uni.navigateTo({
         url: `/pages/comment/index?id=${formInfo.form_code}&type=${approveType}`
       })

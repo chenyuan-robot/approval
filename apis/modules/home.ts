@@ -7,5 +7,5 @@ import type { TreeWithFormReqParams, TreeWithFormResponse } from '../typings/hom
  * @returns
  */
 export const treeWithForm = (params: TreeWithFormReqParams) => {
-  return http.get<TreeWithFormResponse | string>('/api/v1/dl_approval/form/document/tree_with_form', { ...params })
+  return http.get<TreeWithFormResponse | string>('/api/v1/approval/form/document/tree_with_form', { ...params })
 }

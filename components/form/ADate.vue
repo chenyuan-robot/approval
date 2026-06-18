@@ -42,6 +42,7 @@ import { ref, onMounted, inject } from 'vue'
 import type { Ref } from 'vue'
 import type { FormActionType, FormItem } from '../../pages/form/typings'
 import { formRulesUtil } from '@/pages/form/utils/rules'
+import dayjs from 'dayjs'
 
 interface FormConfig {
   placeholder: string
@@ -91,7 +92,6 @@ const getConfig = (): FormConfig => {
     name: `COMP_DATE___${props.formItem.sequence}`,
     rules: [
       {
-        // ruleType: required ? '^.+$' : '.*',
         ruleType: required ? '^(?!0$).*$' : '.*',
         errorMessage: `${props.formItem.label}不能为空`
       }
@@ -116,18 +116,74 @@ const handleClear = () => {
 }
 
 const getDate = (type: 'start' | 'end'): string => {
-  const date = new Date()
-  let year = date.getFullYear()
-  let month: string | number = date.getMonth() + 1
-  let day: string | number = date.getDate()
-  if (type === 'start') {
-    year = year - 10
-  } else if (type === 'end') {
-    year = year + 10
+  let value: string = ''
+  const optionDate = props.formItem.values.find((item) => item.name === '可选日期')
+  const optionDateValue = optionDate?.value as string | null
+  console.log('optionDateValue: ', optionDateValue)
+  const today = dayjs()
+  if (optionDateValue === null || optionDateValue === '所以日期' || optionDateValue === '自定义') {
+    value =
+      type === 'start' ? today.subtract(10, 'year').format('YYYY-MM-DD') : today.add(10, 'year').format('YYYY-MM-DD')
+  } else if (optionDateValue === '本周') {
+    // 本周：周一开始，周日结束（按中国习惯）
+    if (type === 'start') {
+      const dayOfWeek = today.day() // 0=Sun, 1=Mon, ..., 6=Sat
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      value = today.subtract(diff, 'day').format('YYYY-MM-DD')
+    } else {
+      const dayOfWeek = today.day()
+      const diff = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
+      value = today.add(diff, 'day').format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '本月') {
+    if (type === 'start') {
+      value = today.startOf('month').format('YYYY-MM-DD')
+    } else {
+      value = today.endOf('month').format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '最近7天') {
+    if (type === 'start') {
+      value = today.subtract(6, 'day').format('YYYY-MM-DD')
+    } else {
+      value = today.format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '最近1个月') {
+    if (type === 'start') {
+      value = today.subtract(1, 'month').format('YYYY-MM-DD')
+    } else {
+      value = today.format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '最近3个月') {
+    if (type === 'start') {
+      value = today.subtract(3, 'month').format('YYYY-MM-DD')
+    } else {
+      value = today.format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '最近半年') {
+    if (type === 'start') {
+      value = today.subtract(6, 'month').format('YYYY-MM-DD')
+    } else {
+      value = today.format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '最近一年') {
+    if (type === 'start') {
+      value = today.subtract(1, 'year').format('YYYY-MM-DD')
+    } else {
+      value = today.format('YYYY-MM-DD')
+    }
+  } else if (optionDateValue === '当天') {
+    value = today.format('YYYY-MM-DD')
+  } else if (optionDateValue === '当天及以后日期') {
+    if (type === 'start') {
+      value = today.format('YYYY-MM-DD')
+    } else {
+      value = today.add(10, 'year').format('YYYY-MM-DD')
+    }
+  } else {
+    value =
+      type === 'start' ? today.subtract(10, 'year').format('YYYY-MM-DD') : today.add(10, 'year').format('YYYY-MM-DD')
   }
-  month = month > 9 ? month : '0' + month
-  day = day > 9 ? day : '0' + day
-  return `${year}-${month}-${day}`
+  return value
 }
 
 const bindDateChange = (event: Event) => {

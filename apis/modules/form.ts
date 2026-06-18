@@ -12,7 +12,7 @@ import type {
  * @returns
  */
 export const queryFormDetail = (id: string) => {
-  return http.get<FormDetailResponse>(`/api/v1/dl_approval/form/detail/${id}`)
+  return http.get<FormDetailResponse>(`/api/v1/approval/form/detail/${id}`)
 }
 
 /**
@@ -21,7 +21,7 @@ export const queryFormDetail = (id: string) => {
  * @returns
  */
 export const createForm = (data: Record<string, unknown>) => {
-  return http.post<string>(`/api/v1/dl_approval/instance/create`, data)
+  return http.post<string>(`/api/v1/approval/instance/create`, data)
 }
 
 /**
@@ -30,7 +30,7 @@ export const createForm = (data: Record<string, unknown>) => {
  * @returns
  */
 export const submitApplicationInstance = (data: Record<string, unknown>, id: string) => {
-  return http.put<string>(`/api/v1/dl_approval/instance/submission/${id}`, data)
+  return http.put<string>(`/api/v1/approval/instance/submission/${id}`, data)
 }
 
 /**
@@ -39,7 +39,7 @@ export const submitApplicationInstance = (data: Record<string, unknown>, id: str
  * @returns
  */
 export const updateApplicationInstance = (data: Record<string, unknown>, id: string) => {
-  return http.put<string>(`/api/v1/dl_approval/instance/${id}`, data)
+  return http.put<string>(`/api/v1/approval/instance/${id}`, data)
 }
 
 /**
@@ -48,7 +48,7 @@ export const updateApplicationInstance = (data: Record<string, unknown>, id: str
  * @returns
  */
 export const getResubmitForm = (data: Record<string, string>) => {
-  return http.post<FormDetailResponse>(`/api/v1/dl_approval/instance/relaunch`, data)
+  return http.post<FormDetailResponse>(`/api/v1/approval/instance/relaunch`, data)
 }
 
 /**
@@ -56,7 +56,7 @@ export const getResubmitForm = (data: Record<string, string>) => {
  * @returns
  */
 export const queryConditionNodeValueList = (code: string, col: string) => {
-  return http.get<ConditionNodeValueListItem[] | string>(`/api/v1/dl_approval/value_list/col/detail`, {
+  return http.get<ConditionNodeValueListItem[] | string>(`/api/v1/approval/value_list/col/detail`, {
     code,
     col
   })
@@ -91,7 +91,7 @@ export const getProvinceCityAreaList = (data: Record<string, string | number>) =
  * @returns
  */
 export const invalidateApplicationInstance = (data: Record<string, string>) => {
-  return http.post<string>('/api/v1/dl_approval/instance/invalid', data)
+  return http.post<string>('/api/v1/approval/instance/invalid', data)
 }
 
 /**
@@ -100,5 +100,5 @@ export const invalidateApplicationInstance = (data: Record<string, string>) => {
  * @returns
  */
 export const modifyApplicationInstance = (data: Record<string, string | unknown>) => {
-  return http.post<string>('/api/v1/dl_approval/instance/modify', data)
+  return http.post<string>('/api/v1/approval/instance/modify', data)
 }

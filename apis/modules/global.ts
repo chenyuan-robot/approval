@@ -18,7 +18,7 @@ export const queryUserList = () => {
  * @returns
  */
 export const uploadAttachment = () => {
-  return http.post<Array<UploadAttachmentItem>>('/api/v1/dl_approval/file/upload')
+  return http.post<Array<UploadAttachmentItem>>('/api/v1/approval/file/upload')
 }
 
 /**

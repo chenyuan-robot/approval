@@ -10,20 +10,20 @@ export const queryInstanceDetail = (id: string, type?: string, task_node_instanc
   if (type === 'pending') {
     if (task_node_instance_id) {
       return http.get<FormDetailResponse>(
-        `/api/v1/dl_approval/instance/${id}?pending_approval=true&task_node_instance_id=${task_node_instance_id}`
+        `/api/v1/approval/instance/${id}?pending_approval=true&task_node_instance_id=${task_node_instance_id}`
       )
     }
-    return http.get<FormDetailResponse>(`/api/v1/dl_approval/instance/${id}?pending_approval=true`)
+    return http.get<FormDetailResponse>(`/api/v1/approval/instance/${id}?pending_approval=true`)
   }
   if (type === 'approved') {
     if (task_node_instance_id) {
       return http.get<FormDetailResponse>(
-        `/api/v1/dl_approval/instance/${id}?pending_approval=false&task_node_id=${task_node_instance_id}`
+        `/api/v1/approval/instance/${id}?pending_approval=false&task_node_id=${task_node_instance_id}`
       )
     }
-    return http.get<FormDetailResponse>(`/api/v1/dl_approval/instance/${id}?pending_approval=false`)
+    return http.get<FormDetailResponse>(`/api/v1/approval/instance/${id}?pending_approval=false`)
   }
-  return http.get<FormDetailResponse>(`/api/v1/dl_approval/instance/${id}`)
+  return http.get<FormDetailResponse>(`/api/v1/approval/instance/${id}`)
 }
 
 /**
@@ -32,7 +32,7 @@ export const queryInstanceDetail = (id: string, type?: string, task_node_instanc
  * @returns
  */
 export const queryInstanceHistory = (id: string) => {
-  return http.get<OperateHistoryResponse | string>(`/api/v1/dl_approval/instance/history/${id}`)
+  return http.get<OperateHistoryResponse | string>(`/api/v1/approval/instance/history/${id}`)
 }
 
 /**
@@ -41,7 +41,7 @@ export const queryInstanceHistory = (id: string) => {
  * @returns
  */
 export const deleteApproval = (id: string) => {
-  return http.delete<boolean | string>(`/api/v1/dl_approval/instance/${id}`)
+  return http.delete<boolean | string>(`/api/v1/approval/instance/${id}`)
 }
 
 /**
@@ -50,7 +50,7 @@ export const deleteApproval = (id: string) => {
  * @returns
  */
 export const withdrawApproval = (params: Record<string, unknown>) => {
-  return http.put<boolean | string>('/api/v1/dl_approval/instance/operation', params)
+  return http.put<boolean | string>('/api/v1/approval/instance/operation', params)
 }
 
 /**
@@ -59,7 +59,7 @@ export const withdrawApproval = (params: Record<string, unknown>) => {
  * @returns
  */
 export const queryReturnNodes = (id: string) => {
-  return http.get<ReturnNodeResponse | string>(`/api/v1/dl_approval/instance/return/nodes/${id}`)
+  return http.get<ReturnNodeResponse | string>(`/api/v1/approval/instance/return/nodes/${id}`)
 }
 
 /**
@@ -68,5 +68,5 @@ export const queryReturnNodes = (id: string) => {
  * @returns
  */
 export const ccReadReport = (instance_id: string) => {
-  return http.put<boolean | string>(`/api/v1/dl_approval/instance/cc/read/${instance_id}`)
+  return http.put<boolean | string>(`/api/v1/approval/instance/cc/read/${instance_id}`)
 }
