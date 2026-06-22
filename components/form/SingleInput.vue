@@ -83,6 +83,7 @@ const getConfig = (): FormConfig => {
       }
     ]
   })
+  console.log('config_titleItem', !(titleItem?.extra_option_config as { default_value?: boolean })?.default_value)
   return {
     placeholder: placeholder || '请输入内容',
     showFieldDesc: showFieldDesc,

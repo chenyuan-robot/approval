@@ -120,6 +120,7 @@ import { debounce } from 'lodash'
 import { useStore } from 'vuex'
 import { getStatusType } from '@/hooks/base/status'
 import type { StoreState } from '@/store/types'
+import dayjs from 'dayjs'
 
 interface FormValues {
   [key: string]: string
@@ -153,6 +154,15 @@ let submitType = 'submit' // submit 或 save
 const fromLarkMsg = ref<boolean>(false)
 
 provide('type', type)
+
+const parseAmPmStr = (str: string) => {
+  if (str.includes('上午')) {
+    return str.replace(' 上午', ' 08:00')
+  } else if (str.includes('下午')) {
+    return str.replace(' 下午', ' 14:00')
+  }
+  return str
+}
 
 const formSubmit = debounce((event: Event) => {
   const e = event as unknown as {
@@ -188,6 +198,7 @@ const formSubmit = debounce((event: Event) => {
   if (Math.random()) {
     for (let i = 0; i < formKeys.length; i++) {
       const key = formKeys[i]
+      console.log(key)
       const value = e.detail.value[key as keyof FormValues]
       // console.log(`表单项 ${key} 的值为：`, value)
       const componentRuleItem = formRulesUtil.rules.find((item) => item.name === key)
@@ -195,7 +206,7 @@ const formSubmit = debounce((event: Event) => {
       for (let j = 0; j < componentRules.length; j++) {
         const ruleItem = componentRules[j]
         const reg = new RegExp(ruleItem.ruleType)
-        console.log(`正则表达式 ${ruleItem.ruleType} 的测试结果为：`, reg.test(value), value)
+        // console.log(`正则表达式 ${ruleItem.ruleType} 的测试结果为：`, reg.test(value), value)
         if (!reg.test(value)) {
           console.warn(`表单项 ${key} 的值 "${value}" 不符合规则：`, ruleItem.errorMessage)
           toast.error(ruleItem.errorMessage)
@@ -279,16 +290,34 @@ const formSubmit = debounce((event: Event) => {
       } else if (comp === 'COMP_DATE_RANGE') {
         // 处理自定义控件日期范围选择组件的值
         console.log('value_date_range', value)
-        if (value !== '0') {
+        if (value !== '0' || !value) {
           if (!find.form_values || (Array.isArray(find.form_values) && find.form_values.length === 2)) {
             find.form_values = []
           }
+          const dateType = formInfo.form_instance[sequence - 1].values.find((item) => item.name === '字段样式')?.value
           // 防止开始、结束日期顺序错误
           const formValues = find.form_values as string[]
           if (formValues.length === 1 && last.endsWith('_start')) {
             formValues.unshift(value)
           } else {
             formValues.push(value)
+          }
+          if (formValues.length === 2) {
+            if (dateType === '年-月-日 时-分') {
+              const t1 = dayjs(formValues[0])
+              const t2 = dayjs(formValues[1])
+              if (t1.isAfter(t2)) {
+                toast.error('开始时间不能大于结束时间', 2000)
+                return
+              }
+            } else if (dateType === '年-月-日 上午/下午') {
+              const t1 = dayjs(parseAmPmStr(formValues[0]))
+              const t2 = dayjs(parseAmPmStr(formValues[1]))
+              if (t1.isAfter(t2)) {
+                toast.error('开始时间不能大于结束时间', 2000)
+                return
+              }
+            }
           }
         }
       } else if (comp === 'COMP_ATTACHMENT') {
@@ -392,7 +421,8 @@ const formSubmit = debounce((event: Event) => {
         })
       return
     }
-    // return
+    console.log('formItems：', formItems.value)
+    return
   }
 
   isUploading.value = true

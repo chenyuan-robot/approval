@@ -13,6 +13,9 @@
     <view v-else-if="props.formItem.component_code === 'COMP_ALLOCATION_BUDGET'">
       <AllocationBudget :formItem="props.formItem" />
     </view>
+    <view v-else-if="props.formItem.component_code === 'COMP_FORM'">
+      <AForm :formItem="props.formItem" />
+    </view>
     <!-- 专用控件 -->
     <view v-else-if="props.formItem.component_code === 'COMP_SECRET_MULTI_INPUT'">
       <SecretMultiInput :formItem="props.formItem" :isReview="props.isReview" />
@@ -112,6 +115,7 @@ import Invoice from '@/components/form/Invoice.vue'
 import DescInput from '@/components/form/DescInput.vue'
 import Formula from '@/components/form/Formula.vue'
 import Unknown from '@/components/form/Unknown.vue'
+import AForm from '@/components/form/AForm.vue'
 
 defineOptions({
   name: 'Renderer',

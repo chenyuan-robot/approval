@@ -121,9 +121,24 @@ const getDate = (type: 'start' | 'end'): string => {
   const optionDateValue = optionDate?.value as string | null
   console.log('optionDateValue: ', optionDateValue)
   const today = dayjs()
-  if (optionDateValue === null || optionDateValue === '所以日期' || optionDateValue === '自定义') {
+  if (optionDateValue === null || optionDateValue === '所有日期') {
     value =
       type === 'start' ? today.subtract(10, 'year').format('YYYY-MM-DD') : today.add(10, 'year').format('YYYY-MM-DD')
+  } else if (optionDateValue === '自定义') {
+    let specific_value: string[]
+    if (Array.isArray(optionDate?.specific_value)) {
+      specific_value = optionDate.specific_value // ['2022-01-01', '2022-01-31']
+    } else {
+      specific_value = ['', '']
+    }
+    const head = specific_value[0]
+    const last = specific_value[1]
+    if (head && last) {
+      value = type === 'start' ? head : last
+    } else {
+      value =
+        type === 'start' ? today.subtract(10, 'year').format('YYYY-MM-DD') : today.add(10, 'year').format('YYYY-MM-DD')
+    }
   } else if (optionDateValue === '本周') {
     // 本周：周一开始，周日结束（按中国习惯）
     if (type === 'start') {

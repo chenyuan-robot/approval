@@ -27,7 +27,7 @@
           "DIGITAL_BASE_URL": "https://digital.softtest.cowarobot.com",
           "NEW_BASE_URL": "https://newbasis.softtest.cowarobot.com",
           "APP_ID": "cli_aa896edfa6b91cc4",
-          "APP_SECRET": "",
+          "APP_SECRET": "NTrZj7yEW9xlGFWspbavLe0w0L53hYNB",
           "TENANT_ABBR": "coowa",
           "REDIRECT_URI": "http://172.16.115.41:5174/"
         }
@@ -41,7 +41,7 @@
           "DIGITAL_BASE_URL": "https://callcenter.coowa.tech",
           "NEW_BASE_URL": "https://coowa.tech",
           "APP_ID": "cli_aaba54586e799cde",
-          "APP_SECRET": "",
+          "APP_SECRET": "tetQpeOl3Pis1utOnnJq4fjLQPeesvFm",
           "TENANT_ABBR": "coowa",
           "REDIRECT_URI": "http://172.16.115.41:5174/"
         }
